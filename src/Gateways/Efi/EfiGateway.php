@@ -116,4 +116,9 @@ class EfiGateway implements EfiGatewayInterface
     {
         throw new Exception('Not implemented');
     }
+
+    public function subscription(): object
+    {
+        throw new Exception('Not implemented');
+    }
 }

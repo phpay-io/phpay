@@ -1,7 +1,5 @@
 <?php
 
-use PHPay\Asaas\AsaasGateway;
-use PHPay\Efi\EfiGateway;
 use PHPay\PHPay;
 
 test('boot phpay class', function () {

@@ -5,6 +5,7 @@ namespace PHPay\Asaas\Interface;
 use PHPay\Asaas\Resources\Charge\Charge;
 use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
+use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
 use PHPay\Contracts\GatewayInterface;
 
@@ -24,6 +25,13 @@ interface AsaasGatewayInterface extends GatewayInterface
      * @return Charge
      */
     public function charge(): Charge;
+
+    /**
+     * get resource subscription from gateway.
+     *
+     * @return Subscription
+     */
+    public function subscription(): Subscription;
 
     /**
      * get resource webhook from gateway.

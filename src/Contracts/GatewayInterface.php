@@ -34,4 +34,11 @@ interface GatewayInterface
      * @return object
      */
     public function pix(array $pix = []): object;
+
+    /**
+     * get resource subscription from gateway.
+     *
+     * @return object
+     */
+    public function subscription(): object;
 }

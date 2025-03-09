@@ -2,7 +2,6 @@
 
 namespace PHPay;
 
-use Efi\Interface\EfiGatewayInterface;
 use PHPay\Contracts\GatewayInterface;
 
 class PHPay implements GatewayInterface
@@ -19,18 +18,14 @@ class PHPay implements GatewayInterface
     }
 
     /**
-     * ATTENTION!!! ONLY EFÍ GATEWAY
+     * instance of PHPay.
      *
-     * @return array<mixed>
+     * @param GatewayInterface $gateway
+     * @return PHPay
      */
-    protected function getToken(): array
+    public static function gateway(GatewayInterface $gateway): PHPay
     {
-        /**
-         * @var EfiGatewayInterface $gateway
-         */
-        $gateway = $this->gateway;
-
-        return $gateway->getToken();
+        return new PHPay($gateway);
     }
 
     /**
@@ -74,5 +69,15 @@ class PHPay implements GatewayInterface
     public function pix(array $pix = []): object
     {
         return $this->gateway->pix($pix);
+    }
+
+    /**
+     * get resource subscription from gateway.
+     *
+     * @return object
+     */
+    public function subscription(): object
+    {
+        return $this->gateway->subscription();
     }
 }
