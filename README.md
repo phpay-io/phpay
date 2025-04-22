@@ -112,11 +112,29 @@ $phpay->undoConfirmReceipt($chargeId);
 
 ```
 
+### Assinaturas
+
+```php
+/**
+ * @var Subscription $phpay
+ */
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX))->subscription();
+
+/**
+ * create a new subscription
+ */
+$phpay->setCustomer($customer)->create([
+    'billingType' => 'BOLETO',
+    'value'       => 100,
+    'nextDueDate' => '2025-04-09',
+]);
+```
+
 ## 📝 Roadmap
 
 - Definições de Arquitetura ✅
 - Domínios ✅
-- Documentação 🕑
+- Documentação ✍️
 - Site 🕛
 - Gateways ✍️
 
@@ -125,6 +143,7 @@ $phpay->undoConfirmReceipt($chargeId);
   - Cobranças ✅
   - Clientes ✅
   - Webhook ✅
+  - Assinaturas ✍️
   - Pix 🕥
 
   - Efí.
@@ -133,6 +152,7 @@ $phpay->undoConfirmReceipt($chargeId);
   - Cobranças ✅
   - Clientes 🕥
   - Webhook 🕥
+  - Assinaturas ✍️
   - Pix 🕥
 
 - Lançamento v1.0.0 🚀

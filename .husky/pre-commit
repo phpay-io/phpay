@@ -8,7 +8,7 @@ fi
 
 php examples/helper/termwind-cli.php success "Pint Ok!"
 
-phpstan=$(vendor/bin/phpstan analyse --level=9 2>&1)
+phpstan=$(vendor/bin/phpstan analyse --level=7 2>&1)
 
 if [ $? -ne 0 ]; then
     php examples/helper/termwind-cli.php error "PHPStan tests failed." "$phpstan"

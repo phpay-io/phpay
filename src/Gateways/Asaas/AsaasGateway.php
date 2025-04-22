@@ -7,6 +7,7 @@ use PHPay\Asaas\Interface\AsaasGatewayInterface;
 use PHPay\Asaas\Resources\Charge\Charge;
 use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
+use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
 
 class AsaasGateway implements AsaasGatewayInterface
@@ -78,5 +79,10 @@ class AsaasGateway implements AsaasGatewayInterface
     public function pix(array $pix = []): Pix
     {
         return new Pix($this->token, $this->sandbox);
+    }
+
+    public function subscription(): Subscription
+    {
+        return new Subscription($this->token, $this->sandbox);
     }
 }
