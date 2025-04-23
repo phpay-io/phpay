@@ -1,6 +1,6 @@
 <?php
 
-use PHPay\Gateways\Asaas\AsaasGateway;
+use PHPay\Asaas\AsaasGateway;
 use PHPay\PHPay;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -17,7 +17,7 @@ $customer = [
  *
  * @var AsaasGateway $phpay
  */
-$phpay = new PHPay(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
 
 /**
  *  store asaas customer
