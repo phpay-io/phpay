@@ -48,9 +48,7 @@ class Customer implements CustomerInterface
      */
     public function getAll(): array
     {
-        return $this->get('customers', [
-            'query' => $this->filter,
-        ]);
+        return $this->get('customers', $this->filter);
     }
 
     /**
