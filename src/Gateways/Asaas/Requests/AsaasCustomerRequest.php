@@ -2,39 +2,40 @@
 
 namespace PHPay\Asaas\Requests;
 
+use PHPay\Exceptions\ValidationException;
+
 class AsaasCustomerRequest
 {
     /**
-     * validate customer
+     * validate customer payload before sending it to the gateway.
      *
      * @param array<mixed> $customer
-     * @property-read string $name
-     * @property-read string $cpfCnpj
      * @return void
+     * @throws ValidationException
      */
     public static function validate(array $customer): void
     {
-        if (!isset($customer['name'])) {
-            /** @phpstan-ignore property.notFound */
-            throw new \InvalidArgumentException(self::messages()->name, 400);
+        $messages = self::messages();
+
+        if (!isset($customer['name']) || !is_string($customer['name']) || trim($customer['name']) === '') {
+            throw ValidationException::make('Asaas', $messages->name);
         }
 
-        if (!isset($customer['cpfCnpj'])) {
-            /** @phpstan-ignore property.notFound */
-            throw new \InvalidArgumentException(self::messages()->cpfCnpj, 400);
+        if (!isset($customer['cpfCnpj']) || !is_string($customer['cpfCnpj']) || trim($customer['cpfCnpj']) === '') {
+            throw ValidationException::make('Asaas', $messages->cpfCnpj);
         }
     }
 
     /**
      * messages for validation
      *
-     * @return object
+     * @return object{name: string, cpfCnpj: string}
      */
     public static function messages(): object
     {
         return (object) [
-            'name'    => 'Asaas: Nome do cliente é obrigatório para o Asaas',
-            'cpfCnpj' => 'Asaas: CPF/CNPJ do cliente é obrigatório para o Asaas',
+            'name'    => 'Nome do cliente é obrigatório e deve ser uma string não vazia.',
+            'cpfCnpj' => 'CPF/CNPJ do cliente é obrigatório e deve ser uma string não vazia.',
         ];
     }
 }
