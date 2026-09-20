@@ -1,44 +1,60 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Test Case
-|--------------------------------------------------------------------------
-|
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind a different classes or traits.
-|
-*/
-
-// pest()->extend(Tests\TestCase::class)->in('Feature');
-
-/*
-|--------------------------------------------------------------------------
-| Expectations
-|--------------------------------------------------------------------------
-|
-| When you're writing tests, you often need to check that values meet certain conditions. The
-| "expect()" function gives you access to a set of "expectations" methods that you can use
-| to assert different things. Of course, you may extend the Expectation API at any time.
-|
-*/
-
-// expect()->extend('toBeOne', function () {
-//     return $this->toBe(1);
-// });
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\{Client, HandlerStack, Middleware};
 
 /*
 |--------------------------------------------------------------------------
 | Functions
 |--------------------------------------------------------------------------
 |
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
+| Helpers shared by the whole suite. No test may reach the network: every
+| resource takes an injected Guzzle client, so we hand it a MockHandler and
+| assert on the recorded request history.
 |
 */
 
-// function something()
-// {
-// }
+/**
+ * build a Guzzle client backed by canned responses.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function mockClient(array $responses, array &$history = []): Client
+{
+    $stack = HandlerStack::create(new MockHandler($responses));
+    $stack->push(Middleware::history($history));
+
+    return new Client([
+        'handler'  => $stack,
+        'base_uri' => 'https://sandbox.asaas.com/api/v3/',
+    ]);
+}
+
+/**
+ * json response helper.
+ *
+ * @param array<mixed> $data
+ * @param int $status
+ * @return Response
+ */
+function jsonResponse(array $data, int $status = 200): Response
+{
+    return new Response($status, ['content-type' => 'application/json'], (string) json_encode($data));
+}
+
+/**
+ * decoded body of a recorded request.
+ *
+ * @param array<int, mixed> $history
+ * @param int $index
+ * @return array<mixed>
+ */
+function recordedBody(array $history, int $index = 0): array
+{
+    $decoded = json_decode((string) $history[$index]['request']->getBody(), true);
+
+    return is_array($decoded) ? $decoded : [];
+}
