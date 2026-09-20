@@ -49,9 +49,9 @@
         "guzzlehttp/guzzle": "^7.0"
     },
     "require-dev": {
-        "laravel/pint": "^1.18",
+        "laravel/pint": "^1.18.3",
         "nunomaduro/termwind": "^2.3",
-        "pestphp/pest": "3.5",
+        "pestphp/pest": "^3.5",
         "phpstan/phpstan": "^2.0"
     },
     "scripts": {

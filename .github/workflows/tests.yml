@@ -14,6 +14,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Estilo e análise estática rodam uma única vez, com as dependências do lock.
+  # O Pint não é estável entre versões — cada release pode adicionar regras, e
+  # 1.18.3 e 1.32.1 discordam sobre ordered_imports — então o estilo do projeto
+  # é definido pela versão travada no composer.lock, não pela mais recente.
+  quality:
+    name: Lint e análise estática
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: curl, json, mbstring
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Lint (Pint)
+        run: composer test:lint
+
+      - name: Static analysis (PHPStan)
+        run: composer test:types
+
   test:
     name: PHP ${{ matrix.php }} - ${{ matrix.dependencies }}
     runs-on: ubuntu-latest
@@ -26,7 +54,9 @@ jobs:
         php: ['8.2', '8.3', '8.4']
         dependencies: [locked]
         include:
-          - php: '8.4'
+          # dependências mínimas contra o PHP mais antigo suportado: casar as
+          # mais antigas com o PHP mais novo só produz deprecations de terceiros.
+          - php: '8.2'
             dependencies: lowest
           - php: '8.4'
             dependencies: highest
@@ -47,11 +77,5 @@ jobs:
         with:
           dependency-versions: ${{ matrix.dependencies }}
 
-      - name: Lint (Pint)
-        run: composer test:lint
-
       - name: Unit tests (Pest)
         run: composer test:unit
-
-      - name: Static analysis (PHPStan)
-        run: composer test:types
