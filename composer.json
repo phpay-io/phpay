@@ -23,7 +23,8 @@
             "PHPay\\": "src/",
             "PHPay\\Asaas\\": "src/Gateways/Asaas/",
             "PHPay\\Efi\\": "src/Gateways/Efi/",
-            "PHPay\\MercadoPago\\": "src/Gateways/MercadoPago/"
+            "PHPay\\MercadoPago\\": "src/Gateways/MercadoPago/",
+            "PHPay\\PagBank\\": "src/Gateways/PagBank/"
         }
     },
     "autoload-dev": {

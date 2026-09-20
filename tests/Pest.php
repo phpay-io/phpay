@@ -74,3 +74,15 @@ function mpClient(array $responses, array &$history = []): Client
 {
     return mockClient($responses, $history, 'https://api.mercadopago.com/');
 }
+
+/**
+ * mock client already pointed at the PagBank orders host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function pagbankClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://sandbox.api.pagseguro.com/');
+}
