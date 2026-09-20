@@ -4,3 +4,6 @@ examples/asaas/credentials.php
 examples/efi/credentials.php
 .idea/
 examples/mercadopago/credentials.php
+
+# configurações locais do Claude Code (pessoais, não versionar)
+.claude/settings.local.json
