@@ -1,6 +1,6 @@
 <?php
 
-namespace Asaas\Resources\Webhook\Enum;
+namespace PHPay\Asaas\Resources\Webhook\Enum;
 
 enum WebhookEventsEnum: string
 {

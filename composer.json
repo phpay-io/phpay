@@ -21,9 +21,12 @@
         "psr-4": {
             "PHPay\\": "src/",
             "PHPay\\Asaas\\": "src/Gateways/Asaas/",
-            "PHPay\\Efi\\": "src/Gateways/Efi/",
-            "Efi\\": "src/Gateways/Efi/",
-            "AsaasCustomer\\": "src/Gateways/Asaas/Resources/Customer/"
+            "PHPay\\Efi\\": "src/Gateways/Efi/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
         }
     },
     "authors": [
