@@ -214,7 +214,7 @@ try {
   - Assinaturas 🕥
   - Pix 🕥
 
-- Lançamento v1.0.0 🚀
+- Lançamento v2.0.0 🚀 (contém breaking changes — veja a seção de tratamento de erros)
 
 ## 🌟 Contribuindo
 
