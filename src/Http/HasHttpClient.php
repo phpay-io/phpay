@@ -39,12 +39,19 @@ trait HasHttpClient
      *
      * @param string $endpoint
      * @param array<mixed> $data
+     * @param array<string, string> $headers extra headers for this request only
      * @return array<mixed>
      * @throws ApiException
      */
-    protected function post(string $endpoint, array $data = []): array
+    protected function post(string $endpoint, array $data = [], array $headers = []): array
     {
-        return $this->request('POST', $endpoint, ['json' => $data]);
+        $options = ['json' => $data];
+
+        if (!empty($headers)) {
+            $options['headers'] = $headers;
+        }
+
+        return $this->request('POST', $endpoint, $options);
     }
 
     /**

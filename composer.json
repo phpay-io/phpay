@@ -22,7 +22,8 @@
         "psr-4": {
             "PHPay\\": "src/",
             "PHPay\\Asaas\\": "src/Gateways/Asaas/",
-            "PHPay\\Efi\\": "src/Gateways/Efi/"
+            "PHPay\\Efi\\": "src/Gateways/Efi/",
+            "PHPay\\MercadoPago\\": "src/Gateways/MercadoPago/"
         }
     },
     "autoload-dev": {
