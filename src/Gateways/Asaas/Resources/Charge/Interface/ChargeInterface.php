@@ -52,7 +52,15 @@ interface ChargeInterface
     public function restore(string $id): array;
 
     /**
-     * set customer
+     * attach an existing gateway customer to the charge.
+     *
+     * @param string $customerId
+     * @return ChargeInterface
+     */
+    public function setCustomerId(string $customerId): ChargeInterface;
+
+    /**
+     * attach a customer to the charge, reusing it when an id is given.
      *
      * @param array<mixed> $customer
      * @return ChargeInterface

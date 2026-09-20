@@ -27,12 +27,15 @@ class Pix implements PixInterface
      * construct
      *
      * @param string $token
+     * @param bool $sandbox
+     * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
         private string $token,
         private bool $sandbox = true,
+        ?Client $client = null,
     ) {
-        $this->client = $this->clientAsaasBoot();
+        $this->client = $client ?? $this->clientAsaasBoot();
     }
 
     /**
@@ -51,13 +54,11 @@ class Pix implements PixInterface
     /**
      * create pix key
      *
-     * @return string
      * @return array<mixed>
+     * @throws \PHPay\Exceptions\ApiException
      */
     public function createKey(): array
     {
-        /* TODO: prepare response */
-        /* TODO: adding reponse with image qrcode */
         return $this->post('pix/addressKeys', [
             'type' => 'EVP',
         ]);

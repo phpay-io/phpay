@@ -13,26 +13,16 @@ use PHPay\Asaas\Resources\Webhook\Webhook;
 class AsaasGateway implements AsaasGatewayInterface
 {
     /**
-     * client guzzle
-     */
-    public Client $client;
-
-    /**
-     * customer data
-     *
-     * @var Customer
-     */
-    public Customer $customer;
-
-    /**
      * construct
      *
      * @param string $token
      * @param bool $sandbox
+     * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
         private string $token,
-        private bool $sandbox = true
+        private bool $sandbox = true,
+        private ?Client $client = null
     ) {
     }
 
@@ -44,9 +34,7 @@ class AsaasGateway implements AsaasGatewayInterface
      */
     public function customer(array $customer = []): Customer
     {
-        $this->customer = new Customer($this->token, $customer, $this->sandbox);
-
-        return $this->customer;
+        return new Customer($this->token, $customer, $this->sandbox, $this->client);
     }
 
     /**
@@ -56,7 +44,7 @@ class AsaasGateway implements AsaasGatewayInterface
      */
     public function charge(): Charge
     {
-        return new Charge($this->token, $this->sandbox);
+        return new Charge($this->token, $this->sandbox, $this->client);
     }
 
     /**
@@ -67,22 +55,26 @@ class AsaasGateway implements AsaasGatewayInterface
      */
     public function webhook(array $webhook = []): Webhook
     {
-        return new Webhook($this->token, $webhook, $this->sandbox);
+        return new Webhook($this->token, $webhook, $this->sandbox, $this->client);
     }
 
     /**
      * pix
      *
-     * @param array<mixed> $pix
      * @return Pix
      */
-    public function pix(array $pix = []): Pix
+    public function pix(): Pix
     {
-        return new Pix($this->token, $this->sandbox);
+        return new Pix($this->token, $this->sandbox, $this->client);
     }
 
+    /**
+     * subscription
+     *
+     * @return Subscription
+     */
     public function subscription(): Subscription
     {
-        return new Subscription($this->token, $this->sandbox);
+        return new Subscription($this->token, $this->sandbox, $this->client);
     }
 }

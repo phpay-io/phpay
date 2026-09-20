@@ -30,10 +30,9 @@ interface GatewayInterface
     /**
      * get resource pix from gateway.
      *
-     * @param array<mixed> $pix
      * @return object
      */
-    public function pix(array $pix = []): object;
+    public function pix(): object;
 
     /**
      * get resource subscription from gateway.

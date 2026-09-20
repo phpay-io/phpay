@@ -44,8 +44,7 @@ interface AsaasGatewayInterface extends GatewayInterface
     /**
      * get resource pix from gateway.
      *
-     * @param array<mixed> $pix
      * @return Pix
      */
-    public function pix(array $pix = []): Pix;
+    public function pix(): Pix;
 }

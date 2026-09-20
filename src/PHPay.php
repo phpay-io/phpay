@@ -14,7 +14,6 @@ class PHPay implements GatewayInterface
     public function __construct(
         protected GatewayInterface $gateway
     ) {
-        $this->gateway = $gateway;
     }
 
     /**
@@ -63,12 +62,11 @@ class PHPay implements GatewayInterface
     /**
      * get resource pix from gateway.
      *
-     * @param array<mixed> $pix
      * @return object
      */
-    public function pix(array $pix = []): object
+    public function pix(): object
     {
-        return $this->gateway->pix($pix);
+        return $this->gateway->pix();
     }
 
     /**
