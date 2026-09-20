@@ -152,6 +152,53 @@ $phpay
     ]);
 ```
 
+## 🧩 Capacidades por gateway
+
+Nem todo gateway oferece todo recurso. Cada gateway **declara** o que suporta
+através de interfaces de capacidade, em vez de o contrato ser a união de tudo:
+
+| Capacidade | Interface | Asaas | Efí |
+| --- | --- | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ |
+| Webhooks | `SupportsWebhooks` | ✅ | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — |
+| Assinaturas | `SupportsSubscriptions` | ✅ | — |
+
+> `SupportsPixKeys` é mais estreito que "aceita Pix": ele significa gerenciar
+> chaves e QR Code estático, algo que só um PSP que emite chave própria oferece.
+> Na maioria dos gateways, Pix é uma forma de pagamento da cobrança.
+
+Para decidir em tempo de execução:
+
+```php
+use PHPay\Contracts\Capability;
+
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+
+$phpay->supports(Capability::SUBSCRIPTIONS);  // true
+$phpay->capabilities();                        // todas as capacidades do gateway
+$phpay->name();                                // 'Asaas'
+```
+
+Chamar um recurso que o gateway não oferece lança `NotImplementedException`
+dizendo o que ele oferece:
+
+```php
+PHPay::gateway(new EfiGateway(CLIENT_ID, CLIENT_SECRET))->pix();
+// NotImplementedException: Efí não suporta chaves Pix.
+//                          Capacidades disponíveis: cobranças.
+```
+
+Se você segurar o gateway concreto em vez da facade, o erro sobe para tempo de
+análise — o PHPStan acusa que o método não existe:
+
+```php
+$efi = new EfiGateway(CLIENT_ID, CLIENT_SECRET);
+$efi->charge();   // ✅
+$efi->pix();      // ❌ o método não existe nesse gateway
+```
+
 ## 🚨 Tratamento de erros
 
 Toda falha vira exceção — um array de retorno é **sempre** uma resposta de sucesso.
