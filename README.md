@@ -10,7 +10,8 @@ O PHPay é uma biblioteca PHP que tem o objetivo tornar o trabalho de integraç�
 
 ## 💸 Gateways
 
-- Asaas (cobranças, gestão de clientes e webhooks)
+- Asaas (cobranças, clientes, webhooks, chaves Pix e assinaturas)
+- Mercado Pago (cobranças, clientes e assinaturas)
 - Efí (cobranças)
 
 ## ⬆️ Vindo da v1?
@@ -163,13 +164,16 @@ $phpay
 Nem todo gateway oferece todo recurso. Cada gateway **declara** o que suporta
 através de interfaces de capacidade, em vez de o contrato ser a união de tudo:
 
-| Capacidade | Interface | Asaas | Efí |
-| --- | --- | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ |
-| Webhooks | `SupportsWebhooks` | ✅ | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — |
-| Assinaturas | `SupportsSubscriptions` | ✅ | — |
+| Capacidade | Interface | Asaas | Mercado Pago | Efí |
+| --- | --- | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | — |
+
+> O Mercado Pago não expõe CRUD de webhooks por API: eles são configurados no
+> painel "Suas integrações", ou por pagamento através do campo `notification_url`.
 
 > `SupportsPixKeys` é mais estreito que "aceita Pix": ele significa gerenciar
 > chaves e QR Code estático, algo que só um PSP que emite chave própria oferece.
@@ -239,6 +243,73 @@ try {
 }
 ```
 
+## 💳 Mercado Pago
+
+O Mercado Pago não tem URL de sandbox — o ambiente vem do próprio token, que é
+prefixado com `TEST-` nas credenciais de teste:
+
+```php
+use PHPay\MercadoPago\Enums\PaymentMethodEnum;
+use PHPay\MercadoPago\MercadoPagoGateway;
+
+$gateway = new MercadoPagoGateway(ACCESS_TOKEN_MERCADO_PAGO);
+
+$gateway->isSandbox();   // true para tokens TEST-
+```
+
+Cobrança via Pix — aqui o Pix é forma de pagamento, não um recurso à parte:
+
+```php
+$charge = PHPay::gateway($gateway)
+    ->charge()
+    ->setCharge([
+        'transaction_amount' => 100.00,
+        'payment_method_id'  => PaymentMethodEnum::PIX->value,
+        'description'        => 'Cobrança de teste',
+        'notification_url'   => 'https://exemplo.test/webhook/mercadopago',
+    ])
+    ->setPayer(['email' => 'comprador@exemplo.test'])
+    ->setIdempotencyKey('pedido-123456')
+    ->create();
+
+$phpay->getPixCode($charge['id']);   // código copia-e-cola
+```
+
+`POST /v1/payments` exige o header `X-Idempotency-Key`. O PHPay gera uma chave
+por chamada; passe a sua com `setIdempotencyKey()` para que um retry da mesma
+operação de negócio não gere duas cobranças.
+
+Para conferir contra o sandbox de verdade — algo que teste com HTTP mockado não
+prova — rode a checagem de conformidade com um token de teste:
+
+```bash
+MP_ACCESS_TOKEN='TEST-...' php examples/mercadopago/sandbox-check.php
+```
+
+O script recusa credenciais de produção e nunca imprime o token.
+
+Assinaturas usam `/preapproval`, com ou sem plano associado:
+
+```php
+$phpay = PHPay::gateway($gateway)->subscription();
+
+$phpay->setPayerEmail('comprador@exemplo.test')->create([
+    'reason'         => 'Assinatura PHPay',
+    'back_url'       => 'https://exemplo.test/retorno',
+    'auto_recurring' => [
+        'frequency'          => 1,
+        'frequency_type'     => 'months',
+        'transaction_amount' => 100.00,
+        'currency_id'        => 'BRL',
+    ],
+]);
+
+/* com plano, a recorrência vem do plano */
+$phpay->setPayerEmail('comprador@exemplo.test')
+    ->setPlan('2c938084726fca480172750000000000')
+    ->create(['back_url' => 'https://exemplo.test/retorno']);
+```
+
 ## 📝 Roadmap
 
 - Definições de Arquitetura ✅
@@ -257,6 +328,14 @@ try {
   - Webhook ✅
   - Pix (chaves e QR Code estático) ✅
   - Assinaturas ✍️ (criação pronta; listar/atualizar/cancelar pendentes)
+
+  - Mercado Pago.
+
+  - Cobranças ✅
+  - Clientes ✅
+  - Assinaturas ✅
+  - Webhook — sem CRUD por API
+  - Pix ✅ (como forma de pagamento)
 
   - Efí.
 
