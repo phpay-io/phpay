@@ -1,6 +1,7 @@
 <?php
 
 use PHPay\Asaas\AsaasGateway;
+use PHPay\Exceptions\PHPayException;
 use PHPay\PHPay;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -13,88 +14,43 @@ $customer = [
 ];
 
 /**
- * initialize phpay
- *
  * @var AsaasGateway $phpay
  */
 $phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
 
-/**
- *  store asaas customer
- *
- * @param array $customer
- * @return array
- * @see available fields in https://docs.asaas.com/reference/criar-novo-cliente
- */
-$customerCreated = $phpay
-    ->customer($customer)
-    ->create();
+try {
+    /**
+     * cria o cliente
+     *
+     * @see available fields in https://docs.asaas.com/reference/criar-novo-cliente
+     */
+    $customerCreated = $phpay
+        ->customer($customer)
+        ->create();
 
-/**
- *  list all clients without filters
- *
- * @return array customers
- */
-$customers = $phpay
-    ->customer()
-    ->getAll();
+    /* lista todos */
+    $phpay->customer()->getAll();
 
-/**
- * get customer with filter
- *
- * @see available fields in https://docs.asaas.com/reference/criar-novo-cliente
- * @return array customers
- */
-$customersFiltred = $phpay
-    ->customer()
-    ->setFilter([
-        'cpfCnpj' => $customerCreated['cpfCnpj'],
-    ])
-    ->getAll();
+    /* lista com filtro */
+    $phpay
+        ->customer()
+        ->setFilter(['cpfCnpj' => $customerCreated['cpfCnpj']])
+        ->getAll();
 
-/**
- * get customer by id
- *
- * @return array customer
- */
-$customerById = $phpay
-    ->customer()
-    ->find($customerCreated['id']);
+    /* busca por id */
+    $phpay->customer()->find($customerCreated['id']);
 
-/**
- * update customer
- *
- * @return array customer
- */
-$customerUpdate = $phpay
-    ->customer([
-        'name' => 'Mário Lucas Updated',
-    ])
-    ->update($customerCreated['id']);
+    /* atualiza */
+    $phpay
+        ->customer(['name' => 'Mário Lucas Updated'])
+        ->update($customerCreated['id']);
 
-/**
- * delete cliente no asaas
- *
- * @return bool
- */
-$customerDeleted = $phpay
-    ->customer()
-    ->destroy($customerCreated['id']);
+    /* notificações do cliente */
+    $phpay->customer()->getNotifications($customerCreated['id']);
 
-/**
- * restore customer deleted
- *
- * @return bool
- */
-$customerIdRestored = $phpay
-    ->customer()
-    ->restore($customerCreated['id']);
-
-/**
- * customer notifications
- *
- * @return array notifications
- */
-$notifications = $phpay
-    ->customer()
-    ->getNotifications($customerCreated['id']);
+    /* remove e restaura */
+    $phpay->customer()->destroy($customerCreated['id']);
+    $phpay->customer()->restore($customerCreated['id']);
+} catch (PHPayException $exception) {
+    echo $exception->getMessage() . PHP_EOL;
+}

@@ -50,6 +50,15 @@ $phpay
     ->create();
 
 /**
+ * reaproveitando um cliente que já existe no gateway
+ * (setCustomer cria um cliente novo quando o array não traz `id`)
+ */
+$phpay
+    ->setCharge($charge)
+    ->setCustomerId('cus_000006337812')
+    ->create();
+
+/**
  * find charge
  */
 $phpay->find($chargeId);
@@ -130,9 +139,59 @@ $phpay->setCustomer($customer)->create([
 ]);
 ```
 
+### Assinaturas com cliente existente
+
+```php
+$phpay
+    ->setCustomerId('cus_000006337812')
+    ->create([
+        'billingType' => 'BOLETO',
+        'value'       => 100,
+        'nextDueDate' => '2026-04-09',
+        'cycle'       => 'MONTHLY',
+    ]);
+```
+
+## 🚨 Tratamento de erros
+
+Toda falha vira exceção — um array de retorno é **sempre** uma resposta de sucesso.
+Todas as exceções da biblioteca implementam `PHPay\Exceptions\PHPayException`, então
+um único `catch` cobre a integração inteira:
+
+```php
+use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\NotImplementedException;
+use PHPay\Exceptions\PHPayException;
+use PHPay\Exceptions\ValidationException;
+
+try {
+    $charge = $phpay->setCharge($charge)->setCustomer($customer)->create();
+} catch (ValidationException $e) {
+    /* payload inválido: nenhuma requisição foi feita */
+    echo $e->getMessage();
+} catch (ApiException $e) {
+    /* o gateway recusou a requisição ou está inacessível */
+    echo $e->getMessage();
+    echo $e->getStatusCode();       // 400, 401, 404... ou 0 se nem chegou ao gateway
+    print_r($e->getResponse());     // corpo devolvido pelo gateway
+    echo $e->getGateway();          // 'Asaas' ou 'Efí'
+
+    if ($e->isConnectionError()) {
+        /* timeout, DNS, TLS — vale um retry */
+    }
+} catch (NotImplementedException $e) {
+    /* o gateway ainda não implementa esse recurso */
+} catch (PHPayException $e) {
+    /* qualquer outra falha do PHPay */
+}
+```
+
 ## 📝 Roadmap
 
 - Definições de Arquitetura ✅
+- Tratamento de erros por exceção ✅
+- Testes com HTTP mockado ✅
+- CI no GitHub Actions ✅
 - Domínios ✅
 - Documentação ✍️
 - Site 🕛
@@ -143,8 +202,8 @@ $phpay->setCustomer($customer)->create([
   - Cobranças ✅
   - Clientes ✅
   - Webhook ✅
-  - Assinaturas ✍️
-  - Pix 🕥
+  - Pix (chaves e QR Code estático) ✅
+  - Assinaturas ✍️ (criação pronta; listar/atualizar/cancelar pendentes)
 
   - Efí.
 
@@ -152,7 +211,7 @@ $phpay->setCustomer($customer)->create([
   - Cobranças ✅
   - Clientes 🕥
   - Webhook 🕥
-  - Assinaturas ✍️
+  - Assinaturas 🕥
   - Pix 🕥
 
 - Lançamento v1.0.0 🚀
