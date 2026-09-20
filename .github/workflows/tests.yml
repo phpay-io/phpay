@@ -3,8 +3,9 @@ name: tests
 on:
   push:
     branches: [develop, main, 'phpay-v*']
+  # sem filtro de branches: o filtro casa com a BASE do PR, então limitá-lo
+  # deixaria PRs empilhados (base numa branch de feature) sem nenhum check.
   pull_request:
-    branches: [develop, main, 'phpay-v*']
 
 permissions:
   contents: read
