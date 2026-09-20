@@ -72,6 +72,13 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      # o lock é resolvido para PHP 8.2 (config.platform) para poder ser
+      # instalado em toda a matriz. no job highest queremos de fato os pacotes
+      # mais novos no PHP mais novo, então liberamos essa trava antes.
+      - name: Liberar config.platform no job highest
+        if: matrix.dependencies == 'highest'
+        run: composer config --unset platform.php
+
       - name: Install dependencies
         uses: ramsey/composer-install@v3
         with:

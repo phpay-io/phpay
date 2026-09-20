@@ -40,7 +40,10 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true
         },
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2"
+        }
     },
     "require": {
         "php": "^8.1",
@@ -49,7 +52,7 @@
         "guzzlehttp/guzzle": "^7.0"
     },
     "require-dev": {
-        "laravel/pint": "^1.18.3",
+        "laravel/pint": "1.30.4",
         "nunomaduro/termwind": "^2.3",
         "pestphp/pest": "^3.5",
         "phpstan/phpstan": "^2.0"

@@ -1,8 +1,8 @@
 <?php
 
+use GuzzleHttp\{Client, HandlerStack, Middleware};
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\{Client, HandlerStack, Middleware};
 
 /*
 |--------------------------------------------------------------------------
