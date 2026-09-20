@@ -7,9 +7,17 @@ use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
-use PHPay\Contracts\GatewayInterface;
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
 
-interface AsaasGatewayInterface extends GatewayInterface
+/**
+ * the Asaas gateway offers every capability the library models.
+ */
+interface AsaasGatewayInterface extends
+    SupportsCustomers,
+    SupportsCharges,
+    SupportsWebhooks,
+    SupportsPixKeys,
+    SupportsSubscriptions
 {
     /**
      * get resource customer from gateway.

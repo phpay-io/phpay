@@ -7,7 +7,10 @@ use PHPay\PHPay;
 test('boot phpay class', function () {
     expect(PHPay::class)
         ->toImplement(GatewayInterface::class)
-        ->toHaveMethods(['__construct', 'customer', 'charge', 'webhook', 'pix', 'subscription']);
+        ->toHaveMethods([
+            '__construct', 'name', 'supports', 'capabilities',
+            'customer', 'charge', 'webhook', 'pix', 'subscription',
+        ]);
 })->group('phpay');
 
 test('a facade delega todos os recursos para o gateway injetado', function () {
@@ -19,13 +22,4 @@ test('a facade delega todos os recursos para o gateway injetado', function () {
         ->and($phpay->webhook())->toEqual($gateway->webhook())
         ->and($phpay->pix())->toEqual($gateway->pix())
         ->and($phpay->subscription())->toEqual($gateway->subscription());
-})->group('phpay');
-
-test('todo gateway declara o contrato completo do GatewayInterface', function () {
-    $contrato = new ReflectionClass(GatewayInterface::class);
-
-    expect(array_map(
-        fn (ReflectionMethod $method) => $method->getName(),
-        $contrato->getMethods()
-    ))->toEqualCanonicalizing(['customer', 'charge', 'webhook', 'pix', 'subscription']);
 })->group('phpay');

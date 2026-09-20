@@ -6,7 +6,7 @@ use GuzzleHttp\Client;
 use PHPay\Efi\Interface\EfiGatewayInterface;
 use PHPay\Efi\Resources\Authorization\Authorization;
 use PHPay\Efi\Resources\Charge\Charge;
-use PHPay\Exceptions\{ApiException, NotImplementedException};
+use PHPay\Exceptions\ApiException;
 
 class EfiGateway implements EfiGatewayInterface
 {
@@ -33,6 +33,16 @@ class EfiGateway implements EfiGatewayInterface
         private bool $sandbox = true,
         private ?Client $client = null,
     ) {
+    }
+
+    /**
+     * gateway name
+     *
+     * @return string
+     */
+    public function name(): string
+    {
+        return 'Efí';
     }
 
     /**
@@ -65,52 +75,6 @@ class EfiGateway implements EfiGatewayInterface
             $this->sandbox,
             $this->client
         );
-    }
-
-    /**
-     * customer resource — not available on Efí yet.
-     *
-     * @param array<mixed> $customer
-     * @return object
-     * @throws NotImplementedException
-     */
-    public function customer(array $customer = []): object
-    {
-        throw NotImplementedException::make('Efí', 'customer');
-    }
-
-    /**
-     * webhook resource — not available on Efí yet.
-     *
-     * @param array<mixed> $webhook
-     * @return object
-     * @throws NotImplementedException
-     */
-    public function webhook(array $webhook = []): object
-    {
-        throw NotImplementedException::make('Efí', 'webhook');
-    }
-
-    /**
-     * pix resource — not available on Efí yet.
-     *
-     * @return object
-     * @throws NotImplementedException
-     */
-    public function pix(): object
-    {
-        throw NotImplementedException::make('Efí', 'pix');
-    }
-
-    /**
-     * subscription resource — not available on Efí yet.
-     *
-     * @return object
-     * @throws NotImplementedException
-     */
-    public function subscription(): object
-    {
-        throw NotImplementedException::make('Efí', 'subscription');
     }
 
     /**

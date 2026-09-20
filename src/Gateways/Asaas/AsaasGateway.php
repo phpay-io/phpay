@@ -27,6 +27,16 @@ class AsaasGateway implements AsaasGatewayInterface
     }
 
     /**
+     * gateway name
+     *
+     * @return string
+     */
+    public function name(): string
+    {
+        return 'Asaas';
+    }
+
+    /**
      * customer
      *
      * @param array<mixed> $customer

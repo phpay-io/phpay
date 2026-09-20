@@ -29,10 +29,17 @@ Requests (validação estática dos payloads antes de qualquer chamada HTTP)
 
 Regras que valem para todo código novo:
 
-- **A facade `PHPay` não conhece gateway concreto.** Todo método dela só repassa para
-  `$this->gateway`. Ao adicionar um recurso novo, ele entra em `GatewayInterface`,
-  em `PHPay` e em **todos** os gateways — quando o gateway não suporta, lance
-  `NotImplementedException::make('<Gateway>', '<recurso>')`, nunca devolva um stub vazio.
+- **Capacidade, não contrato único.** `GatewayInterface` carrega só `name()`. Cada
+  recurso é uma interface em `src/Contracts/` (`SupportsCustomers`, `SupportsCharges`,
+  `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`) que o gateway
+  implementa se — e só se — oferecer aquele recurso. **Nunca** declare um recurso para
+  depois lançar de dentro dele.
+- **Recurso novo = interface nova + case na enum `Capability` + método guardado na
+  facade.** O guard é `instanceof` seguido de
+  `NotImplementedException::forCapability()`; o PHPStan usa esse `instanceof` para
+  estreitar o tipo, então não troque por um helper genérico.
+- **A facade `PHPay` não conhece gateway concreto**, por isso ela checa em runtime.
+  Quem segura o gateway concreto ganha a checagem em tempo de análise.
 - **Cada Resource tem uma Interface própria** em `Resources/<Nome>/Interface/`.
 - **Resource é descartável e carrega estado via setters fluentes** (`setCharge`,
   `setCustomer`, `setCustomerId`, `setQueryParams`, `setFilter`), sempre com `return $this`
