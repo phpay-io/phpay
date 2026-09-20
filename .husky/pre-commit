@@ -8,7 +8,8 @@ fi
 
 php examples/helper/termwind-cli.php success "Pint Ok!"
 
-phpstan=$(vendor/bin/phpstan analyse --level=7 2>&1)
+# mesmo nível configurado em phpstan.neon e usado pelo CI
+phpstan=$(vendor/bin/phpstan analyse --no-progress 2>&1)
 
 if [ $? -ne 0 ]; then
     php examples/helper/termwind-cli.php error "PHPStan tests failed." "$phpstan"
