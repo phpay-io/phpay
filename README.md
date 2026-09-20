@@ -13,6 +13,12 @@ O PHPay é uma biblioteca PHP que tem o objetivo tornar o trabalho de integraç�
 - Asaas (cobranças, gestão de clientes e webhooks)
 - Efí (cobranças)
 
+## ⬆️ Vindo da v1?
+
+A v2.0.0 tem breaking changes — a principal é que falhas passaram a ser exceção
+em vez de array de erro. O de-para completo está em
+[UPGRADE.md](./UPGRADE.md).
+
 ## 📦 Instalação
 
 Instale via Composer:
