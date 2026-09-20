@@ -273,6 +273,15 @@ $phpay->getPixCode($charge['id']);   // código copia-e-cola
 por chamada; passe a sua com `setIdempotencyKey()` para que um retry da mesma
 operação de negócio não gere duas cobranças.
 
+Para conferir contra o sandbox de verdade — algo que teste com HTTP mockado não
+prova — rode a checagem de conformidade com um token de teste:
+
+```bash
+MP_ACCESS_TOKEN='TEST-...' php examples/mercadopago/sandbox-check.php
+```
+
+O script recusa credenciais de produção e nunca imprime o token.
+
 Assinaturas usam `/preapproval`, com ou sem plano associado:
 
 ```php
