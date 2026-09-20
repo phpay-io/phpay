@@ -1,16 +1,16 @@
 <?php
 
-namespace Efi\Interface;
+namespace PHPay\Efi\Interface;
 
-use Efi\Resources\Charge\Charge;
 use PHPay\Contracts\GatewayInterface;
+use PHPay\Efi\Resources\Charge\Charge;
 
 interface EfiGatewayInterface extends GatewayInterface
 {
     /**
      * get token
      *
-     * @return array<mixed> token
+     * @return array<string, mixed> token
      */
     public function getToken(): array;
 
@@ -23,10 +23,9 @@ interface EfiGatewayInterface extends GatewayInterface
     public function charge(array $charge = []): Charge;
 
     /**
-     * get resource customer from gateway.
+     * get resource pix from gateway.
      *
-     * @param array<mixed> $pix
      * @return object
      */
-    public function pix(array $pix = []): object;
+    public function pix(): object;
 }

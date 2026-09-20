@@ -1,10 +1,12 @@
 <?php
 
-namespace Efi\Resources\Charge;
+namespace PHPay\Efi\Resources\Charge;
 
-use Efi\Resources\Charge\Interface\ChargeInterface;
-use Efi\Traits\HasEfiClient;
 use GuzzleHttp\Client;
+use PHPay\Efi\Requests\{EfiChargeRequest, EfiCustomerRequest};
+use PHPay\Efi\Resources\Charge\Interface\ChargeInterface;
+use PHPay\Efi\Traits\HasEfiClient;
+use PHPay\Exceptions\{ApiException, ValidationException};
 
 class Charge implements ChargeInterface
 {
@@ -21,7 +23,7 @@ class Charge implements ChargeInterface
     /**
      * @var array<mixed>
      */
-    private array $customer;
+    private array $customer = [];
 
     /**
      * @var array<mixed>
@@ -41,23 +43,28 @@ class Charge implements ChargeInterface
     /**
      * construct
      *
-     * @param array<string> $token
+     * @param array<string, mixed> $token
      * @param array<mixed> $charge
      * @param bool $sandbox
+     * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
         array $token,
         private array $charge = [],
         private bool $sandbox = true,
+        ?Client $client = null,
     ) {
-        $this->client = $this->clientEfiBoot(
-            $token['access_token'],
-            $token['token_type']
-        );
+        $accessToken = $token['access_token'] ?? null;
+        $tokenType   = $token['token_type'] ?? null;
 
-        if (!empty($charge)) {
-            $this->charge = $charge;
+        if (!is_string($accessToken) || !is_string($tokenType)) {
+            throw ValidationException::make(
+                'Efí',
+                'Token inválido: access_token e token_type devem ser strings.'
+            );
         }
+
+        $this->client = $client ?? $this->clientEfiBoot($accessToken, $tokenType);
     }
 
     /**
@@ -123,7 +130,7 @@ class Charge implements ChargeInterface
      */
     public function create(): array
     {
-        // EfiChargeRequest::validate($this->charge);
+        EfiChargeRequest::validate($this->charge, $this->customer);
 
         $items          = $this->getItems();
         $configurations = $this->getConfigurations();
@@ -181,12 +188,15 @@ class Charge implements ChargeInterface
     /**
      * get status charge
      *
+     * Efí has no dedicated status endpoint — the charge detail carries `status`.
+     *
      * @param string $id
-     * @return array<array|mixed>
+     * @return array<mixed>
+     * @throws ApiException
      */
     public function getStatus(string $id): array
     {
-        return $this->get("payments/{$id}/status");
+        return $this->get("v1/charge/{$id}");
     }
 
     /**
@@ -244,41 +254,36 @@ class Charge implements ChargeInterface
     /**
      * boot customer
      *
-     * @param array<mixed|array> $customer
+     * @param array<mixed> $customer
      * @return array<mixed>
+     * @throws ValidationException
      */
     private function bootCustomer(array $customer): array
     {
-        if (!isset($customer['name'])) {
-            throw new \Exception('Efí: Nome é obrigatório');
+        EfiCustomerRequest::validate($customer);
+
+        $document = $customer['cpf_cnpj'];
+
+        if (!is_string($document)) {
+            throw ValidationException::make('Efí', EfiCustomerRequest::messages()->cpfCnpj);
         }
 
-        if (!isset($customer['cpf_cnpj'])) {
-            throw new \Exception('Efí: CPF/CNPJ é obrigatório');
-        }
-
-        $isFiscalPerson = (strlen($customer['cpf_cnpj']) === 11);
-
-        if ($isFiscalPerson) {
-            $customerMounted = [
+        $customerMounted = strlen($document) === 11
+            ? [
                 'name' => $customer['name'],
-                'cpf'  => $customer['cpf_cnpj'],
-            ];
-        } else {
-            $customerMounted = [
+                'cpf'  => $document,
+            ]
+            : [
                 'juridical_person' => [
                     'corporate_name' => $customer['name'],
-                    'cnpj'           => $customer['cpf_cnpj'],
+                    'cnpj'           => $document,
                 ],
             ];
-        }
 
-        if (array_key_exists('email', $customer)) {
-            $customerMounted['email'] = $customer['email'];
-        }
-
-        if (array_key_exists('phone_number', $customer)) {
-            $customerMounted['phone_number'] = $customer['phone_number'];
+        foreach (['email', 'phone_number'] as $optional) {
+            if (array_key_exists($optional, $customer)) {
+                $customerMounted[$optional] = $customer[$optional];
+            }
         }
 
         return $customerMounted;

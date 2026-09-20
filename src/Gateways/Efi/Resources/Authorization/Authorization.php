@@ -1,19 +1,23 @@
 <?php
 
-namespace Efi\Resources\Authorization;
+namespace PHPay\Efi\Resources\Authorization;
 
-use Efi\Resources\Authorization\Interface\AuthorizationInterface;
-use Efi\Traits\HasEfiClient;
 use GuzzleHttp\Client;
+use PHPay\Efi\Resources\Authorization\Interface\AuthorizationInterface;
+use PHPay\Efi\Traits\HasEfiClient;
+use PHPay\Exceptions\ApiException;
 
 class Authorization implements AuthorizationInterface
 {
+    /**
+     * trait Efi client
+     */
     use HasEfiClient;
 
     /**
      * client guzzle
      */
-    public Client $client;
+    private Client $client;
 
     /**
      * construct
@@ -21,30 +25,27 @@ class Authorization implements AuthorizationInterface
      * @param string $clientId
      * @param string $clientSecret
      * @param bool $sandbox
+     * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
-        private string $clientId,
-        private string $clientSecret,
-        protected bool $sandbox = true
+        string $clientId,
+        string $clientSecret,
+        protected bool $sandbox = true,
+        ?Client $client = null
     ) {
+        $this->client = $client ?? $this->clientEfiAuthorize($clientId, $clientSecret);
     }
 
     /**
-     * get token
+     * exchange credentials for an access token.
      *
-     * @return array<string>
+     * @return array<string, mixed>
+     * @throws ApiException
      */
     public function getToken(): array
     {
-        $this->client = $this->clientEfiAuthorize($this->clientId, $this->clientSecret);
-
-        /**
-         * @var array<string> $response
-         */
-        $response = $this->post("v1/authorize", [
+        return $this->post('v1/authorize', [
             'grant_type' => 'client_credentials',
         ]);
-
-        return $response;
     }
 }

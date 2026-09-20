@@ -2,123 +2,141 @@
 
 namespace PHPay\Efi;
 
-use Efi\Interface\EfiGatewayInterface;
-use Efi\Resources\Authorization\Authorization;
-use Efi\Resources\Charge\Charge;
-use Efi\Traits\HasEfiClient;
-use Exception;
 use GuzzleHttp\Client;
-use stdClass;
+use PHPay\Efi\Interface\EfiGatewayInterface;
+use PHPay\Efi\Resources\Authorization\Authorization;
+use PHPay\Efi\Resources\Charge\Charge;
+use PHPay\Exceptions\{ApiException, NotImplementedException};
 
 class EfiGateway implements EfiGatewayInterface
 {
-    use HasEfiClient;
-
     /**
-     * client guzzle
+     * credentials exchanged for an access token
+     *
+     * @var array<string, mixed>|null
      */
-    public Client $client;
-
-    /**
-     * @var array<string> $token
-     */
-    private array $token;
+    private ?array $token = null;
 
     /**
      * construct
      *
+     * no network call happens here — the token is fetched lazily on first use.
+     *
      * @param string $clientId
      * @param string $clientSecret
      * @param bool $sandbox
+     * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
         private string $clientId,
         private string $clientSecret,
         private bool $sandbox = true,
+        private ?Client $client = null,
     ) {
-        $this->authorization();
     }
 
     /**
-     * get token
+     * get token, authorizing on first use.
      *
-     * @return array<mixed> token
+     * @return array<string, mixed> token
+     * @throws ApiException
      */
     public function getToken(): array
     {
+        if ($this->token === null) {
+            $this->token = $this->authorize();
+        }
+
         return $this->token;
     }
 
     /**
      * create charge
      *
-     * @param array<string> $charge
+     * @param array<mixed> $charge
      * @return Charge
+     * @throws ApiException
      */
     public function charge(array $charge = []): Charge
     {
         return new Charge(
-            $this->token,
+            $this->getToken(),
             $charge,
-            $this->sandbox
+            $this->sandbox,
+            $this->client
         );
     }
 
     /**
-     * create customer
+     * customer resource — not available on Efí yet.
      *
-     * @param array<string> $customer
-     * @return object customer
+     * @param array<mixed> $customer
+     * @return object
+     * @throws NotImplementedException
      */
     public function customer(array $customer = []): object
     {
-        return new stdClass();
+        throw NotImplementedException::make('Efí', 'customer');
     }
 
     /**
-     * create webhook
+     * webhook resource — not available on Efí yet.
      *
-     * @param array<string> $webhook
-     * @return object webhook
+     * @param array<mixed> $webhook
+     * @return object
+     * @throws NotImplementedException
      */
     public function webhook(array $webhook = []): object
     {
-        return new stdClass();
+        throw NotImplementedException::make('Efí', 'webhook');
     }
 
     /**
-     * authorization
+     * pix resource — not available on Efí yet.
      *
-     * @return void
+     * @return object
+     * @throws NotImplementedException
      */
-    private function authorization(): void
+    public function pix(): object
     {
-        $authorization = new Authorization(
-            $this->clientId,
-            $this->clientSecret,
-            $this->sandbox
-        );
-
-        $this->token = $authorization->getToken();
-
-        if (!isset($this->token['access_token'])) {
-            throw new \Exception('Token not generated');
-        }
+        throw NotImplementedException::make('Efí', 'pix');
     }
 
     /**
-     * create pix
+     * subscription resource — not available on Efí yet.
      *
-     * @param array<string> $pix
-     * @return object pix
+     * @return object
+     * @throws NotImplementedException
      */
-    public function pix(array $pix = []): object
-    {
-        throw new Exception('Not implemented');
-    }
-
     public function subscription(): object
     {
-        throw new Exception('Not implemented');
+        throw NotImplementedException::make('Efí', 'subscription');
+    }
+
+    /**
+     * exchange credentials for an access token.
+     *
+     * @return array<string, mixed>
+     * @throws ApiException
+     */
+    private function authorize(): array
+    {
+        $token = (new Authorization(
+            $this->clientId,
+            $this->clientSecret,
+            $this->sandbox,
+            $this->client
+        ))->getToken();
+
+        if (!isset($token['access_token']) || !isset($token['token_type'])) {
+            throw new ApiException(
+                'Efí: autorização não retornou access_token.',
+                'Efí',
+                0,
+                $token
+            );
+        }
+
+        return $token;
     }
 }
