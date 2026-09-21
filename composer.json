@@ -27,7 +27,8 @@
             "PHPay\\PagBank\\": "src/Gateways/PagBank/",
             "PHPay\\PagarMe\\": "src/Gateways/PagarMe/",
             "PHPay\\Cielo\\": "src/Gateways/Cielo/",
-            "PHPay\\Rede\\": "src/Gateways/Rede/"
+            "PHPay\\Rede\\": "src/Gateways/Rede/",
+            "PHPay\\AbacatePay\\": "src/Gateways/AbacatePay/"
         }
     },
     "autoload-dev": {

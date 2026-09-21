@@ -146,3 +146,15 @@ function redeOauthClient(array $responses, array &$history = []): Client
 {
     return mockClient($responses, $history, 'https://rl7-sandbox-api.useredecloud.com.br/');
 }
+
+/**
+ * mock client already pointed at the AbacatePay host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function abacateClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://api.abacatepay.com/v1/');
+}
