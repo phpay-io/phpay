@@ -100,6 +100,30 @@ function pagarmeClient(array $responses, array &$history = []): Client
 }
 
 /**
+ * mock client already pointed at the Cielo sandbox write host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function cieloClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://apisandbox.cieloecommerce.cielo.com.br/');
+}
+
+/**
+ * mock client already pointed at the Cielo sandbox query host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function cieloQueryClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://apiquerysandbox.cieloecommerce.cielo.com.br/');
+}
+
+/**
  * mock client already pointed at the Rede sandbox transactions host.
  *
  * @param array<int, Response|Throwable> $responses

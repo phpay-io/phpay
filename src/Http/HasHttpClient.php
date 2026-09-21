@@ -2,6 +2,7 @@
 
 namespace PHPay\Http;
 
+use GuzzleHttp\Client;
 use PHPay\Exceptions\ApiException;
 use Throwable;
 
@@ -87,13 +88,19 @@ trait HasHttpClient
      * @param string $method
      * @param string $endpoint
      * @param array<mixed> $options
+     * @param Client|null $client overrides $this->client — for gateways that
+     *                            split operations across more than one host
      * @return array<mixed>
      * @throws ApiException
      */
-    protected function request(string $method, string $endpoint, array $options = []): array
-    {
+    protected function request(
+        string $method,
+        string $endpoint,
+        array $options = [],
+        ?Client $client = null
+    ): array {
         try {
-            $response = $this->client->request($method, $endpoint, $options);
+            $response = ($client ?? $this->client)->request($method, $endpoint, $options);
         } catch (Throwable $exception) {
             throw ApiException::fromThrowable(
                 $exception,
