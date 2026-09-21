@@ -5,7 +5,7 @@
     <a href="https://www.php.net"><img src="https://img.shields.io/badge/php-%3E%3D8.1-brightgreen.svg" alt="Versão do PHP"></a>
     <a href="https://packagist.org/packages/phpay-io/phpay"><img src="https://poser.pugx.org/phpay-io/phpay/downloads" alt="Downloads"></a>
     <a href="https://github.com/phpay-io/phpay/actions/workflows/tests.yml"><img src="https://github.com/phpay-io/phpay/actions/workflows/tests.yml/badge.svg?branch=develop" alt="Testes"></a>
-    <a href="./LICENSE.md"><img src="https://poser.pugx.org/phpay-io/phpay/license" alt="Licença"></a>
+    <a href="./LICENSE.md"><img src="https://img.shields.io/badge/licen%C3%A7a-BUSL--1.1-blue.svg" alt="Licença"></a>
 </p>
 
 <p align="center">
@@ -633,6 +633,9 @@ Dois pontos merecem auditoria de quem vem da v1:
 Leia o [manual de contribuição](./CONTRIBUTING.md). Ele cobre o ambiente de
 desenvolvimento, o gate de qualidade e as convenções do projeto.
 
+Contribuições enviadas a partir de 2026-09-20 estão sujeitas ao
+[Contributor License Agreement](./CLA.md), aceito por checkbox no pull request.
+
 ```bash
 composer install
 composer test     # Pint + Pest + PHPStan nível 9
@@ -655,7 +658,31 @@ Esta é uma biblioteca de pagamentos: nunca logue, imprima ou versione tokens,
 
 ## Licença
 
-MIT. Veja [LICENSE.md](./LICENSE.md).
+O PHPay é distribuído sob a **[Business Source License 1.1](./LICENSE.md)** a
+partir da versão 2.0.0. É uma licença *source-available*: o código é aberto e
+auditável, com uma única restrição comercial.
+
+**O resumo abaixo não substitui a licença** — ele existe só para você saber
+rápido se precisa ler o texto completo.
+
+| | |
+| --- | --- |
+| ✅ **Pode** | Usar em produção, inclusive em software fechado e comercial |
+| ✅ **Pode** | Processar pagamentos seus ou dos seus clientes |
+| ✅ **Pode** | Modificar, forkar, estudar e redistribuir |
+| ❌ **Não pode** | Oferecer o PHPay, ou um derivado, como biblioteca, SDK ou serviço de integração de pagamentos que concorra com ele |
+
+Ou seja: se você integra pagamentos **no seu produto**, nada muda para você. A
+restrição atinge apenas quem quiser revender o próprio PHPay.
+
+Em **2030-09-20** a licença converte automaticamente para **MIT**, e cada
+versão converte no máximo quatro anos após ser publicada.
+
+> As versões **1.0.0 e 1.0.1** foram publicadas sob MIT e **permanecem sob
+> MIT** — uma licença nova não é retroativa. O texto está preservado em
+> [LICENSE-MIT.md](./LICENSE-MIT.md).
+
+Precisa de termos diferentes? Escreva para [fale@phpay.io](mailto:fale@phpay.io).
 
 ---
 
