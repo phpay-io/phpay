@@ -75,14 +75,13 @@ class Webhook implements WebhookInterface
             $this->webhook = $webhook;
         }
 
-        EfiWebhookRequest::validate($this->webhook);
+        $webhook = $this->webhook;
 
-        /** @var string $key validated above */
-        $key = $this->webhook['chave'];
+        EfiWebhookRequest::validate($webhook);
 
         return $this->put(
-            'v2/webhook/' . rawurlencode($key),
-            ['webhookUrl' => $this->webhook['webhookUrl']],
+            'v2/webhook/' . rawurlencode($webhook['chave']),
+            ['webhookUrl' => $webhook['webhookUrl']],
             $this->skipMtlsChecking ? ['x-skip-mtls-checking' => 'true'] : [],
         );
     }

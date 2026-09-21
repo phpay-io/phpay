@@ -12,6 +12,7 @@ class EfiWebhookRequest
      * @param array<mixed> $webhook
      * @return void
      * @throws ValidationException
+     * @phpstan-assert array{chave: string, webhookUrl: string} $webhook
      */
     public static function validate(array $webhook): void
     {
