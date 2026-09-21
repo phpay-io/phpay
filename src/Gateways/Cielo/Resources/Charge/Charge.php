@@ -8,7 +8,7 @@ use PHPay\Cielo\Requests\CieloSaleRequest;
 use PHPay\Cielo\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Cielo\Traits\HasCieloClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\Support\Money;
+use PHPay\Support\{Customer, Money};
 
 /**
  * sales of the Cielo E-commerce API 3.0.
@@ -95,8 +95,12 @@ class Charge implements ChargeInterface
      * @param array<mixed> $customer
      * @return ChargeInterface
      */
-    public function setCustomer(array $customer): ChargeInterface
+    public function setCustomer(Customer|array $customer): ChargeInterface
     {
+        if ($customer instanceof Customer) {
+            $customer = CieloSaleRequest::fromCustomer($customer);
+        }
+
         $this->sale['Customer'] = $customer;
 
         return $this;

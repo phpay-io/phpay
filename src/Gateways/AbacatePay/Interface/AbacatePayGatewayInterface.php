@@ -6,6 +6,7 @@ use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\AbacatePay\Resources\Coupon\Coupon;
 use PHPay\AbacatePay\Resources\Customer\Customer;
 use PHPay\Contracts\{SupportsCharges, SupportsCustomers};
+use PHPay\Support\Customer as CustomerData;
 
 /**
  * the AbacatePay gateway offers customers and charges.
@@ -28,7 +29,7 @@ interface AbacatePayGatewayInterface extends
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer;
+    public function customer(CustomerData|array $customer = []): Customer;
 
     /**
      * get resource charge from gateway.

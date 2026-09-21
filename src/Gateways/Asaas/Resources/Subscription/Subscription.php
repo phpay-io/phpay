@@ -3,11 +3,13 @@
 namespace PHPay\Asaas\Resources\Subscription;
 
 use GuzzleHttp\Client;
+use PHPay\Asaas\Requests\AsaasCustomerRequest;
 use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Subscription\Interface\SubscriptionInterface;
 use PHPay\Asaas\Resources\Subscription\Requests\StoreSubscriptionAsaasRequest;
 use PHPay\Asaas\Traits\HasAsaasClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Customer as CustomerData;
 
 class Subscription implements SubscriptionInterface
 {
@@ -65,8 +67,16 @@ class Subscription implements SubscriptionInterface
      * @return SubscriptionInterface
      * @throws ValidationException|ApiException
      */
-    public function setCustomer(array $customer): SubscriptionInterface
+    public function setCustomer(CustomerData|array $customer): SubscriptionInterface
     {
+        if ($customer instanceof CustomerData) {
+            if ($customer->id !== null) {
+                return $this->setCustomerId($customer->id);
+            }
+
+            $customer = AsaasCustomerRequest::fromCustomer($customer);
+        }
+
         if (isset($customer['id']) && is_string($customer['id']) && $customer['id'] !== '') {
             return $this->setCustomerId($customer['id']);
         }

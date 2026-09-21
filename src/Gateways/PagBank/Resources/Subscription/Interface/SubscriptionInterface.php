@@ -2,6 +2,8 @@
 
 namespace PHPay\PagBank\Resources\Subscription\Interface;
 
+use PHPay\Support\Customer;
+
 interface SubscriptionInterface
 {
     /**
@@ -26,7 +28,7 @@ interface SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface;
+    public function setCustomer(Customer|array $customer): SubscriptionInterface;
 
     /**
      * set list filter

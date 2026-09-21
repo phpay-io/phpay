@@ -4,11 +4,13 @@ namespace PHPay\Asaas;
 
 use GuzzleHttp\Client;
 use PHPay\Asaas\Interface\AsaasGatewayInterface;
+use PHPay\Asaas\Requests\AsaasCustomerRequest;
 use PHPay\Asaas\Resources\Charge\Charge;
 use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
+use PHPay\Support\Customer as CustomerData;
 
 class AsaasGateway implements AsaasGatewayInterface
 {
@@ -42,8 +44,12 @@ class AsaasGateway implements AsaasGatewayInterface
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer
+    public function customer(CustomerData|array $customer = []): Customer
     {
+        if ($customer instanceof CustomerData) {
+            $customer = AsaasCustomerRequest::fromCustomer($customer);
+        }
+
         return new Customer($this->token, $customer, $this->sandbox, $this->client);
     }
 

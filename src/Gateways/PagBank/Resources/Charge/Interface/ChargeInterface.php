@@ -2,7 +2,7 @@
 
 namespace PHPay\PagBank\Resources\Charge\Interface;
 
-use PHPay\Support\Money;
+use PHPay\Support\{Customer, Money};
 
 interface ChargeInterface
 {
@@ -20,7 +20,7 @@ interface ChargeInterface
      * @param array<mixed> $customer
      * @return ChargeInterface
      */
-    public function setCustomer(array $customer): ChargeInterface;
+    public function setCustomer(Customer|array $customer): ChargeInterface;
 
     /**
      * set the items of the order

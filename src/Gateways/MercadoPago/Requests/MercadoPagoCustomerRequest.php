@@ -3,6 +3,7 @@
 namespace PHPay\MercadoPago\Requests;
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Customer;
 
 class MercadoPagoCustomerRequest
 {
@@ -36,4 +37,32 @@ class MercadoPagoCustomerRequest
             'email' => 'O campo email é obrigatório e deve ser um e-mail válido.',
         ];
     }
+
+    /**
+     * map the library's Customer onto the payer Mercado Pago expects.
+     *
+     * Mercado Pago wants the name split in two and the document inside an
+     * identification object.
+     *
+     * @param Customer $customer
+     * @return array<mixed>
+     */
+    public static function fromCustomer(Customer $customer): array
+    {
+        $payload = array_filter([
+            'email'      => $customer->email,
+            'first_name' => $customer->firstName(),
+            'last_name'  => $customer->lastName(),
+        ], fn ($value) => $value !== null);
+
+        if ($customer->documentType() !== null) {
+            $payload['identification'] = [
+                'type'   => $customer->documentType(),
+                'number' => $customer->document,
+            ];
+        }
+
+        return $payload + $customer->extra();
+    }
+
 }

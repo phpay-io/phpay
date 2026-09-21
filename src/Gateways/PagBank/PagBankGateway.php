@@ -4,9 +4,11 @@ namespace PHPay\PagBank;
 
 use GuzzleHttp\Client;
 use PHPay\PagBank\Interface\PagBankGatewayInterface;
+use PHPay\PagBank\Requests\PagBankCustomerRequest;
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
+use PHPay\Support\Customer as CustomerData;
 
 class PagBankGateway implements PagBankGatewayInterface
 {
@@ -40,8 +42,12 @@ class PagBankGateway implements PagBankGatewayInterface
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer
+    public function customer(CustomerData|array $customer = []): Customer
     {
+        if ($customer instanceof CustomerData) {
+            $customer = PagBankCustomerRequest::fromCustomer($customer);
+        }
+
         return new Customer($this->token, $customer, $this->sandbox, $this->client);
     }
 

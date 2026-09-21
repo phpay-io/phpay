@@ -3,6 +3,7 @@
 namespace PHPay\Asaas\Requests;
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Customer;
 
 class AsaasCustomerRequest
 {
@@ -38,4 +39,21 @@ class AsaasCustomerRequest
             'cpfCnpj' => 'CPF/CNPJ do cliente é obrigatório e deve ser uma string não vazia.',
         ];
     }
+
+    /**
+     * map the library's Customer onto the payload Asaas expects.
+     *
+     * @param Customer $customer
+     * @return array<mixed>
+     */
+    public static function fromCustomer(Customer $customer): array
+    {
+        return array_filter([
+            'name'        => $customer->name,
+            'cpfCnpj'     => $customer->document,
+            'email'       => $customer->email,
+            'mobilePhone' => $customer->phone,
+        ], fn ($value) => $value !== null) + $customer->extra();
+    }
+
 }

@@ -4,8 +4,8 @@ namespace PHPay\Woovi\Resources\Subscription;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\Support\Money;
-use PHPay\Woovi\Requests\WooviSubscriptionRequest;
+use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Woovi\Requests\{WooviCustomerRequest, WooviSubscriptionRequest};
 use PHPay\Woovi\Resources\Subscription\Interface\SubscriptionInterface;
 use PHPay\Woovi\Traits\HasWooviClient;
 
@@ -51,8 +51,12 @@ class Subscription implements SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface
+    public function setCustomer(CustomerData|array $customer): SubscriptionInterface
     {
+        if ($customer instanceof CustomerData) {
+            $customer = WooviCustomerRequest::fromCustomer($customer);
+        }
+
         $this->subscription['customer'] = $customer;
 
         return $this;

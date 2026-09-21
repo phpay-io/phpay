@@ -3,7 +3,9 @@
 namespace PHPay\Woovi;
 
 use GuzzleHttp\Client;
+use PHPay\Support\Customer as CustomerData;
 use PHPay\Woovi\Interface\WooviGatewayInterface;
+use PHPay\Woovi\Requests\WooviCustomerRequest;
 use PHPay\Woovi\Resources\Charge\Charge;
 use PHPay\Woovi\Resources\Customer\Customer;
 use PHPay\Woovi\Resources\Pix\Pix;
@@ -42,8 +44,12 @@ class WooviGateway implements WooviGatewayInterface
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer
+    public function customer(CustomerData|array $customer = []): Customer
     {
+        if ($customer instanceof CustomerData) {
+            $customer = WooviCustomerRequest::fromCustomer($customer);
+        }
+
         return new Customer($this->appId, $customer, $this->sandbox, $this->client);
     }
 

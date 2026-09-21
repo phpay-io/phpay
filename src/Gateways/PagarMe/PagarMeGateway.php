@@ -4,10 +4,12 @@ namespace PHPay\PagarMe;
 
 use GuzzleHttp\Client;
 use PHPay\PagarMe\Interface\PagarMeGatewayInterface;
+use PHPay\PagarMe\Requests\PagarMeCustomerRequest;
 use PHPay\PagarMe\Resources\Charge\Charge;
 use PHPay\PagarMe\Resources\Customer\Customer;
 use PHPay\PagarMe\Resources\Subscription\Subscription;
 use PHPay\PagarMe\Resources\WebhookDelivery\WebhookDelivery;
+use PHPay\Support\Customer as CustomerData;
 
 class PagarMeGateway implements PagarMeGatewayInterface
 {
@@ -57,8 +59,12 @@ class PagarMeGateway implements PagarMeGatewayInterface
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer
+    public function customer(CustomerData|array $customer = []): Customer
     {
+        if ($customer instanceof CustomerData) {
+            $customer = PagarMeCustomerRequest::fromCustomer($customer);
+        }
+
         return new Customer($this->secretKey, $customer, $this->client);
     }
 

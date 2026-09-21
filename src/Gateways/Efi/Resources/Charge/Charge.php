@@ -7,7 +7,7 @@ use PHPay\Efi\Requests\{EfiChargeRequest, EfiCustomerRequest};
 use PHPay\Efi\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Efi\Traits\HasEfiClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\Support\Money;
+use PHPay\Support\{Customer, Money};
 
 class Charge implements ChargeInterface
 {
@@ -74,8 +74,12 @@ class Charge implements ChargeInterface
      * @param array<mixed> $customer
      * @return Charge
      */
-    public function setCustomer(array $customer): Charge
+    public function setCustomer(Customer|array $customer): Charge
     {
+        if ($customer instanceof Customer) {
+            $customer = EfiCustomerRequest::fromCustomer($customer);
+        }
+
         $this->customer = $this->bootCustomer($customer);
 
         return $this;

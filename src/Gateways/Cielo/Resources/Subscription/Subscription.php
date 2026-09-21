@@ -4,11 +4,11 @@ namespace PHPay\Cielo\Resources\Subscription;
 
 use GuzzleHttp\Client;
 use PHPay\Cielo\Enums\{PaymentTypeEnum, RecurrentIntervalEnum};
-use PHPay\Cielo\Requests\CieloRecurrentRequest;
+use PHPay\Cielo\Requests\{CieloRecurrentRequest, CieloSaleRequest};
 use PHPay\Cielo\Resources\Subscription\Interface\SubscriptionInterface;
 use PHPay\Cielo\Traits\HasCieloClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\Support\Money;
+use PHPay\Support\{Customer, Money};
 
 /**
  * recurrences of the Cielo E-commerce API 3.0.
@@ -83,8 +83,12 @@ class Subscription implements SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface
+    public function setCustomer(Customer|array $customer): SubscriptionInterface
     {
+        if ($customer instanceof Customer) {
+            $customer = CieloSaleRequest::fromCustomer($customer);
+        }
+
         $this->sale['Customer'] = $customer;
 
         return $this;

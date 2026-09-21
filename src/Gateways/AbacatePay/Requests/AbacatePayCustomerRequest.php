@@ -3,6 +3,7 @@
 namespace PHPay\AbacatePay\Requests;
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Customer;
 
 class AbacatePayCustomerRequest
 {
@@ -57,4 +58,21 @@ class AbacatePayCustomerRequest
             'taxId'     => 'O campo taxId é obrigatório — é o CPF ou CNPJ do cliente.',
         ];
     }
+
+    /**
+     * map the library's Customer onto the payload AbacatePay expects.
+     *
+     * @param Customer $customer
+     * @return array<mixed>
+     */
+    public static function fromCustomer(Customer $customer): array
+    {
+        return array_filter([
+            'name'      => $customer->name,
+            'email'     => $customer->email,
+            'cellphone' => $customer->phone,
+            'taxId'     => $customer->document,
+        ], fn ($value) => $value !== null) + $customer->extra();
+    }
+
 }

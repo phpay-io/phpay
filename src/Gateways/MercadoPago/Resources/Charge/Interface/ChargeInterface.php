@@ -2,7 +2,7 @@
 
 namespace PHPay\MercadoPago\Resources\Charge\Interface;
 
-use PHPay\Support\Money;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 interface ChargeInterface
 {
@@ -28,7 +28,7 @@ interface ChargeInterface
      * @param array<mixed> $payer
      * @return ChargeInterface
      */
-    public function setPayer(array $payer): ChargeInterface;
+    public function setPayer(CustomerData|array $payer): ChargeInterface;
 
     /**
      * set the idempotency key used on create

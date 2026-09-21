@@ -4,9 +4,11 @@ namespace PHPay\AbacatePay;
 
 use GuzzleHttp\Client;
 use PHPay\AbacatePay\Interface\AbacatePayGatewayInterface;
+use PHPay\AbacatePay\Requests\AbacatePayCustomerRequest;
 use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\AbacatePay\Resources\Coupon\Coupon;
 use PHPay\AbacatePay\Resources\Customer\Customer;
+use PHPay\Support\Customer as CustomerData;
 
 class AbacatePayGateway implements AbacatePayGatewayInterface
 {
@@ -43,8 +45,12 @@ class AbacatePayGateway implements AbacatePayGatewayInterface
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer
+    public function customer(CustomerData|array $customer = []): Customer
     {
+        if ($customer instanceof CustomerData) {
+            $customer = AbacatePayCustomerRequest::fromCustomer($customer);
+        }
+
         return new Customer($this->token, $customer, $this->client);
     }
 

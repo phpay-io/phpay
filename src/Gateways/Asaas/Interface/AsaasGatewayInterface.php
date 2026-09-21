@@ -8,6 +8,7 @@ use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
 use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
+use PHPay\Support\Customer as CustomerData;
 
 /**
  * the Asaas gateway offers every capability the library models.
@@ -25,7 +26,7 @@ interface AsaasGatewayInterface extends
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer;
+    public function customer(CustomerData|array $customer = []): Customer;
 
     /**
      * get resource charge from gateway.
