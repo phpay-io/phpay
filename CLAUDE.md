@@ -7,7 +7,7 @@ Orientações para o Claude Code trabalhar neste repositório.
 PHPay (`phpay-io/phpay`) é uma **biblioteca PHP** (não uma aplicação) que padroniza a
 integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** (as cinco
 capacidades), **Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças,
-assinaturas) e **Efí** (cobranças).
+assinaturas), **Cielo** (cobranças e recorrência) e **Efí** (cobranças).
 
 Requisitos: PHP `^8.1` para consumir a lib; `^8.2` para rodar o ambiente de dev
 (Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`, `ext-json`,
@@ -144,6 +144,13 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   inteiro em centavos** — os validadores recusam decimal, porque mandar `10.50` onde
   se espera `1050` cobra onze centavos. Pix é `qr_codes` do pedido (um só por pedido,
   copia-e-cola em `qr_codes[0].text`), não uma `charge`.
+- **Cielo** — **dois hosts separados por tipo de operação**, não por domínio: escritas
+  em `api.cieloecommerce...`, consultas em `apiquery.cieloecommerce...`. O **mesmo
+  recurso** usa os dois, por isso `HasHttpClient::request()` aceita um client opcional
+  e o trait expõe `queryGet()`. Autenticação por headers `MerchantId`/`MerchantKey`.
+  Valores em centavos. Recorrência **não tem endpoint de criação**: nasce de uma venda
+  com bloco `RecurrentPayment`. Os endpoints de update da recorrência recebem um valor
+  JSON puro no corpo (`19900`, `"Monthly"`), não um objeto — daí o `putValue()`.
 - **Pagar.me** — autenticação **Basic** (secret key como usuário, senha vazia), não
   Bearer. Ambiente pelo prefixo `sk_test_`, host único, então sem `$sandbox`. Valores
   em centavos. Cancelamento é `DELETE /charges/{id}` com valor opcional no corpo —

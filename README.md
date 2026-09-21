@@ -31,6 +31,7 @@
   - [Mercado Pago](#mercado-pago)
   - [PagBank](#pagbank)
   - [Pagar.me](#pagarme)
+  - [Cielo](#cielo)
   - [Efí](#efí)
 - [Exemplos executáveis](#exemplos-executáveis)
 - [Migrando da v1](#migrando-da-v1)
@@ -67,13 +68,13 @@ Trocar de gateway é trocar a linha do construtor.
 
 ## Gateways suportados
 
-| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Efí |
-| --- | --- | :---: | :---: | :---: | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | — |
-| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — |
+| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Efí |
+| --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — | — |
 
 Duas colunas merecem explicação, porque a ausência de ✅ **não** quer dizer que o
 gateway não aceita Pix ou não manda webhook:
@@ -232,6 +233,7 @@ que cada um faz em vez de inventar um padrão:
 | --- | --- |
 | **Asaas** | `$sandbox` no construtor — troca a URL |
 | **PagBank** | `$sandbox` no construtor — troca a URL |
+| **Cielo** | `$sandbox` no construtor — troca **as duas** URLs |
 | **Efí** | `$sandbox` no construtor — troca a URL |
 | **Mercado Pago** | Prefixo do token (`TEST-`); host único, sem `$sandbox` |
 | **Pagar.me** | Prefixo da chave (`sk_test_`); host único, sem `$sandbox` |
@@ -257,6 +259,7 @@ em vez de falhar:
 | **Mercado Pago** | Reais (decimal) | `100.50` |
 | **PagBank** | Centavos (inteiro) | `10050` |
 | **Pagar.me** | Centavos (inteiro) | `10050` |
+| **Cielo** | Centavos (inteiro) | `10050` |
 | **Efí** | Centavos (inteiro) | `10050` |
 
 Nos gateways que usam centavos, o PHPay **recusa valor decimal na validação**,
@@ -538,6 +541,68 @@ $gateway->webhookDeliveries()->resend($hookId);
 É assim que o modelo de capacidades abre espaço para o que só um gateway
 oferece: quem segura `PagarMeGateway` alcança, quem tipa uma capacidade não.
 
+### Cielo
+
+A primeira **adquirente** da biblioteca, e a forma mostra: não há recurso de
+cliente — ele é um campo da venda. Daí as duas capacidades.
+
+A particularidade é que a Cielo separa **dois hosts por tipo de operação**:
+escritas vão para `api.cieloecommerce...`, consultas para
+`apiquery.cieloecommerce...`. O mesmo recurso usa os dois, e o PHPay roteia
+sozinho — `create()` vai num, `find()` no outro.
+
+```php
+use PHPay\Cielo\CieloGateway;
+
+$phpay = PHPay::gateway(new CieloGateway(MERCHANT_ID, MERCHANT_KEY))->charge();
+
+$venda = $phpay
+    ->setOrderId('pedido-1')
+    ->setCustomer(['Name' => 'Mário Lucas'])
+    ->setPix(15700)             // R$ 157,00
+    ->setRequestId('pedido-1')  // idempotência
+    ->create();
+
+$phpay->getPixCode($venda['Payment']['PaymentId']);
+```
+
+Cartão em duas etapas — autoriza agora, captura depois:
+
+```php
+$phpay
+    ->setCustomer(['Name' => 'Mário Lucas'])
+    ->setCreditCard(15700, $cartao, installments: 3)   // capture: false por padrão
+    ->create();
+
+$phpay->capture($paymentId);
+$phpay->cancel($paymentId, 2500);   // estorna R$ 25,00
+```
+
+#### Recorrência
+
+A Cielo **não tem endpoint de criar assinatura**: a recorrência nasce de uma
+venda com um bloco `RecurrentPayment`, e só então ganha um `RecurrentPaymentId`
+próprio. Sempre cobra cartão.
+
+```php
+use PHPay\Cielo\Enums\RecurrentIntervalEnum;
+
+$phpay = PHPay::gateway(new CieloGateway(MERCHANT_ID, MERCHANT_KEY))->subscription();
+
+$recorrencia = $phpay
+    ->setCustomer(['Name' => 'Mário Lucas'])
+    ->setCard($cartao)
+    ->setInterval(RecurrentIntervalEnum::MONTHLY)
+    ->setEndDate('2027-12-31')
+    ->create(15700);
+
+$id = $recorrencia['Payment']['RecurrentPayment']['RecurrentPaymentId'];
+
+$phpay->updateAmount($id, 19900);
+$phpay->deactivate($id);
+$phpay->reactivate($id);
+```
+
 ### Efí
 
 Só cobranças, por enquanto. O gateway **não faz chamada de rede no construtor**
@@ -614,13 +679,13 @@ Dois pontos merecem auditoria de quem vem da v1:
 
 ### Cobertura por gateway
 
-| | Asaas | Mercado Pago | PagBank | Pagar.me | Efí |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Clientes | ✅ | ✅ | ✅ | ✅ | 🕥 |
-| Assinaturas | ✍️ | ✅ | ✅ | ✅ | 🕥 |
-| Webhooks | ✅ | — | — | leitura ✅ | 🕥 |
-| Pix | ✅ | ✅ | ✅ | ✅ | 🕥 |
+| | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Efí |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Clientes | ✅ | ✅ | ✅ | ✅ | — | 🕥 |
+| Assinaturas | ✍️ | ✅ | ✅ | ✅ | ✅ | 🕥 |
+| Webhooks | ✅ | — | — | leitura ✅ | — | 🕥 |
+| Pix | ✅ | ✅ | ✅ | ✅ | ✅ | 🕥 |
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
 
