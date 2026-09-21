@@ -1,294 +1,395 @@
 ![capa-redes](https://github.com/user-attachments/assets/20051d3a-ecbf-4d01-8c29-50c43b8d3af4)
 
 <p align="center">
-    <a href="https://github.com/phpay-io/phpay/releases"><img src="https://poser.pugx.org/phpay-io/phpay/v/stable" alt="Stable Version"></a>
-    <a href="https://www.php.net"><img src="https://img.shields.io/badge/php-%3E=8.1-brightgreen.svg?maxAge=2592000" alt="Php Version"></a>
-    <a href="https://packagist.org/packages/phpay-io/phpay"><img src="https://poser.pugx.org/phpay-io/phpay/downloads" alt="Total Downloads"></a>
+    <a href="https://github.com/phpay-io/phpay/releases"><img src="https://poser.pugx.org/phpay-io/phpay/v/stable" alt="Versão estável"></a>
+    <a href="https://www.php.net"><img src="https://img.shields.io/badge/php-%3E%3D8.1-brightgreen.svg" alt="Versão do PHP"></a>
+    <a href="https://packagist.org/packages/phpay-io/phpay"><img src="https://poser.pugx.org/phpay-io/phpay/downloads" alt="Downloads"></a>
+    <a href="https://github.com/phpay-io/phpay/actions/workflows/tests.yml"><img src="https://github.com/phpay-io/phpay/actions/workflows/tests.yml/badge.svg?branch=develop" alt="Testes"></a>
+    <a href="./LICENSE.md"><img src="https://poser.pugx.org/phpay-io/phpay/license" alt="Licença"></a>
 </p>
 
-O PHPay é uma biblioteca PHP que tem o objetivo tornar o trabalho de integrações com gateways de pagamento mais simples e descomplicadas, facilitando a conexão entre tecnologia e negócios em produtos de software.
+<p align="center">
+    Uma interface só para os gateways de pagamento brasileiros.
+</p>
 
-## 💸 Gateways
+---
 
-- Asaas (cobranças, clientes, webhooks, chaves Pix e assinaturas)
-- Mercado Pago (cobranças, clientes e assinaturas)
-- PagBank / PagSeguro (cobranças, assinantes e assinaturas)
-- Efí (cobranças)
+## Sumário
 
-## ⬆️ Vindo da v1?
+- [Por que o PHPay](#por-que-o-phpay)
+- [Gateways suportados](#gateways-suportados)
+- [Requisitos](#requisitos)
+- [Instalação](#instalação)
+- [Início rápido](#início-rápido)
+- [Conceitos](#conceitos)
+  - [Capacidades](#capacidades)
+  - [Tratamento de erros](#tratamento-de-erros)
+  - [Ambientes e credenciais](#ambientes-e-credenciais)
+  - [Unidade monetária](#unidade-monetária)
+- [Gateways](#gateways)
+  - [Asaas](#asaas)
+  - [Mercado Pago](#mercado-pago)
+  - [PagBank](#pagbank)
+  - [Pagar.me](#pagarme)
+  - [Efí](#efí)
+- [Exemplos executáveis](#exemplos-executáveis)
+- [Migrando da v1](#migrando-da-v1)
+- [Roadmap](#roadmap)
+- [Contribuindo](#contribuindo)
+- [Segurança](#segurança)
+- [Licença](#licença)
 
-A v2.0.0 tem breaking changes — a principal é que falhas passaram a ser exceção
-em vez de array de erro. O de-para completo está em
-[UPGRADE.md](./UPGRADE.md).
+---
 
-## 📦 Instalação
+## Por que o PHPay
 
-Instale via Composer:
+Cada gateway brasileiro resolve os mesmos problemas de um jeito diferente: um
+chama de `payment`, outro de `order`, outro de `charge`. Um quer reais, outro
+quer centavos. Um separa ambiente por URL, outro pelo prefixo do token.
+
+O PHPay normaliza isso numa interface só, **sem esconder o que é genuinamente
+diferente**. Quando um gateway não oferece um recurso, ele não finge que
+oferece — ele declara o que sabe fazer, e você descobre em tempo de análise
+estática, não em produção.
 
 ```php
+use PHPay\Asaas\AsaasGateway;
+use PHPay\PHPay;
+
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN));
+
+$phpay->charge()->setCharge($cobranca)->setCustomerId($clienteId)->create();
+```
+
+Trocar de gateway é trocar a linha do construtor.
+
+---
+
+## Gateways suportados
+
+| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Efí |
+| --- | --- | :---: | :---: | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | — |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — |
+
+Duas colunas merecem explicação, porque a ausência de ✅ **não** quer dizer que o
+gateway não aceita Pix ou não manda webhook:
+
+- **`SupportsPixKeys`** significa *gerenciar chaves Pix e QR Code estático*, o
+  que só um PSP que emite chave própria oferece. Nos outros gateways, Pix é
+  forma de pagamento de uma cobrança — e todos aceitam.
+- **`SupportsWebhooks`** significa *cadastrar endpoints pela API*. Nos outros,
+  o cadastro é no painel; a notificação vai por cobrança, no campo
+  `notification_url`. O Pagar.me ainda deixa **consultar e reenviar entregas**,
+  através de [`webhookDeliveries()`](#consultando-entregas-de-webhook).
+
+---
+
+## Requisitos
+
+| | |
+| --- | --- |
+| **Para usar a biblioteca** | PHP `^8.1`, `ext-curl`, `ext-json` |
+| **Para desenvolver o PHPay** | PHP `^8.2` (Pest 3 e Termwind 2 exigem) |
+
+A compatibilidade com PHP 8.1 é verificada estaticamente pelo PHPStan a cada
+build, com `phpVersion` mínimo configurado.
+
+---
+
+## Instalação
+
+```bash
 composer require phpay-io/phpay
 ```
 
-## ⚙️ Como usar o PHPay?
+---
+
+## Início rápido
+
+Uma cobrança Pix no Asaas, do zero:
 
 ```php
-/**
- * instance with gateway inject
- * @var AsaasGateway $phpay
- */
-$phpay = (new PHPay(new AsaasGateway(TOKEN_ASAAS_SANDBOX)));
+use PHPay\Asaas\AsaasGateway;
+use PHPay\Exceptions\PHPayException;
+use PHPay\PHPay;
+
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+
+try {
+    $cobranca = $phpay->charge()
+        ->setCharge([
+            'billingType' => 'PIX',
+            'value'       => 100.50,
+            'dueDate'     => date('Y-m-d', strtotime('+3 days')),
+            'description' => 'Assinatura PHPay',
+        ])
+        ->setCustomer([
+            'name'    => 'Mário Lucas',
+            'cpfCnpj' => '12345678901',
+        ])
+        ->create();
+
+    print_r($phpay->charge()->getQrCodePix($cobranca['id']));
+} catch (PHPayException $e) {
+    echo $e->getMessage();
+}
 ```
 
-### Cobranças
+Um array devolvido é **sempre** uma resposta de sucesso. Qualquer falha vira
+exceção — veja [Tratamento de erros](#tratamento-de-erros).
 
-```php
-/**
- * instance with gateway inject and resource call
- *
- * @var Charge $phpay
- */
-$phpay = (new PHPay(new AsaasGateway(TOKEN_ASAAS_SANDBOX)))->charge();
+---
 
-/**
- * create charge
- */
-$phpay
-    ->setCharge($charge)
-    ->setCustomer($customer)
-    ->create();
+## Conceitos
 
-/**
- * reaproveitando um cliente que já existe no gateway
- * (setCustomer cria um cliente novo quando o array não traz `id`)
- */
-$phpay
-    ->setCharge($charge)
-    ->setCustomerId('cus_000006337812')
-    ->create();
+Três coisas valem entender uma vez; depois todo gateway se comporta igual.
 
-/**
- * find charge
- */
-$phpay->find($chargeId);
+### Capacidades
 
-/**
- * get all charges
- */
-$phpay->getAll();
-
-/**
- * get all charges with filters
- */
-$phpay
-    ->setQueryParams(['limit' => 2])
-    ->getAll();
-
-/**
- * update charge
- */
-$phpay->update($chargeId, $data);
-
-/**
- * destroy charge
- */
-$phpay->destroy($chargeId);
-
-/**
- * restore charge
- */
-$phpay->restore($chargeId);
-
-/**
- * get status charge
- */
-$phpay->getStatus($chargeId);
-
-/**
- * get digitable line charge
- */
-$phpay->getDigitableLine($chargeId);
-
-/**
- * get qrcode charge
- */
-$phpay->getQrCodePix($chargeId);
-
-/**
- * confirm receipt charge
- */
-$phpay->confirmReceipt($chargeId, [
-    'paymentDate'    => date('Y-m-d'),
-    'value'          => 100.00,
-    'notifyCustomer' => true,
-]);
-
-/**
- * undo confirm receipt
- */
-$phpay->undoConfirmReceipt($chargeId);
-
-```
-
-### Assinaturas
-
-```php
-/**
- * @var Subscription $phpay
- */
-$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX))->subscription();
-
-/**
- * create a new subscription
- */
-$phpay->setCustomer($customer)->create([
-    'billingType' => 'BOLETO',
-    'value'       => 100,
-    'nextDueDate' => '2025-04-09',
-]);
-```
-
-### Assinaturas com cliente existente
-
-```php
-$phpay
-    ->setCustomerId('cus_000006337812')
-    ->create([
-        'billingType' => 'BOLETO',
-        'value'       => 100,
-        'nextDueDate' => '2026-04-09',
-        'cycle'       => 'MONTHLY',
-    ]);
-```
-
-## 🧩 Capacidades por gateway
-
-Nem todo gateway oferece todo recurso. Cada gateway **declara** o que suporta
-através de interfaces de capacidade, em vez de o contrato ser a união de tudo:
-
-| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Efí |
-| --- | --- | :---: | :---: | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ |
-| Webhooks | `SupportsWebhooks` | ✅ | — | — | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — |
-| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | — |
-
-> Nem Mercado Pago nem PagBank expõem CRUD de webhooks por API: eles são
-> registrados no painel, ou por cobrança através de `notification_url` /
-> `notification_urls`.
-
-> `SupportsPixKeys` é mais estreito que "aceita Pix": ele significa gerenciar
-> chaves e QR Code estático, algo que só um PSP que emite chave própria oferece.
-> Na maioria dos gateways, Pix é uma forma de pagamento da cobrança.
-
-Para decidir em tempo de execução:
+`GatewayInterface` carrega só a identidade do gateway. Cada recurso é uma
+interface que o gateway implementa **se, e só se,** oferecer:
 
 ```php
 use PHPay\Contracts\Capability;
 
-$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+$phpay = PHPay::gateway(new EfiGateway(CLIENT_ID, CLIENT_SECRET));
 
-$phpay->supports(Capability::SUBSCRIPTIONS);  // true
-$phpay->capabilities();                        // todas as capacidades do gateway
-$phpay->name();                                // 'Asaas'
+$phpay->name();                                 // 'Efí'
+$phpay->supports(Capability::SUBSCRIPTIONS);    // false
+$phpay->capabilities();                          // [Capability::CHARGES]
 ```
 
-Chamar um recurso que o gateway não oferece lança `NotImplementedException`
-dizendo o que ele oferece:
+Chamar um recurso que o gateway não oferece lança uma exceção que diz o que ele
+oferece:
 
 ```php
-PHPay::gateway(new EfiGateway(CLIENT_ID, CLIENT_SECRET))->pix();
+$phpay->pix();
 // NotImplementedException: Efí não suporta chaves Pix.
 //                          Capacidades disponíveis: cobranças.
 ```
 
-Se você segurar o gateway concreto em vez da facade, o erro sobe para tempo de
-análise — o PHPStan acusa que o método não existe:
+Se você segurar o **gateway concreto** em vez da facade, o erro sobe para tempo
+de análise — o PHPStan acusa que o método não existe naquele tipo:
 
 ```php
 $efi = new EfiGateway(CLIENT_ID, CLIENT_SECRET);
+
 $efi->charge();   // ✅
 $efi->pix();      // ❌ o método não existe nesse gateway
 ```
 
-## 🚨 Tratamento de erros
+Para injeção de dependência, tipe a capacidade em vez do gateway:
 
-Toda falha vira exceção — um array de retorno é **sempre** uma resposta de sucesso.
-Todas as exceções da biblioteca implementam `PHPay\Exceptions\PHPayException`, então
-um único `catch` cobre a integração inteira:
+```php
+use PHPay\Contracts\SupportsCharges;
+
+public function __construct(private SupportsCharges $gateway) {}
+```
+
+### Tratamento de erros
+
+Toda exceção da biblioteca implementa `PHPay\Exceptions\PHPayException`, então
+um `catch` cobre a integração inteira:
+
+| Exceção | Estende | Quando acontece |
+| --- | --- | --- |
+| `ValidationException` | `InvalidArgumentException` | Payload inválido, **antes** de qualquer HTTP |
+| `ApiException` | `RuntimeException` | O gateway recusou, ou está inacessível |
+| `NotImplementedException` | `BadMethodCallException` | O gateway não oferece o recurso |
 
 ```php
 use PHPay\Exceptions\ApiException;
-use PHPay\Exceptions\NotImplementedException;
 use PHPay\Exceptions\PHPayException;
 use PHPay\Exceptions\ValidationException;
 
 try {
-    $charge = $phpay->setCharge($charge)->setCustomer($customer)->create();
+    $cobranca = $phpay->charge()->setCharge($dados)->create();
 } catch (ValidationException $e) {
-    /* payload inválido: nenhuma requisição foi feita */
-    echo $e->getMessage();
+    // payload inválido: nenhuma requisição foi feita
 } catch (ApiException $e) {
-    /* o gateway recusou a requisição ou está inacessível */
-    echo $e->getMessage();
-    echo $e->getStatusCode();       // 400, 401, 404... ou 0 se nem chegou ao gateway
-    print_r($e->getResponse());     // corpo devolvido pelo gateway
-    echo $e->getGateway();          // 'Asaas' ou 'Efí'
-
-    if ($e->isConnectionError()) {
-        /* timeout, DNS, TLS — vale um retry */
-    }
-} catch (NotImplementedException $e) {
-    /* o gateway ainda não implementa esse recurso */
+    $e->getStatusCode();       // 400, 401, 404… ou 0 se nem chegou ao gateway
+    $e->getResponse();         // corpo devolvido pelo gateway
+    $e->getGateway();          // 'Asaas', 'Pagar.me', …
+    $e->isConnectionError();   // true em timeout, DNS, TLS — vale retry
 } catch (PHPayException $e) {
-    /* qualquer outra falha do PHPay */
+    // qualquer outra falha do PHPay
 }
 ```
 
-## 💳 Mercado Pago
+`ApiException` já resume os formatos de erro de cada gateway, então
+`getMessage()` traz a descrição legível, não um dump.
 
-O Mercado Pago não tem URL de sandbox — o ambiente vem do próprio token, que é
-prefixado com `TEST-` nas credenciais de teste:
+### Ambientes e credenciais
+
+Os gateways discordam sobre como separar teste de produção, e o PHPay segue o
+que cada um faz em vez de inventar um padrão:
+
+| Gateway | Como o ambiente é decidido |
+| --- | --- |
+| **Asaas** | `$sandbox` no construtor — troca a URL |
+| **PagBank** | `$sandbox` no construtor — troca a URL |
+| **Efí** | `$sandbox` no construtor — troca a URL |
+| **Mercado Pago** | Prefixo do token (`TEST-`); host único, sem `$sandbox` |
+| **Pagar.me** | Prefixo da chave (`sk_test_`); host único, sem `$sandbox` |
+
+Nos dois últimos, `isSandbox()` diz em qual ambiente você está:
+
+```php
+(new MercadoPagoGateway($token))->isSandbox();
+(new PagarMeGateway($secretKey))->isSandbox();
+```
+
+> **Nunca** versione credenciais. Os arquivos `examples/*/credentials.php` são
+> ignorados pelo git por padrão.
+
+### Unidade monetária
+
+**Este é o erro mais caro de cometer**, porque a cobrança sai com valor errado
+em vez de falhar:
+
+| Gateway | Unidade | R$ 100,50 é |
+| --- | --- | --- |
+| **Asaas** | Reais (decimal) | `100.50` |
+| **Mercado Pago** | Reais (decimal) | `100.50` |
+| **PagBank** | Centavos (inteiro) | `10050` |
+| **Pagar.me** | Centavos (inteiro) | `10050` |
+| **Efí** | Centavos (inteiro) | `10050` |
+
+Nos gateways que usam centavos, o PHPay **recusa valor decimal na validação**,
+antes de qualquer chamada:
+
+```php
+$phpay->charge()->addItem('Item', 100.50);
+// ValidationException: ... deve ser um inteiro em CENTAVOS maior que zero.
+//                      R$ 10,50 é 1050.
+```
+
+---
+
+## Gateways
+
+Cada seção cobre só o que é específico daquele gateway. Tudo que vale para
+todos está em [Conceitos](#conceitos).
+
+### Asaas
+
+O único com as cinco capacidades — é PSP, então emite chave Pix própria e
+gerencia webhooks por API.
+
+```php
+use PHPay\Asaas\AsaasGateway;
+
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+```
+
+#### Cobranças
+
+```php
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX))->charge();
+
+/* cria a cobrança, criando também o cliente */
+$phpay->setCharge($cobranca)->setCustomer($cliente)->create();
+
+/* reaproveita um cliente que já existe — evita cadastro duplicado */
+$phpay->setCharge($cobranca)->setCustomerId('cus_000006337812')->create();
+
+$phpay->find($id);
+$phpay->getAll();
+$phpay->setQueryParams(['limit' => 2])->getAll();
+$phpay->update($id, $dados);
+$phpay->destroy($id);
+$phpay->restore($id);
+
+$phpay->getStatus($id);
+$phpay->getDigitableLine($id);
+$phpay->getQrCodePix($id);
+
+$phpay->confirmReceipt($id, [
+    'paymentDate'    => date('Y-m-d'),
+    'value'          => 100.00,
+    'notifyCustomer' => true,
+]);
+$phpay->undoConfirmReceipt($id);
+```
+
+#### Clientes
+
+```php
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+
+$cliente = $phpay->customer(['name' => 'Mário Lucas', 'cpfCnpj' => '12345678901'])->create();
+
+$phpay->customer()->find($cliente['id']);
+$phpay->customer()->setFilter(['cpfCnpj' => '12345678901'])->getAll();
+$phpay->customer(['name' => 'Novo Nome'])->update($cliente['id']);
+$phpay->customer()->getNotifications($cliente['id']);
+$phpay->customer()->destroy($cliente['id']);
+$phpay->customer()->restore($cliente['id']);
+```
+
+#### Assinaturas
+
+```php
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX))->subscription();
+
+$phpay->setCustomer($cliente)->create([
+    'billingType' => 'BOLETO',
+    'value'       => 100,
+    'nextDueDate' => '2026-04-09',
+    'cycle'       => 'MONTHLY',
+]);
+
+/* ou com um cliente existente */
+$phpay->setCustomerId('cus_000006337812')->create([...]);
+```
+
+#### Webhooks e chaves Pix
+
+```php
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+
+/* webhooks com CRUD completo — exclusividade do Asaas */
+$phpay->webhook(WEBHOOK)->create();
+$phpay->webhook()->getAll();
+$phpay->webhook()->update($id, $dados);
+$phpay->webhook()->destroy($id);
+
+/* chaves Pix e QR Code estático */
+$chave = $phpay->pix()->createKey();
+$phpay->pix()->getAll();
+$phpay->pix()->staticQrCode(['addressKey' => $chave['key'], 'value' => 25.00]);
+$phpay->pix()->destroy($chave['id']);
+```
+
+### Mercado Pago
+
+Ambiente pelo prefixo do token. `POST /v1/payments` exige o header
+`X-Idempotency-Key`: o PHPay gera uma chave por chamada, e
+`setIdempotencyKey()` deixa você fixar a sua — assim um retry da mesma operação
+de negócio não cria duas cobranças.
 
 ```php
 use PHPay\MercadoPago\Enums\PaymentMethodEnum;
 use PHPay\MercadoPago\MercadoPagoGateway;
 
-$gateway = new MercadoPagoGateway(ACCESS_TOKEN_MERCADO_PAGO);
+$gateway = new MercadoPagoGateway(ACCESS_TOKEN);
 
-$gateway->isSandbox();   // true para tokens TEST-
-```
-
-Cobrança via Pix — aqui o Pix é forma de pagamento, não um recurso à parte:
-
-```php
-$charge = PHPay::gateway($gateway)
-    ->charge()
+$cobranca = PHPay::gateway($gateway)->charge()
     ->setCharge([
-        'transaction_amount' => 100.00,
+        'transaction_amount' => 100.50,
         'payment_method_id'  => PaymentMethodEnum::PIX->value,
-        'description'        => 'Cobrança de teste',
         'notification_url'   => 'https://exemplo.test/webhook/mercadopago',
     ])
     ->setPayer(['email' => 'comprador@exemplo.test'])
     ->setIdempotencyKey('pedido-123456')
     ->create();
 
-$phpay->getPixCode($charge['id']);   // código copia-e-cola
+$phpay->getPixCode($cobranca['id']);
 ```
-
-`POST /v1/payments` exige o header `X-Idempotency-Key`. O PHPay gera uma chave
-por chamada; passe a sua com `setIdempotencyKey()` para que um retry da mesma
-operação de negócio não gere duas cobranças.
-
-Para conferir contra o sandbox de verdade — algo que teste com HTTP mockado não
-prova — rode a checagem de conformidade com um token de teste:
-
-```bash
-MP_ACCESS_TOKEN='TEST-...' php examples/mercadopago/sandbox-check.php
-```
-
-O script recusa credenciais de produção e nunca imprime o token.
 
 Assinaturas usam `/preapproval`, com ou sem plano associado:
 
@@ -301,7 +402,7 @@ $phpay->setPayerEmail('comprador@exemplo.test')->create([
     'auto_recurring' => [
         'frequency'          => 1,
         'frequency_type'     => 'months',
-        'transaction_amount' => 100.00,
+        'transaction_amount' => 100.50,
         'currency_id'        => 'BRL',
     ],
 ]);
@@ -312,27 +413,26 @@ $phpay->setPayerEmail('comprador@exemplo.test')
     ->create(['back_url' => 'https://exemplo.test/retorno']);
 ```
 
-## 🏦 PagBank (PagSeguro)
+> O recurso `Customer` do Mercado Pago existe para cartões salvos — **não** é
+> pré-requisito para cobrar, já que o pagamento carrega `payer.email` direto. A
+> API também não oferece exclusão de cliente.
 
-Duas particularidades que o PHPay resolve por você.
+### PagBank
+
+Duas particularidades, ambas resolvidas pela biblioteca.
 
 **Duas APIs em hosts diferentes.** Pedidos vivem em `api.pagseguro.com`,
-assinaturas em `api.assinaturas.pagseguro.com`. Cada recurso boota o client
-da API certa — você não precisa saber disso.
+assinaturas em `api.assinaturas.pagseguro.com`. Cada recurso boota o client da
+API certa — você não precisa saber disso.
 
-**Todo valor é inteiro em centavos.** R$ 100,50 é `10050`. Mandar `100.50`
-cobraria um real. O PHPay recusa decimal na validação, antes de chegar na API.
+**Pix não é uma cobrança.** Entra como `qr_codes` do pedido, e só um por pedido.
+A conta precisa ter uma chave Pix ativa.
 
 ```php
 use PHPay\PagBank\PagBankGateway;
 
 $phpay = PHPay::gateway(new PagBankGateway(TOKEN_PAGBANK_SANDBOX))->charge();
-```
 
-No PagBank o **Pix não é uma cobrança**: ele entra como `qr_codes` do pedido, e
-só um por pedido. A conta precisa ter uma chave Pix ativa.
-
-```php
 $pedido = $phpay
     ->setCustomer(['name' => 'Mário', 'email' => 'fale@phpay.io', 'tax_id' => '12345678901'])
     ->addItem('Assinatura PHPay', 10050)   // R$ 100,50
@@ -340,14 +440,14 @@ $pedido = $phpay
     ->setNotificationUrls(['https://exemplo.test/webhook/pagbank'])
     ->create();
 
-$phpay->getPixCode($pedido['id']);   // copia-e-cola, de qr_codes[0].text
+$phpay->getPixCode($pedido['id']);   // de qr_codes[0].text
 ```
 
 Cartão e boleto, aí sim, vão em `charges`:
 
 ```php
 $phpay
-    ->setCustomer($customer)
+    ->setCustomer($cliente)
     ->addItem('Camiseta', 5990, 2)
     ->setCharges([[
         'reference_id'   => 'cobranca-1',
@@ -373,71 +473,193 @@ $phpay->setPlan($plano['id'])
     ->create();
 ```
 
-Para conferir contra o sandbox de verdade:
+### Pagar.me
 
-```bash
-PAGBANK_TOKEN='...' php examples/pagbank/sandbox-check.php
+Autenticação Basic com a secret key, ambiente pelo prefixo da chave, e Pix como
+forma de pagamento do pedido.
+
+```php
+use PHPay\PagarMe\PagarMeGateway;
+
+$gateway = new PagarMeGateway(SECRET_KEY_PAGARME);
+
+$pedido = PHPay::gateway($gateway)->charge()
+    ->setCustomer([
+        'name'     => 'Mário Lucas',
+        'email'    => 'fale@phpay.io',
+        'document' => '12345678901',
+    ])
+    ->addItem('Assinatura PHPay', 10050)   // R$ 100,50
+    ->setPix(1800)                          // expira em 30 minutos
+    ->create();
+
+$phpay->getPixCode($pedido['id']);   // de charges[0].last_transaction.qr_code
 ```
 
-## 📝 Roadmap
+O cancelamento é `DELETE`, com valor opcional para estorno parcial:
 
-- Definições de Arquitetura ✅
-- Tratamento de erros por exceção ✅
-- Testes com HTTP mockado ✅
-- CI no GitHub Actions ✅
-- Domínios ✅
-- Documentação ✍️
-- Site 🕛
-- Gateways ✍️
+```php
+$phpay->cancel($cobrancaId, 2500);   // estorna R$ 25,00
+$phpay->cancel($cobrancaId);         // estorna tudo
+```
 
-  - Asaas.
+Assinaturas aceitam um plano ou a recorrência no próprio payload:
 
-  - Cobranças ✅
-  - Clientes ✅
-  - Webhook ✅
-  - Pix (chaves e QR Code estático) ✅
-  - Assinaturas ✍️ (criação pronta; listar/atualizar/cancelar pendentes)
+```php
+$phpay = PHPay::gateway($gateway)->subscription();
 
-  - Mercado Pago.
+$plano = $phpay->createPlan([
+    'name'           => 'Plano PHPay Mensal',
+    'interval'       => 'month',
+    'interval_count' => 1,
+    'items'          => [[
+        'name'           => 'Mensalidade',
+        'quantity'       => 1,
+        'pricing_scheme' => ['price' => 4990],   // R$ 49,90
+    ]],
+]);
 
-  - Cobranças ✅
-  - Clientes ✅
-  - Assinaturas ✅
-  - Webhook — sem CRUD por API
-  - Pix ✅ (como forma de pagamento)
+$phpay->setPlan($plano['id'])
+    ->setCustomerId($clienteId)
+    ->create(['payment_method' => 'pix']);
+```
 
-  - PagBank.
+#### Consultando entregas de webhook
 
-  - Cobranças ✅
-  - Assinantes ✅
-  - Assinaturas ✅ (com planos)
-  - Webhook — sem CRUD por API
-  - Pix ✅ (como QR Code do pedido)
+O Pagar.me deixa ler e reenviar os eventos que já despachou. Isso **não** é a
+capacidade `SupportsWebhooks` — o cadastro dos endpoints é no dashboard — então
+vive no gateway concreto, não na facade:
 
-  - Efí.
+```php
+$gateway->webhookDeliveries()->setFilter(['size' => 10])->getAll();
+$gateway->webhookDeliveries()->resend($hookId);
+```
 
-  - Autorização ✅
-  - Cobranças ✅
-  - Clientes 🕥
-  - Webhook 🕥
-  - Assinaturas 🕥
-  - Pix 🕥
+É assim que o modelo de capacidades abre espaço para o que só um gateway
+oferece: quem segura `PagarMeGateway` alcança, quem tipa uma capacidade não.
 
-- Lançamento v2.0.0 🚀 (contém breaking changes — veja a seção de tratamento de erros)
+### Efí
 
-## 🌟 Contribuindo
+Só cobranças, por enquanto. O gateway **não faz chamada de rede no construtor**
+— a autorização acontece na primeira vez que o token é necessário, e uma vez só.
 
-Para contribuir com o PHPay, implementando melhorias e novos gateways de pagamento,
-leia nosso manual de contribuição. [MANUAL DE CONTRIBUIÇÃO PHPAY](./CONTRIBUTING.md)
+```php
+use PHPay\Efi\EfiGateway;
 
-## 📄 Licença
+$gateway = new EfiGateway(CLIENT_ID, CLIENT_SECRET);
 
-Este projeto está licenciado sob a MIT License. Consulte o arquivo [LICENSE](./LICENSE.md) para mais detalhes.
+$cobranca = PHPay::gateway($gateway)->charge([
+    'value'       => 10050,   // R$ 100,50 — o Efí usa centavos
+    'description' => 'Assinatura PHPay',
+    'expire_at'   => date('Y-m-d', strtotime('+3 days')),
+])
+    ->setCustomer(['name' => 'Mário Lucas', 'cpf_cnpj' => '12345678901'])
+    ->create();
+```
 
-## 🤝 Contato
+---
 
-💻 GitHub: [Mário Lucas](https://github.com/mariolucasdev)
+## Exemplos executáveis
 
-📧 Email: fale@phpay.io
+O diretório [`examples/`](./examples) traz scripts prontos por gateway. Copie o
+`credentials.example.php` para `credentials.php`, preencha, e rode:
 
-🎉 Comece a usar o PHPay e simplifique suas integrações com gateways de pagamento!
+```bash
+php examples/asaas/charges.php
+```
+
+Dois gateways têm também uma **checagem de conformidade**, que roda contra o
+sandbox de verdade e relata cada operação. Teste com HTTP mockado prova que a
+biblioteca monta o payload que decidimos; isto prova que o gateway o aceita:
+
+```bash
+MP_ACCESS_TOKEN='TEST-...' php examples/mercadopago/sandbox-check.php
+PAGBANK_TOKEN='...'        php examples/pagbank/sandbox-check.php
+```
+
+Os dois recusam credenciais de produção e nunca imprimem o token.
+
+---
+
+## Migrando da v1
+
+A v2.0.0 tem breaking changes — a principal é que falhas passaram a ser exceção
+em vez de array de erro. O de-para completo, quebra por quebra, está em
+**[UPGRADE.md](./UPGRADE.md)**.
+
+Dois pontos merecem auditoria de quem vem da v1:
+
+1. Falhas que antes voltavam como array e passavam despercebidas agora
+   **interrompem o fluxo**. É o comportamento correto, mas expõe caminhos que
+   nunca foram exercitados.
+2. Integrações que chamavam `setCustomer()` em laço **provavelmente acumularam
+   clientes duplicados** no gateway.
+
+---
+
+## Roadmap
+
+### Plataforma
+
+| Item | Status |
+| --- | :---: |
+| Definições de arquitetura | ✅ |
+| Capacidades por gateway | ✅ |
+| Tratamento de erros por exceção | ✅ |
+| Testes com HTTP mockado | ✅ |
+| CI no GitHub Actions | ✅ |
+| Guia de migração | ✅ |
+| Documentação | ✍️ |
+| Site | 🕛 |
+
+### Cobertura por gateway
+
+| | Asaas | Mercado Pago | PagBank | Pagar.me | Efí |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Clientes | ✅ | ✅ | ✅ | ✅ | 🕥 |
+| Assinaturas | ✍️ | ✅ | ✅ | ✅ | 🕥 |
+| Webhooks | ✅ | — | — | leitura ✅ | 🕥 |
+| Pix | ✅ | ✅ | ✅ | ✅ | 🕥 |
+
+**✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
+
+> Assinaturas do Asaas: criação pronta; listar, atualizar e cancelar pendentes.
+
+---
+
+## Contribuindo
+
+Leia o [manual de contribuição](./CONTRIBUTING.md). Ele cobre o ambiente de
+desenvolvimento, o gate de qualidade e as convenções do projeto.
+
+```bash
+composer install
+composer test     # Pint + Pest + PHPStan nível 9
+```
+
+Nenhum teste pode acessar a rede: os recursos aceitam um `GuzzleHttp\Client`
+injetado, e a suíte usa mocks.
+
+---
+
+## Segurança
+
+Encontrou uma vulnerabilidade? Não abra issue pública — siga a
+[política de segurança](./.github/SECURITY.md).
+
+Esta é uma biblioteca de pagamentos: nunca logue, imprima ou versione tokens,
+`access_token`, `clientSecret` ou CPF/CNPJ reais.
+
+---
+
+## Licença
+
+MIT. Veja [LICENSE.md](./LICENSE.md).
+
+---
+
+<p align="center">
+    Feito por <a href="https://github.com/mariolucasdev">Mário Lucas</a> ·
+    <a href="mailto:fale@phpay.io">fale@phpay.io</a>
+</p>
