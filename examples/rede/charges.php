@@ -5,6 +5,7 @@ use PHPay\PHPay;
 use PHPay\Rede\Enums\{TransactionKindEnum, TransactionStatusEnum};
 use PHPay\Rede\RedeGateway;
 use PHPay\Rede\Resources\Charge\Charge;
+use PHPay\Support\Money;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -31,7 +32,7 @@ try {
     $transacao = $phpay
         ->setReference('pedido-' . time())
         ->setCard('5448280000000007', 'MARIO LUCAS', '12', '2030', '123')
-        ->setPayment(2099, TransactionKindEnum::CREDIT, installments: 1, capture: true)
+        ->setPayment(Money::reais(20.99), TransactionKindEnum::CREDIT, installments: 1, capture: true)
         ->setSoftDescriptor('PHPAY')
         ->create();
 
@@ -59,7 +60,7 @@ try {
     $emDuasEtapas = PHPay::gateway($gateway)->charge()
         ->setReference('pedido-2-etapas-' . time())
         ->setCard('5448280000000007', 'MARIO LUCAS', '12', '2030', '123')
-        ->setPayment(5000, TransactionKindEnum::CREDIT, capture: false)
+        ->setPayment(Money::reais(50.00), TransactionKindEnum::CREDIT, capture: false)
         ->create();
 
     $phpay->capture((string) $emDuasEtapas['tid']);

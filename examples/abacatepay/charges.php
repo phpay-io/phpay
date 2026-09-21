@@ -4,6 +4,7 @@ use PHPay\AbacatePay\AbacatePayGateway;
 use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\Exceptions\PHPayException;
 use PHPay\PHPay;
+use PHPay\Support\Money;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -33,8 +34,8 @@ try {
     */
     $cobranca = $phpay
         ->setCustomer($cliente)
-        ->addProduct('prod-1234', 'Assinatura PHPay', 2000)            /* R$ 20,00 */
-        ->addProduct('prod-5678', 'Camiseta', 5990, 2, 'Tamanho M')    /* R$ 59,90 cada */
+        ->addProduct('prod-1234', 'Assinatura PHPay', Money::reais(20.00))            /* R$ 20,00 */
+        ->addProduct('prod-5678', 'Camiseta', Money::reais(59.90), 2, 'Tamanho M')    /* R$ 59,90 cada */
         ->setUrls(
             completionUrl: 'https://exemplo.test/obrigado',
             returnUrl: 'https://exemplo.test/loja'
@@ -58,7 +59,7 @@ try {
 
     PHPay::gateway($gateway)->charge()
         ->setCustomerId((string) ($criado['data']['id'] ?? ''))
-        ->addProduct('prod-1234', 'Assinatura PHPay', 2000)
+        ->addProduct('prod-1234', 'Assinatura PHPay', Money::reais(20.00))
         ->setUrls('https://exemplo.test/obrigado', 'https://exemplo.test/loja')
         ->create();
 

@@ -263,29 +263,55 @@ Nos dois últimos, `isSandbox()` diz em qual ambiente você está:
 
 ### Unidade monetária
 
-**Este é o erro mais caro de cometer**, porque a cobrança sai com valor errado
-em vez de falhar:
+Os gateways discordam sobre a unidade, e **errar não quebra a integração — ela
+cobra o valor errado**. Mandar `100.50` num gateway de centavos cobra R$ 1,00,
+e você só descobre na conciliação.
 
-| Gateway | Unidade | R$ 100,50 é |
-| --- | --- | --- |
-| **Asaas** | Reais (decimal) | `100.50` |
-| **Mercado Pago** | Reais (decimal) | `100.50` |
-| **PagBank** | Centavos (inteiro) | `10050` |
-| **Pagar.me** | Centavos (inteiro) | `10050` |
-| **Cielo** | Centavos (inteiro) | `10050` |
-| **Rede** | Centavos (inteiro) | `10050` |
-| **AbacatePay** | Centavos (inteiro, mín. 100) | `10050` |
-| **Woovi** | Centavos (inteiro) | `10050` |
-| **Efí** | Centavos (inteiro) | `10050` |
-
-Nos gateways que usam centavos, o PHPay **recusa valor decimal na validação**,
-antes de qualquer chamada:
+Use `Money` e o problema deixa de existir: você diz a unidade que tem, o
+gateway pede a unidade que precisa, e nenhum dos dois pode errar.
 
 ```php
-$phpay->charge()->addItem('Item', 100.50);
-// ValidationException: ... deve ser um inteiro em CENTAVOS maior que zero.
-//                      R$ 10,50 é 1050.
+use PHPay\Support\Money;
+
+$valor = Money::reais(100.50);     // ou Money::centavos(10050)
+
+$asaas->charge()->setAmount($valor);          // vira 100.50
+$pagbank->charge()->addItem('Item', $valor);  // vira 10050
 ```
+
+Também aceita string, que é o que um campo de formulário costuma entregar:
+
+```php
+Money::reais('100,50');      // notação brasileira
+Money::reais('1.234,56');    // com separador de milhar
+Money::reais('100.50');      // notação com ponto
+```
+
+E tem o que um total precisa:
+
+```php
+$unitario = Money::reais(59.90);
+
+$unitario->multiply(2);              // R$ 119,80
+$unitario->plus(Money::reais(10));   // R$ 69,90
+$unitario->format();                 // 'R$ 59,90'
+```
+
+> `Money::reais(10 / 3)` **lança exceção** em vez de arredondar. Arredondamento
+> silencioso é como nascem erros de um centavo na conciliação — arredonde você
+> mesmo, ou use `Money::centavos()` para ser exato.
+
+#### Passando número cru
+
+Continua funcionando, e cada gateway lê na unidade que sempre esperou:
+
+| Gateway | Unidade do número cru | R$ 100,50 |
+| --- | --- | --- |
+| **Asaas**, **Mercado Pago** | Reais (decimal) | `100.50` |
+| **PagBank**, **Pagar.me**, **Cielo**, **Rede**, **AbacatePay**, **Woovi**, **Efí** | Centavos (inteiro) | `10050` |
+
+Nos que usam centavos, o PHPay recusa decimal na validação. Mas é justamente
+essa tabela que o `Money` torna desnecessária — **prefira o value object**.
 
 ---
 

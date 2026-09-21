@@ -7,6 +7,7 @@ use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\MercadoPago\Requests\MercadoPagoChargeRequest;
 use PHPay\MercadoPago\Resources\Charge\Interface\ChargeInterface;
 use PHPay\MercadoPago\Traits\HasMercadoPagoClient;
+use PHPay\Support\Money;
 
 class Charge implements ChargeInterface
 {
@@ -57,6 +58,22 @@ class Charge implements ChargeInterface
     public function setCharge(array $charge): ChargeInterface
     {
         $this->charge = $charge;
+
+        return $this;
+    }
+
+    /**
+     * set the amount of the charge.
+     *
+     * Mercado Pago takes reais as a decimal — pass a Money and the unit is
+     * handled for you, or a raw number, which is read as reais.
+     *
+     * @param Money|int|float $amount
+     * @return ChargeInterface
+     */
+    public function setAmount(Money|int|float $amount): ChargeInterface
+    {
+        $this->charge['transaction_amount'] = Money::asReais($amount);
 
         return $this;
     }

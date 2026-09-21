@@ -2,6 +2,8 @@
 
 namespace PHPay\MercadoPago\Resources\Charge\Interface;
 
+use PHPay\Support\Money;
+
 interface ChargeInterface
 {
     /**
@@ -11,6 +13,14 @@ interface ChargeInterface
      * @return ChargeInterface
      */
     public function setCharge(array $charge): ChargeInterface;
+
+    /**
+     * set the amount of the charge, in reais
+     *
+     * @param Money|int|float $amount
+     * @return ChargeInterface
+     */
+    public function setAmount(Money|int|float $amount): ChargeInterface;
 
     /**
      * set the payer of the charge

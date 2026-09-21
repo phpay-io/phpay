@@ -4,6 +4,7 @@ use PHPay\Asaas\AsaasGateway;
 use PHPay\Asaas\Resources\Charge\Charge;
 use PHPay\Exceptions\PHPayException;
 use PHPay\PHPay;
+use PHPay\Support\Money;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -16,7 +17,6 @@ $customer = [
 
 $charge = [
     'billingType' => 'BOLETO',
-    'value'       => 100.00,
     'dueDate'     => date('Y-m-d', strtotime('+3 days')),
     'description' => 'Cobrança de teste do PHPay',
 ];
@@ -34,6 +34,8 @@ try {
     /* cria a cobrança criando também o cliente */
     $chargeCreated = $phpay
         ->setCharge($charge)
+        /* o Money cuida da unidade: aqui vira reais, em outros gateways vira centavos */
+        ->setAmount(Money::reais(100.00))
         ->setCustomer($customer)
         ->create();
 

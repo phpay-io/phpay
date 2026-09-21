@@ -2,6 +2,8 @@
 
 namespace PHPay\PagarMe\Resources\Charge\Interface;
 
+use PHPay\Support\Money;
+
 interface ChargeInterface
 {
     /**
@@ -44,7 +46,7 @@ interface ChargeInterface
      * @param int $quantity
      * @return ChargeInterface
      */
-    public function addItem(string $description, int $amount, int $quantity = 1): ChargeInterface;
+    public function addItem(string $description, Money|int $amount, int $quantity = 1): ChargeInterface;
 
     /**
      * set the payments of the order
@@ -132,7 +134,7 @@ interface ChargeInterface
      * @param int|null $amount amount in cents
      * @return array<mixed>
      */
-    public function capture(string $id, ?int $amount = null): array;
+    public function capture(string $id, Money|int|null $amount = null): array;
 
     /**
      * cancel a charge, refunding fully or partially
@@ -141,5 +143,5 @@ interface ChargeInterface
      * @param int|null $amount amount in cents
      * @return array<mixed>
      */
-    public function cancel(string $id, ?int $amount = null): array;
+    public function cancel(string $id, Money|int|null $amount = null): array;
 }

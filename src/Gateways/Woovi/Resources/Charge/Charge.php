@@ -4,6 +4,7 @@ namespace PHPay\Woovi\Resources\Charge;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 use PHPay\Woovi\Requests\WooviChargeRequest;
 use PHPay\Woovi\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Woovi\Traits\HasWooviClient;
@@ -114,9 +115,9 @@ class Charge implements ChargeInterface
      * @return array<mixed>
      * @throws ValidationException|ApiException
      */
-    public function create(int $value): array
+    public function create(Money|int $value): array
     {
-        $this->charge['value']         = $value;
+        $this->charge['value']         = Money::asCentavos($value);
         $this->charge['correlationID'] = $this->charge['correlationID'] ?? uniqid('phpay_');
 
         WooviChargeRequest::validate($this->charge);

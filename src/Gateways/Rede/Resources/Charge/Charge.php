@@ -9,6 +9,7 @@ use PHPay\Rede\Requests\RedeTransactionRequest;
 use PHPay\Rede\Resources\Authorization\Authorization;
 use PHPay\Rede\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Rede\Traits\HasRedeClient;
+use PHPay\Support\Money;
 
 /**
  * transactions of the e.Rede v2 API.
@@ -113,12 +114,12 @@ class Charge implements ChargeInterface
      * @return ChargeInterface
      */
     public function setPayment(
-        int $amount,
+        Money|int $amount,
         TransactionKindEnum $kind = TransactionKindEnum::CREDIT,
         int $installments = 1,
         bool $capture = true
     ): ChargeInterface {
-        $this->transaction['amount']       = $amount;
+        $this->transaction['amount']       = Money::asCentavos($amount);
         $this->transaction['kind']         = $kind->value;
         $this->transaction['installments'] = $installments;
         $this->transaction['capture']      = $capture;
@@ -208,10 +209,10 @@ class Charge implements ChargeInterface
      * @return array<mixed>
      * @throws ApiException
      */
-    public function capture(string $tid, ?int $amount = null): array
+    public function capture(string $tid, Money|int|null $amount = null): array
     {
         return $this->request('PUT', "transactions/{$tid}", $this->authorized([
-            'json' => $amount === null ? [] : ['amount' => $amount],
+            'json' => $amount === null ? [] : ['amount' => Money::asCentavos($amount)],
         ]));
     }
 
@@ -223,10 +224,10 @@ class Charge implements ChargeInterface
      * @return array<mixed>
      * @throws ApiException
      */
-    public function refund(string $tid, ?int $amount = null): array
+    public function refund(string $tid, Money|int|null $amount = null): array
     {
         return $this->request('POST', "transactions/{$tid}/refunds", $this->authorized([
-            'json' => $amount === null ? [] : ['amount' => $amount],
+            'json' => $amount === null ? [] : ['amount' => Money::asCentavos($amount)],
         ]));
     }
 

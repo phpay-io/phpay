@@ -3,6 +3,7 @@
 namespace PHPay\Cielo\Resources\Subscription\Interface;
 
 use PHPay\Cielo\Enums\RecurrentIntervalEnum;
+use PHPay\Support\Money;
 
 interface SubscriptionInterface
 {
@@ -52,7 +53,7 @@ interface SubscriptionInterface
      * @param int $amount amount in cents
      * @return array<mixed>
      */
-    public function create(int $amount): array;
+    public function create(Money|int $amount): array;
 
     /**
      * find a recurrence by id
@@ -85,7 +86,7 @@ interface SubscriptionInterface
      * @param int $amount amount in cents
      * @return array<mixed>
      */
-    public function updateAmount(string $recurrentPaymentId, int $amount): array;
+    public function updateAmount(string $recurrentPaymentId, Money|int $amount): array;
 
     /**
      * change how often the recurrence charges

@@ -8,6 +8,7 @@ use PHPay\Cielo\Requests\CieloSaleRequest;
 use PHPay\Cielo\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Cielo\Traits\HasCieloClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 
 /**
  * sales of the Cielo E-commerce API 3.0.
@@ -107,11 +108,11 @@ class Charge implements ChargeInterface
      * @param int $amount amount in cents
      * @return ChargeInterface
      */
-    public function setPix(int $amount): ChargeInterface
+    public function setPix(Money|int $amount): ChargeInterface
     {
         $this->sale['Payment'] = [
             'Type'   => PaymentTypeEnum::PIX->value,
-            'Amount' => $amount,
+            'Amount' => Money::asCentavos($amount),
         ];
 
         return $this;
@@ -124,11 +125,11 @@ class Charge implements ChargeInterface
      * @param array<mixed> $options extra Payment fields, such as Demonstrative
      * @return ChargeInterface
      */
-    public function setBoleto(int $amount, array $options = []): ChargeInterface
+    public function setBoleto(Money|int $amount, array $options = []): ChargeInterface
     {
         $this->sale['Payment'] = array_merge([
             'Type'   => PaymentTypeEnum::BOLETO->value,
-            'Amount' => $amount,
+            'Amount' => Money::asCentavos($amount),
         ], $options);
 
         return $this;
@@ -144,14 +145,14 @@ class Charge implements ChargeInterface
      * @return ChargeInterface
      */
     public function setCreditCard(
-        int $amount,
+        Money|int $amount,
         array $card,
         int $installments = 1,
         bool $capture = false
     ): ChargeInterface {
         $this->sale['Payment'] = [
             'Type'         => PaymentTypeEnum::CREDIT_CARD->value,
-            'Amount'       => $amount,
+            'Amount'       => Money::asCentavos($amount),
             'Installments' => $installments,
             'Capture'      => $capture,
             'CreditCard'   => $card,
@@ -268,9 +269,9 @@ class Charge implements ChargeInterface
      * @return array<mixed>
      * @throws ApiException
      */
-    public function capture(string $paymentId, ?int $amount = null): array
+    public function capture(string $paymentId, Money|int|null $amount = null): array
     {
-        $query = $amount === null ? '' : '?amount=' . $amount;
+        $query = $amount === null ? '' : '?amount=' . Money::asCentavos($amount);
 
         return $this->put("1/sales/{$paymentId}/capture{$query}");
     }
@@ -286,9 +287,9 @@ class Charge implements ChargeInterface
      * @return array<mixed>
      * @throws ApiException
      */
-    public function cancel(string $paymentId, ?int $amount = null): array
+    public function cancel(string $paymentId, Money|int|null $amount = null): array
     {
-        $query = $amount === null ? '' : '?amount=' . $amount;
+        $query = $amount === null ? '' : '?amount=' . Money::asCentavos($amount);
 
         return $this->put("1/sales/{$paymentId}/void{$query}");
     }

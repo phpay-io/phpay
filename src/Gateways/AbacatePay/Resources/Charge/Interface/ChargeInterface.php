@@ -2,6 +2,8 @@
 
 namespace PHPay\AbacatePay\Resources\Charge\Interface;
 
+use PHPay\Support\Money;
+
 interface ChargeInterface
 {
     /**
@@ -49,7 +51,7 @@ interface ChargeInterface
     public function addProduct(
         string $externalId,
         string $name,
-        int $price,
+        Money|int $price,
         int $quantity = 1,
         ?string $description = null
     ): ChargeInterface;

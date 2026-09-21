@@ -8,6 +8,7 @@ use PHPay\AbacatePay\Requests\AbacatePayBillingRequest;
 use PHPay\AbacatePay\Resources\Charge\Interface\ChargeInterface;
 use PHPay\AbacatePay\Traits\HasAbacatePayClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 
 /**
  * billings of the AbacatePay API.
@@ -127,7 +128,7 @@ class Charge implements ChargeInterface
     public function addProduct(
         string $externalId,
         string $name,
-        int $price,
+        Money|int $price,
         int $quantity = 1,
         ?string $description = null
     ): ChargeInterface {
@@ -141,7 +142,7 @@ class Charge implements ChargeInterface
             'externalId' => $externalId,
             'name'       => $name,
             'quantity'   => $quantity,
-            'price'      => $price,
+            'price'      => Money::asCentavos($price),
         ];
 
         if ($description !== null) {

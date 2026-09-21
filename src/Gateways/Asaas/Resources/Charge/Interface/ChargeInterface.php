@@ -2,6 +2,8 @@
 
 namespace PHPay\Asaas\Resources\Charge\Interface;
 
+use PHPay\Support\Money;
+
 interface ChargeInterface
 {
     /**
@@ -66,6 +68,14 @@ interface ChargeInterface
      * @return ChargeInterface
      */
     public function setCustomer(array $customer): ChargeInterface;
+
+    /**
+     * set the amount of the charge, in reais
+     *
+     * @param Money|int|float $amount
+     * @return ChargeInterface
+     */
+    public function setAmount(Money|int|float $amount): ChargeInterface;
 
     /**
      * set charge

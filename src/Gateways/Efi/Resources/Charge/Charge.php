@@ -7,6 +7,7 @@ use PHPay\Efi\Requests\{EfiChargeRequest, EfiCustomerRequest};
 use PHPay\Efi\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Efi\Traits\HasEfiClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 
 class Charge implements ChargeInterface
 {
@@ -76,6 +77,22 @@ class Charge implements ChargeInterface
     public function setCustomer(array $customer): Charge
     {
         $this->customer = $this->bootCustomer($customer);
+
+        return $this;
+    }
+
+    /**
+     * set the amount of the charge.
+     *
+     * Efí takes cents as an integer — pass a Money and the unit is handled
+     * for you, or a raw integer, which is read as cents.
+     *
+     * @param Money|int $amount
+     * @return ChargeInterface
+     */
+    public function setAmount(Money|int $amount): ChargeInterface
+    {
+        $this->charge['value'] = Money::asCentavos($amount);
 
         return $this;
     }
