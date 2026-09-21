@@ -33,6 +33,7 @@
   - [Pagar.me](#pagarme)
   - [Cielo](#cielo)
   - [Rede](#rede)
+  - [AbacatePay](#abacatepay)
   - [Efí](#efí)
 - [Exemplos executáveis](#exemplos-executáveis)
 - [Migrando da v1](#migrando-da-v1)
@@ -69,13 +70,13 @@ Trocar de gateway é trocar a linha do construtor.
 
 ## Gateways suportados
 
-| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Rede | Efí |
-| --- | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | ✅ | — | — |
-| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — | — | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — | — | — |
+| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Rede | Abacate | Efí |
+| --- | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — | — | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — | — | — | — |
 
 Duas colunas merecem explicação, porque a ausência de ✅ **não** quer dizer que o
 gateway não aceita Pix ou não manda webhook:
@@ -239,6 +240,7 @@ que cada um faz em vez de inventar um padrão:
 | **Rede** | `$sandbox` no construtor — troca **as duas** URLs e o caminho do token |
 | **Mercado Pago** | Prefixo do token (`TEST-`); host único, sem `$sandbox` |
 | **Pagar.me** | Prefixo da chave (`sk_test_`); host único, sem `$sandbox` |
+| **AbacatePay** | Pela chave usada; host único, **sem prefixo** — a cobrança informa em `devMode` |
 
 Nos dois últimos, `isSandbox()` diz em qual ambiente você está:
 
@@ -263,6 +265,7 @@ em vez de falhar:
 | **Pagar.me** | Centavos (inteiro) | `10050` |
 | **Cielo** | Centavos (inteiro) | `10050` |
 | **Rede** | Centavos (inteiro) | `10050` |
+| **AbacatePay** | Centavos (inteiro, mín. 100) | `10050` |
 | **Efí** | Centavos (inteiro) | `10050` |
 
 Nos gateways que usam centavos, o PHPay **recusa valor decimal na validação**,
@@ -654,6 +657,58 @@ $gateway->authorization()->hasValidToken();
 $gateway->authorization()->forget();
 ```
 
+### AbacatePay
+
+Pix nativo, e **mesmo assim não declara `SupportsPixKeys`** — aquela capacidade
+é sobre gerenciar chaves e QR Code estático, coisa de PSP. Aqui Pix é o método
+de pagamento da cobrança, e o único aceito.
+
+Também não declara assinaturas: a API documenta `ONE_TIME` como a única
+frequência aceita.
+
+A cobrança é um **link de pagamento montado a partir de produtos**, não de um
+valor solto — o total vem calculado em `amount`. Preço em centavos, com
+**mínimo de 100** (R$ 1,00) por produto.
+
+```php
+use PHPay\AbacatePay\AbacatePayGateway;
+
+$gateway = new AbacatePayGateway(ABACATEPAY_TOKEN);
+
+$cobranca = PHPay::gateway($gateway)->charge()
+    ->setCustomer([
+        'name'      => 'Mário Lucas',
+        'email'     => 'fale@phpay.io',
+        'cellphone' => '(11) 4002-8922',
+        'taxId'     => '12345678901',
+    ])
+    ->addProduct('prod-1234', 'Assinatura PHPay', 2000)   // R$ 20,00
+    ->setUrls(
+        completionUrl: 'https://exemplo.test/obrigado',
+        returnUrl: 'https://exemplo.test/loja'
+    )
+    ->create();
+
+$phpay->getPaymentUrl($cobranca);   // o link para onde mandar o cliente
+$phpay->isDevMode($cobranca);       // em qual ambiente a cobrança nasceu
+```
+
+O `externalId` do produto é o id **no seu sistema** — o AbacatePay cria o
+produto do lado dele a partir dele, então precisa ser único.
+
+#### Cupons de desconto
+
+Nenhum outro gateway da biblioteca tem isso, então não é capacidade: vive no
+gateway concreto, como o `webhookDeliveries()` do Pagar.me.
+
+```php
+$gateway->coupons()->create([
+    'code'         => 'PHPAY10',
+    'discountKind' => 'PERCENTAGE',
+    'discount'     => 10,
+]);
+```
+
 ### Efí
 
 Só cobranças, por enquanto. O gateway **não faz chamada de rede no construtor**
@@ -730,13 +785,13 @@ Dois pontos merecem auditoria de quem vem da v1:
 
 ### Cobertura por gateway
 
-| | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Rede | Efí |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Clientes | ✅ | ✅ | ✅ | ✅ | — | — | 🕥 |
-| Assinaturas | ✍️ | ✅ | ✅ | ✅ | ✅ | — | 🕥 |
-| Webhooks | ✅ | — | — | leitura ✅ | — | — | 🕥 |
-| Pix | ✅ | ✅ | ✅ | ✅ | ✅ | 🕥 | 🕥 |
+| | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Rede | Abacate | Efí |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Clientes | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | 🕥 |
+| Assinaturas | ✍️ | ✅ | ✅ | ✅ | ✅ | — | — | 🕥 |
+| Webhooks | ✅ | — | — | leitura ✅ | — | — | — | 🕥 |
+| Pix | ✅ | ✅ | ✅ | ✅ | ✅ | 🕥 | ✅ | 🕥 |
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
 
