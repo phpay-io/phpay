@@ -34,6 +34,7 @@
   - [Cielo](#cielo)
   - [Rede](#rede)
   - [AbacatePay](#abacatepay)
+  - [Woovi/OpenPix](#wooviopenpix)
   - [Efí](#efí)
 - [Exemplos executáveis](#exemplos-executáveis)
 - [Migrando da v1](#migrando-da-v1)
@@ -70,13 +71,20 @@ Trocar de gateway é trocar a linha do construtor.
 
 ## Gateways suportados
 
-| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Rede | Abacate | Efí |
-| --- | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — | — | — | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — | — | — | — |
+| Gateway | Clientes | Cobranças | Assinaturas | Webhooks | Chaves Pix |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Mercado Pago** | ✅ | ✅ | ✅ | — | — |
+| **PagBank** | ✅ | ✅ | ✅ | — | — |
+| **Pagar.me** | ✅ | ✅ | ✅ | — | — |
+| **AbacatePay** | ✅ | ✅ | — | — | — |
+| **Cielo** | — | ✅ | ✅ | — | — |
+| **Rede** | — | ✅ | — | — | — |
+| **Efí** | — | ✅ | — | — | — |
+
+As interfaces correspondentes são `SupportsCustomers`, `SupportsCharges`,
+`SupportsSubscriptions`, `SupportsWebhooks` e `SupportsPixKeys`.
 
 Duas colunas merecem explicação, porque a ausência de ✅ **não** quer dizer que o
 gateway não aceita Pix ou não manda webhook:
@@ -240,6 +248,7 @@ que cada um faz em vez de inventar um padrão:
 | **Rede** | `$sandbox` no construtor — troca **as duas** URLs e o caminho do token |
 | **Mercado Pago** | Prefixo do token (`TEST-`); host único, sem `$sandbox` |
 | **Pagar.me** | Prefixo da chave (`sk_test_`); host único, sem `$sandbox` |
+| **Woovi** | `$sandbox` no construtor — o sandbox tem **domínio próprio** |
 | **AbacatePay** | Pela chave usada; host único, **sem prefixo** — a cobrança informa em `devMode` |
 
 Nos dois últimos, `isSandbox()` diz em qual ambiente você está:
@@ -266,6 +275,7 @@ em vez de falhar:
 | **Cielo** | Centavos (inteiro) | `10050` |
 | **Rede** | Centavos (inteiro) | `10050` |
 | **AbacatePay** | Centavos (inteiro, mín. 100) | `10050` |
+| **Woovi** | Centavos (inteiro) | `10050` |
 | **Efí** | Centavos (inteiro) | `10050` |
 
 Nos gateways que usam centavos, o PHPay **recusa valor decimal na validação**,
@@ -709,6 +719,63 @@ $gateway->coupons()->create([
 ]);
 ```
 
+### Woovi/OpenPix
+
+**O segundo gateway com as cinco capacidades**, ao lado do Asaas — e o que
+confirma que o modelo descreve o domínio, não um fornecedor: são duas empresas
+independentes, com APIs independentes, preenchendo o mesmo contrato.
+
+Sendo PSP Pix-nativo, ele gerencia chaves e QR Code estático de verdade.
+
+```php
+use PHPay\Woovi\Enums\PixKeyTypeEnum;
+use PHPay\Woovi\WooviGateway;
+
+$phpay = PHPay::gateway(new WooviGateway(WOOVI_APP_ID));
+
+/* chaves Pix da conta */
+$phpay->pix()->createKey(PixKeyTypeEnum::RANDOM);
+$phpay->pix()->getAll();
+
+/* consulta uma chave antes de pagar */
+$phpay->pix()->verifyKey('fale@phpay.io');
+
+/* QR Code estático, com ou sem valor */
+$phpay->pix()->staticQrCode('Caixa 1');
+$phpay->pix()->staticQrCode('Caixa 2', 2500);
+```
+
+Três particularidades:
+
+**O AppID vai cru no `Authorization`** — sem `Bearer`, sem `Basic`.
+
+**O sandbox tem domínio próprio**: `api.woovi-sandbox.com` contra
+`api.openpix.com.br`.
+
+**Todo objeto é endereçável pelo `correlationID`**, o id no *seu* sistema —
+nenhum outro gateway da biblioteca oferece isso:
+
+```php
+$cobranca = $phpay->charge()
+    ->setCorrelationId('pedido-1')
+    ->setCustomer(['name' => 'Mário Lucas', 'email' => 'fale@phpay.io'])
+    ->create(10050);   // R$ 100,50
+
+$phpay->charge()->getPixCode($cobranca);
+$phpay->charge()->find('pedido-1');      // pelo SEU id, não pelo do gateway
+```
+
+Webhooks têm CRUD por API — junto com o Asaas, os únicos:
+
+```php
+$phpay->webhook(['name' => 'PHPay', 'url' => 'https://exemplo.test/webhook'])->create();
+$phpay->webhook()->getAll();
+```
+
+> Repare que o webhook fica em `api/openpix/v1/`, enquanto os demais recursos
+> ficam em `api/v1/` — herança da fusão das duas marcas. O PHPay trata isso
+> internamente.
+
 ### Efí
 
 Só cobranças, por enquanto. O gateway **não faz chamada de rede no construtor**
@@ -785,13 +852,17 @@ Dois pontos merecem auditoria de quem vem da v1:
 
 ### Cobertura por gateway
 
-| | Asaas | Mercado Pago | PagBank | Pagar.me | Cielo | Rede | Abacate | Efí |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Clientes | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | 🕥 |
-| Assinaturas | ✍️ | ✅ | ✅ | ✅ | ✅ | — | — | 🕥 |
-| Webhooks | ✅ | — | — | leitura ✅ | — | — | — | 🕥 |
-| Pix | ✅ | ✅ | ✅ | ✅ | ✅ | 🕥 | ✅ | 🕥 |
+| Gateway | Cobranças | Clientes | Assinaturas | Webhooks | Pix |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| **Asaas** | ✅ | ✅ | ✍️ | ✅ | ✅ |
+| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Mercado Pago** | ✅ | ✅ | ✅ | — | ✅ |
+| **PagBank** | ✅ | ✅ | ✅ | — | ✅ |
+| **Pagar.me** | ✅ | ✅ | ✅ | leitura ✅ | ✅ |
+| **AbacatePay** | ✅ | ✅ | — | — | ✅ |
+| **Cielo** | ✅ | — | ✅ | — | ✅ |
+| **Rede** | ✅ | — | — | — | 🕥 |
+| **Efí** | ✅ | 🕥 | 🕥 | 🕥 | 🕥 |
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
 

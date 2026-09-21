@@ -158,3 +158,15 @@ function abacateClient(array $responses, array &$history = []): Client
 {
     return mockClient($responses, $history, 'https://api.abacatepay.com/v1/');
 }
+
+/**
+ * mock client already pointed at the Woovi sandbox host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function wooviClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://api.woovi-sandbox.com/');
+}

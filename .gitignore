@@ -4,6 +4,7 @@ node_modules/
 
 # credenciais dos exemplos (nunca versionar)
 examples/abacatepay/credentials.php
+examples/woovi/credentials.php
 examples/asaas/credentials.php
 examples/efi/credentials.php
 examples/mercadopago/credentials.php
