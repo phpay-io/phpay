@@ -15,3 +15,8 @@ examples/rede/credentials.php
 
 # configurações locais do Claude Code (pessoais, não versionar)
 .claude/settings.local.json
+
+# certificados de mTLS (nunca versionar)
+*.p12
+*.pfx
+*.pem

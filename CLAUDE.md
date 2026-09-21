@@ -5,14 +5,16 @@ Orientações para o Claude Code trabalhar neste repositório.
 ## O que é
 
 PHPay (`phpay-io/phpay`) é uma **biblioteca PHP** (não uma aplicação) que padroniza a
-integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** (as cinco
-capacidades), **Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças,
-assinaturas), **Cielo** (cobranças e recorrência), **AbacatePay** (clientes e
-cobranças), **Rede** e **Efí** (cobranças).
+integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** e
+**Woovi/OpenPix** (as cinco capacidades), **Efí** (todas menos clientes),
+**Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças, assinaturas),
+**Cielo** (cobranças e recorrência), **AbacatePay** (clientes e cobranças) e
+**Rede** (cobranças).
 
 Requisitos: PHP `^8.1` para consumir a lib; `^8.2` para rodar o ambiente de dev
 (Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`, `ext-json`,
-`guzzlehttp/guzzle ^7`. Publicado no Packagist.
+`guzzlehttp/guzzle ^7.3` (a 7.3 é a primeira que entrega `.p12` ao cURL pela
+extensão, e o mTLS depende disso). Publicado no Packagist.
 
 ## Arquitetura
 
@@ -24,7 +26,7 @@ AsaasGateway / EfiGateway  ──implements──▶  <Gateway>Interface extends
    │ cada método (customer/charge/pix/webhook/subscription) devolve um Resource novo
    ▼
 Resources (Customer, Charge, Pix, Webhook, Subscription)
-   │ trait HasAsaasClient / HasEfiClient  →  PHPay\Http\HasHttpClient (get/post/put/delete)
+   │ trait HasAsaasClient / HasEfiClient  →  PHPay\Http\HasHttpClient (get/post/put/patch/delete)
    ▼
 Requests (validação estática dos payloads antes de qualquer chamada HTTP)
 ```
@@ -173,8 +175,19 @@ quebra a integração, cobra o valor errado.
 
 ## Particularidades por gateway
 
-- **Asaas** — `$sandbox` troca a base URL. Único com chaves Pix, porque é PSP.
-- **Efí** — autoriza sob demanda (token em cache no gateway); `$sandbox` troca a base URL.
+- **Asaas** — `$sandbox` troca a base URL. Chaves Pix próprias, porque é PSP (como Woovi e Efí).
+- **Efí** — **duas APIs com as mesmas credenciais**: Cobranças (`cobrancas.api...`,
+  trait `HasEfiClient`, boleto em `charge()`) e Pix (`pix.api...`, trait
+  `HasEfiPixClient`, **só por mTLS**). Cada API tem o seu token (`getToken()` e
+  `getPixToken()`), em cache no gateway e renovado ao expirar, com margem de 30s.
+  A cobrança Pix é `pixCharge()`, **extra do gateway concreto**: `charge()` já é o
+  boleto e mudar o retorno quebraria a v2. **Na API Pix, valor só como `Money`**
+  (reais em string, `toDecimal()`), porque a API de Cobranças do mesmo gateway usa
+  centavos — não abra `Money|int` ali. O certificado só é exigido quando o recurso
+  monta o próprio client, por isso os testes injetam `pixClient` e não precisam de
+  arquivo. Webhook é **um por chave Pix**, endereçado pela chave. Chaves Pix: só EVP.
+  Rotas conferidas no SDK oficial (`efipay/sdk-php-apis-efi`), e status e campos do
+  Pix Automático na especificação do BACEN (`bacen/pix-api`, `openapi.yaml`).
 - **PagBank** — **duas APIs em hosts diferentes**: pedidos em `api.pagseguro.com`,
   assinaturas em `api.assinaturas.pagseguro.com`. O trait expõe `clientPagBankBoot()`
   e `clientPagBankSubscriptionsBoot()`; cada recurso boota o seu. **Todo valor é
@@ -221,10 +234,12 @@ quebra a integração, cobra o valor errado.
 
 - `Subscription` só implementa `create()`. Listar, buscar, atualizar, cancelar,
   carnê e NFe seguem pendentes na API do Asaas.
-- A Efí só tem autorização e cobranças; `customer`, `webhook`, `pix` e `subscription`
-  lançam `NotImplementedException`.
-- Só o Asaas implementa `SupportsWebhooks` e `SupportsPixKeys`. Mercado Pago, PagBank e
-  Pagar.me registram endpoints por painel, e Pix neles é forma de pagamento. Não
+- Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
+  notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
+  (`webhookrec`, `webhookcobr`), envio de Pix e split.
+- `SupportsWebhooks` e `SupportsPixKeys` só no Asaas, no Woovi e na Efí — os três são
+  PSP. Mercado Pago, PagBank e Pagar.me registram endpoints por painel, e Pix neles é
+  forma de pagamento. Não
   "resolva" isso criando stubs — e não declare a capacidade por causa de uma API
   parecida: o `/hooks` do Pagar.me lê entregas, é outra coisa, e por isso virou um
   recurso fora do modelo.
@@ -233,6 +248,20 @@ quebra a integração, cobra o valor errado.
   `description`/`value`; `getConfigurations()` usa fine 200 / interest 33).
 - O CI roda a matriz em 8.2/8.3/8.4; a compatibilidade com 8.1 é garantida
   estaticamente pelo `phpVersion: min: 80100` do `phpstan.neon`, não por execução real.
+
+## mTLS
+
+Use **`PHPay\Http\Certificate`**. O padrão do BACEN para API Pix exige mTLS em toda
+requisição, inclusive a do token, e Inter, BB, Itaú, Sicoob e Sicredi seguem o mesmo
+esquema — por isso o certificado é genérico, não da Efí.
+
+- `guzzleOptions()` devolve `['cert' => ...]`. Some isso à config do `Client` que o
+  trait monta; **não** passe `CURLOPT_SSLCERTTYPE` em `curl`, porque o Guzzle recente
+  recusa opção cURL que conflita com a dele, e ele já deduz `P12` pela extensão.
+- Só `.p12` e `.pem`. Um `.pfx` é o mesmo formato, mas o Guzzle não o reconhece pela
+  extensão: a mensagem manda renomear.
+- `fromBase64()` grava num temporário 0600, apagado ao fim do processo.
+- `__debugInfo()` mascara a senha. Não crie getter para ela.
 
 ## Segurança
 

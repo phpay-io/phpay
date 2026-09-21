@@ -60,12 +60,32 @@ trait HasHttpClient
      *
      * @param string $endpoint
      * @param array<mixed> $data
+     * @param array<string, string> $headers extra headers for this request only
      * @return array<mixed>
      * @throws ApiException
      */
-    protected function put(string $endpoint, array $data = []): array
+    protected function put(string $endpoint, array $data = [], array $headers = []): array
     {
-        return $this->request('PUT', $endpoint, ['json' => $data]);
+        $options = ['json' => $data];
+
+        if (!empty($headers)) {
+            $options['headers'] = $headers;
+        }
+
+        return $this->request('PUT', $endpoint, $options);
+    }
+
+    /**
+     * patch data
+     *
+     * @param string $endpoint
+     * @param array<mixed> $data
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    protected function patch(string $endpoint, array $data = []): array
+    {
+        return $this->request('PATCH', $endpoint, ['json' => $data]);
     }
 
     /**
