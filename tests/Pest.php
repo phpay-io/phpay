@@ -86,3 +86,15 @@ function pagbankClient(array $responses, array &$history = []): Client
 {
     return mockClient($responses, $history, 'https://sandbox.api.pagseguro.com/');
 }
+
+/**
+ * mock client already pointed at the Pagar.me host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function pagarmeClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://api.pagar.me/core/v5/');
+}
