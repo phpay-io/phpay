@@ -26,7 +26,7 @@ AsaasGateway / EfiGateway  ──implements──▶  <Gateway>Interface extends
    │ cada método (customer/charge/pix/webhook/subscription) devolve um Resource novo
    ▼
 Resources (Customer, Charge, Pix, Webhook, Subscription)
-   │ trait HasAsaasClient / HasEfiClient  →  PHPay\Http\HasHttpClient (get/post/put/patch/delete)
+   │ trait HasAsaasClient / HasEfiClient  →  PHPay\Http\HasHttpClient (get/post/put/patch/delete/download)
    ▼
 Requests (validação estática dos payloads antes de qualquer chamada HTTP)
 ```
@@ -176,6 +176,11 @@ quebra a integração, cobra o valor errado.
 ## Particularidades por gateway
 
 - **Asaas** — `$sandbox` troca a base URL. Chaves Pix próprias, porque é PSP (como Woovi e Efí).
+  Assinatura cobre os 14 endpoints da API. **O carnê responde PDF**, por isso usa
+  `HasHttpClient::download()`, que devolve o corpo cru — `request()` decodifica
+  JSON e devolveria `[]`. `destroy()` leva as cobranças pendentes e vencidas;
+  a pausa é `deactivate()`, e **reativar exige um novo `nextDueDate`**. `cycle` é
+  obrigatório na criação. Atualização de assinatura é `PUT`, como o resto do Asaas.
 - **Efí** — **duas APIs com as mesmas credenciais**: Cobranças (`cobrancas.api...`,
   trait `HasEfiClient`, boleto em `charge()`) e Pix (`pix.api...`, trait
   `HasEfiPixClient`, **só por mTLS**). Cada API tem o seu token (`getToken()` e
@@ -232,8 +237,6 @@ quebra a integração, cobra o valor errado.
 
 ## O que ainda está em aberto
 
-- `Subscription` só implementa `create()`. Listar, buscar, atualizar, cancelar,
-  carnê e NFe seguem pendentes na API do Asaas.
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
   (`webhookrec`, `webhookcobr`), envio de Pix e split.
