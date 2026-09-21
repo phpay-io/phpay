@@ -20,3 +20,6 @@ examples/rede/credentials.php
 *.p12
 *.pfx
 *.pem
+
+# arquivos gerados pelos exemplos (carnês, boletos)
+examples/*/*.pdf
