@@ -29,6 +29,34 @@ it('autoriza apenas na primeira vez que o token é usado', function () {
         ->and((string) $history[0]['request']->getUri())->toEndWith('v1/authorize');
 })->group('efi');
 
+it('reaproveita o token enquanto ele não expira', function () {
+    $history = [];
+    $client  = mockClient([
+        jsonResponse(['access_token' => 'tok_1', 'token_type' => 'Bearer', 'expires_in' => 600]),
+    ], $history);
+
+    $gateway = new EfiGateway('client-id', 'client-secret', true, $client);
+    $gateway->getToken();
+    $gateway->getToken();
+
+    expect($history)->toHaveCount(1);
+})->group('efi');
+
+it('autoriza de novo quando o token expira', function () {
+    $history = [];
+    $client  = mockClient([
+        /* 10s de vida é menos que a margem de 30s: já nasce vencido */
+        jsonResponse(['access_token' => 'tok_1', 'token_type' => 'Bearer', 'expires_in' => 10]),
+        jsonResponse(['access_token' => 'tok_2', 'token_type' => 'Bearer', 'expires_in' => 600]),
+    ], $history);
+
+    $gateway = new EfiGateway('client-id', 'client-secret', true, $client);
+
+    expect($gateway->getToken()['access_token'])->toBe('tok_1')
+        ->and($gateway->getToken()['access_token'])->toBe('tok_2')
+        ->and($history)->toHaveCount(2);
+})->group('efi');
+
 it('falha com ApiException quando a autorização não devolve access_token', function () {
     $client = mockClient([jsonResponse(['error' => 'invalid_client'])]);
 

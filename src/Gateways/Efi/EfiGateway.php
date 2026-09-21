@@ -18,6 +18,17 @@ class EfiGateway implements EfiGatewayInterface
     private ?array $token = null;
 
     /**
+     * unix time after which the token is considered stale
+     */
+    private int $tokenExpiresAt = 0;
+
+    /**
+     * seconds subtracted from the advertised lifetime, so a token never
+     * expires between being handed out and being used
+     */
+    private const EXPIRY_MARGIN = 30;
+
+    /**
      * construct
      *
      * no network call happens here — the token is fetched lazily on first use.
@@ -46,15 +57,19 @@ class EfiGateway implements EfiGatewayInterface
     }
 
     /**
-     * get token, authorizing on first use.
+     * get token, authorizing on first use and again once it expires.
+     *
+     * the gateway may outlive the token — a queue worker keeps the same
+     * instance for hours — so the lifetime Efí advertises is honored.
      *
      * @return array<string, mixed> token
      * @throws ApiException
      */
     public function getToken(): array
     {
-        if ($this->token === null) {
-            $this->token = $this->authorize();
+        if ($this->token === null || time() >= $this->tokenExpiresAt) {
+            $this->token          = $this->authorize();
+            $this->tokenExpiresAt = self::expiresAt($this->token);
         }
 
         return $this->token;
@@ -102,5 +117,23 @@ class EfiGateway implements EfiGatewayInterface
         }
 
         return $token;
+    }
+
+    /**
+     * unix time at which a token stops being reused.
+     *
+     * without `expires_in` the token is kept for the life of the instance,
+     * which is what the gateway always did.
+     *
+     * @param array<string, mixed> $token
+     * @return int
+     */
+    private static function expiresAt(array $token): int
+    {
+        $lifetime = $token['expires_in'] ?? null;
+
+        return is_numeric($lifetime)
+            ? time() + (int) $lifetime - self::EXPIRY_MARGIN
+            : PHP_INT_MAX;
     }
 }
