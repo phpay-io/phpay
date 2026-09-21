@@ -1,9 +1,12 @@
 vendor/
 node_modules/
+.idea/
+
+# credenciais dos exemplos (nunca versionar)
 examples/asaas/credentials.php
 examples/efi/credentials.php
-.idea/
 examples/mercadopago/credentials.php
+examples/pagbank/credentials.php
 
 # configurações locais do Claude Code (pessoais, não versionar)
 .claude/settings.local.json

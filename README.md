@@ -12,6 +12,7 @@ O PHPay é uma biblioteca PHP que tem o objetivo tornar o trabalho de integraç�
 
 - Asaas (cobranças, clientes, webhooks, chaves Pix e assinaturas)
 - Mercado Pago (cobranças, clientes e assinaturas)
+- PagBank / PagSeguro (cobranças, assinantes e assinaturas)
 - Efí (cobranças)
 
 ## ⬆️ Vindo da v1?
@@ -164,16 +165,17 @@ $phpay
 Nem todo gateway oferece todo recurso. Cada gateway **declara** o que suporta
 através de interfaces de capacidade, em vez de o contrato ser a união de tudo:
 
-| Capacidade | Interface | Asaas | Mercado Pago | Efí |
-| --- | --- | :---: | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | ✅ | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ |
-| Webhooks | `SupportsWebhooks` | ✅ | — | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — | — |
-| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | — |
+| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Efí |
+| --- | --- | :---: | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | — |
 
-> O Mercado Pago não expõe CRUD de webhooks por API: eles são configurados no
-> painel "Suas integrações", ou por pagamento através do campo `notification_url`.
+> Nem Mercado Pago nem PagBank expõem CRUD de webhooks por API: eles são
+> registrados no painel, ou por cobrança através de `notification_url` /
+> `notification_urls`.
 
 > `SupportsPixKeys` é mais estreito que "aceita Pix": ele significa gerenciar
 > chaves e QR Code estático, algo que só um PSP que emite chave própria oferece.
@@ -310,6 +312,73 @@ $phpay->setPayerEmail('comprador@exemplo.test')
     ->create(['back_url' => 'https://exemplo.test/retorno']);
 ```
 
+## 🏦 PagBank (PagSeguro)
+
+Duas particularidades que o PHPay resolve por você.
+
+**Duas APIs em hosts diferentes.** Pedidos vivem em `api.pagseguro.com`,
+assinaturas em `api.assinaturas.pagseguro.com`. Cada recurso boota o client
+da API certa — você não precisa saber disso.
+
+**Todo valor é inteiro em centavos.** R$ 100,50 é `10050`. Mandar `100.50`
+cobraria um real. O PHPay recusa decimal na validação, antes de chegar na API.
+
+```php
+use PHPay\PagBank\PagBankGateway;
+
+$phpay = PHPay::gateway(new PagBankGateway(TOKEN_PAGBANK_SANDBOX))->charge();
+```
+
+No PagBank o **Pix não é uma cobrança**: ele entra como `qr_codes` do pedido, e
+só um por pedido. A conta precisa ter uma chave Pix ativa.
+
+```php
+$pedido = $phpay
+    ->setCustomer(['name' => 'Mário', 'email' => 'fale@phpay.io', 'tax_id' => '12345678901'])
+    ->addItem('Assinatura PHPay', 10050)   // R$ 100,50
+    ->setQrCode(10050)
+    ->setNotificationUrls(['https://exemplo.test/webhook/pagbank'])
+    ->create();
+
+$phpay->getPixCode($pedido['id']);   // copia-e-cola, de qr_codes[0].text
+```
+
+Cartão e boleto, aí sim, vão em `charges`:
+
+```php
+$phpay
+    ->setCustomer($customer)
+    ->addItem('Camiseta', 5990, 2)
+    ->setCharges([[
+        'reference_id'   => 'cobranca-1',
+        'amount'         => ['value' => 11980, 'currency' => 'BRL'],
+        'payment_method' => ['type' => 'CREDIT_CARD', 'installments' => 1, 'capture' => true],
+    ]])
+    ->create();
+```
+
+Assinaturas sempre pertencem a um plano, e o assinante pode nascer junto:
+
+```php
+$phpay = PHPay::gateway(new PagBankGateway(TOKEN_PAGBANK_SANDBOX))->subscription();
+
+$plano = $phpay->createPlan([
+    'name'     => 'Plano PHPay Mensal',
+    'amount'   => ['value' => 4990, 'currency' => 'BRL'],   // R$ 49,90
+    'interval' => ['unit' => 'MONTHS', 'length' => 1],
+]);
+
+$phpay->setPlan($plano['id'])
+    ->setCustomer(['name' => 'Mário', 'email' => 'fale@phpay.io', 'tax_id' => '12345678901'])
+    ->create();
+```
+
+Para conferir contra o sandbox de verdade:
+
+```bash
+PAGBANK_TOKEN='...' php examples/pagbank/sandbox-check.php
+```
+
 ## 📝 Roadmap
 
 - Definições de Arquitetura ✅
@@ -336,6 +405,14 @@ $phpay->setPayerEmail('comprador@exemplo.test')
   - Assinaturas ✅
   - Webhook — sem CRUD por API
   - Pix ✅ (como forma de pagamento)
+
+  - PagBank.
+
+  - Cobranças ✅
+  - Assinantes ✅
+  - Assinaturas ✅ (com planos)
+  - Webhook — sem CRUD por API
+  - Pix ✅ (como QR Code do pedido)
 
   - Efí.
 

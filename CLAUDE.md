@@ -6,7 +6,8 @@ Orientações para o Claude Code trabalhar neste repositório.
 
 PHPay (`phpay-io/phpay`) é uma **biblioteca PHP** (não uma aplicação) que padroniza a
 integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** (as cinco
-capacidades), **Mercado Pago** (clientes, cobranças, assinaturas) e **Efí** (cobranças).
+capacidades), **Mercado Pago** e **PagBank** (clientes, cobranças, assinaturas) e
+**Efí** (cobranças).
 
 Requisitos: PHP `^8.1` para consumir a lib; `^8.2` para rodar o ambiente de dev
 (Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`, `ext-json`,
@@ -137,6 +138,12 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
 
 - **Asaas** — `$sandbox` troca a base URL. Único com chaves Pix, porque é PSP.
 - **Efí** — autoriza sob demanda (token em cache no gateway); `$sandbox` troca a base URL.
+- **PagBank** — **duas APIs em hosts diferentes**: pedidos em `api.pagseguro.com`,
+  assinaturas em `api.assinaturas.pagseguro.com`. O trait expõe `clientPagBankBoot()`
+  e `clientPagBankSubscriptionsBoot()`; cada recurso boota o seu. **Todo valor é
+  inteiro em centavos** — os validadores recusam decimal, porque mandar `10.50` onde
+  se espera `1050` cobra onze centavos. Pix é `qr_codes` do pedido (um só por pedido,
+  copia-e-cola em `qr_codes[0].text`), não uma `charge`.
 - **Mercado Pago** — **não tem URL de sandbox**: o ambiente vem do prefixo `TEST-` do
   access token, então o construtor não recebe `$sandbox`. `POST /v1/payments` exige
   `X-Idempotency-Key` (por isso `HasHttpClient::post()` aceita headers por requisição).
@@ -148,9 +155,9 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   carnê e NFe seguem pendentes na API do Asaas.
 - A Efí só tem autorização e cobranças; `customer`, `webhook`, `pix` e `subscription`
   lançam `NotImplementedException`.
-- O Mercado Pago não implementa `SupportsWebhooks` nem `SupportsPixKeys`, e isso é
-  correto: webhooks só têm configuração por painel ou `notification_url` por pagamento,
-  e Pix lá é forma de pagamento. Não "resolva" isso criando stubs.
+- Nem o Mercado Pago nem o PagBank implementam `SupportsWebhooks` ou `SupportsPixKeys`,
+  e isso é correto: webhooks só têm configuração por painel ou `notification_url(s)` por
+  cobrança, e Pix nos dois é forma de pagamento. Não "resolva" isso criando stubs.
 - `Efi\Resources\Charge\Charge` tem `$items` e `$configuration` privados sem setter —
   hoje sempre caem no fallback (`getItems()` monta um item a partir de
   `description`/`value`; `getConfigurations()` usa fine 200 / interest 33).
