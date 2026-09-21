@@ -175,7 +175,7 @@ quebra a integração, cobra o valor errado.
 
 ## Particularidades por gateway
 
-- **Asaas** — `$sandbox` troca a base URL. Único com chaves Pix, porque é PSP.
+- **Asaas** — `$sandbox` troca a base URL. Chaves Pix próprias, porque é PSP (como Woovi e Efí).
 - **Efí** — **duas APIs com as mesmas credenciais**: Cobranças (`cobrancas.api...`,
   trait `HasEfiClient`, boleto em `charge()`) e Pix (`pix.api...`, trait
   `HasEfiPixClient`, **só por mTLS**). Cada API tem o seu token (`getToken()` e
