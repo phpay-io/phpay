@@ -7,6 +7,7 @@ examples/asaas/credentials.php
 examples/efi/credentials.php
 examples/mercadopago/credentials.php
 examples/pagbank/credentials.php
+examples/pagarme/credentials.php
 
 # configurações locais do Claude Code (pessoais, não versionar)
 .claude/settings.local.json

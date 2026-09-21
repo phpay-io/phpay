@@ -13,6 +13,7 @@ O PHPay é uma biblioteca PHP que tem o objetivo tornar o trabalho de integraç�
 - Asaas (cobranças, clientes, webhooks, chaves Pix e assinaturas)
 - Mercado Pago (cobranças, clientes e assinaturas)
 - PagBank / PagSeguro (cobranças, assinantes e assinaturas)
+- Pagar.me (cobranças, clientes e assinaturas)
 - Efí (cobranças)
 
 ## ⬆️ Vindo da v1?
@@ -165,17 +166,22 @@ $phpay
 Nem todo gateway oferece todo recurso. Cada gateway **declara** o que suporta
 através de interfaces de capacidade, em vez de o contrato ser a união de tudo:
 
-| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Efí |
-| --- | --- | :---: | :---: | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ |
-| Webhooks | `SupportsWebhooks` | ✅ | — | — | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — |
-| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | — |
+| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Efí |
+| --- | --- | :---: | :---: | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | — |
 
-> Nem Mercado Pago nem PagBank expõem CRUD de webhooks por API: eles são
-> registrados no painel, ou por cobrança através de `notification_url` /
-> `notification_urls`.
+> Só o Asaas expõe CRUD de webhooks por API. Nos outros, os endpoints são
+> registrados no painel — a notificação vai por cobrança
+> (`notification_url` / `notification_urls`), e o Pagar.me ainda deixa
+> **consultar e reenviar entregas** via `webhookDeliveries()`, fora do modelo
+> de capacidades.
+>
+> `SupportsPixKeys` significa gerenciar chaves e QR Code estático, o que só um
+> PSP que emite chave própria oferece. Nos demais, Pix é forma de pagamento.
 
 > `SupportsPixKeys` é mais estreito que "aceita Pix": ele significa gerenciar
 > chaves e QR Code estático, algo que só um PSP que emite chave própria oferece.
@@ -379,6 +385,77 @@ Para conferir contra o sandbox de verdade:
 PAGBANK_TOKEN='...' php examples/pagbank/sandbox-check.php
 ```
 
+## 💠 Pagar.me
+
+Autenticação Basic com a secret key, e ambiente pelo prefixo da chave — teste e
+produção compartilham `api.pagar.me/core/v5`:
+
+```php
+use PHPay\PagarMe\PagarMeGateway;
+
+$gateway = new PagarMeGateway(SECRET_KEY_PAGARME);
+
+$gateway->isSandbox();   // true para chaves sk_test_
+```
+
+Valores em **centavos inteiros**, e Pix como forma de pagamento do pedido:
+
+```php
+$pedido = PHPay::gateway($gateway)->charge()
+    ->setCustomer([
+        'name'     => 'Mário Lucas',
+        'email'    => 'fale@phpay.io',
+        'document' => '12345678901',
+    ])
+    ->addItem('Assinatura PHPay', 10050)   // R$ 100,50
+    ->setPix(1800)                          // expira em 30 minutos
+    ->create();
+
+$phpay->getPixCode($pedido['id']);   // de charges[0].last_transaction.qr_code
+```
+
+O cancelamento é `DELETE`, com valor opcional para estorno parcial:
+
+```php
+$phpay->cancel($cobrancaId, 2500);   // estorna R$ 25,00
+$phpay->cancel($cobrancaId);         // estorna tudo
+```
+
+Assinaturas aceitam um plano ou a recorrência no próprio payload:
+
+```php
+$phpay = PHPay::gateway($gateway)->subscription();
+
+$plano = $phpay->createPlan([
+    'name'           => 'Plano PHPay Mensal',
+    'interval'       => 'month',
+    'interval_count' => 1,
+    'items'          => [[
+        'name'           => 'Mensalidade',
+        'quantity'       => 1,
+        'pricing_scheme' => ['price' => 4990],   // R$ 49,90
+    ]],
+]);
+
+$phpay->setPlan($plano['id'])
+    ->setCustomerId($customerId)
+    ->create(['payment_method' => 'pix']);
+```
+
+### Consultando entregas de webhook
+
+O Pagar.me deixa ler e reenviar os eventos que já despachou. Isso **não** é a
+capacidade `SupportsWebhooks` — o cadastro dos endpoints é no dashboard — então
+vive no gateway concreto, não na facade:
+
+```php
+$gateway->webhookDeliveries()->setFilter(['size' => 10])->getAll();
+$gateway->webhookDeliveries()->resend($hookId);
+```
+
+É assim que o modelo de capacidades abre espaço para o que só um gateway
+oferece: quem segura `PagarMeGateway` alcança, quem tipa uma capacidade não.
+
 ## 📝 Roadmap
 
 - Definições de Arquitetura ✅
@@ -413,6 +490,14 @@ PAGBANK_TOKEN='...' php examples/pagbank/sandbox-check.php
   - Assinaturas ✅ (com planos)
   - Webhook — sem CRUD por API
   - Pix ✅ (como QR Code do pedido)
+
+  - Pagar.me.
+
+  - Cobranças ✅
+  - Clientes ✅ (com cartões salvos)
+  - Assinaturas ✅ (com ou sem plano)
+  - Webhook — leitura de entregas ✅, cadastro só no dashboard
+  - Pix ✅ (como forma de pagamento)
 
   - Efí.
 
