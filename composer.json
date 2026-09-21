@@ -25,7 +25,8 @@
             "PHPay\\Efi\\": "src/Gateways/Efi/",
             "PHPay\\MercadoPago\\": "src/Gateways/MercadoPago/",
             "PHPay\\PagBank\\": "src/Gateways/PagBank/",
-            "PHPay\\PagarMe\\": "src/Gateways/PagarMe/"
+            "PHPay\\PagarMe\\": "src/Gateways/PagarMe/",
+            "PHPay\\Cielo\\": "src/Gateways/Cielo/"
         }
     },
     "autoload-dev": {
