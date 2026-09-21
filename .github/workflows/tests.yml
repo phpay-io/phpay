@@ -1,0 +1,89 @@
+name: tests
+
+on:
+  push:
+    branches: [develop, main, 'phpay-v*']
+  # sem filtro de branches: o filtro casa com a BASE do PR, então limitá-lo
+  # deixaria PRs empilhados (base numa branch de feature) sem nenhum check.
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Estilo e análise estática rodam uma única vez, com as dependências do lock.
+  # O Pint não é estável entre versões — cada release pode adicionar regras, e
+  # 1.18.3 e 1.32.1 discordam sobre ordered_imports — então o estilo do projeto
+  # é definido pela versão travada no composer.lock, não pela mais recente.
+  quality:
+    name: Lint e análise estática
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: curl, json, mbstring
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Lint (Pint)
+        run: composer test:lint
+
+      - name: Static analysis (PHPStan)
+        run: composer test:types
+
+  test:
+    name: PHP ${{ matrix.php }} - ${{ matrix.dependencies }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # o toolchain de dev (pest 3 / termwind 2) exige PHP >= 8.2.
+        # a compatibilidade com 8.1 é garantida pelo phpVersion do phpstan.neon.
+        php: ['8.2', '8.3', '8.4']
+        dependencies: [locked]
+        include:
+          # dependências mínimas contra o PHP mais antigo suportado: casar as
+          # mais antigas com o PHP mais novo só produz deprecations de terceiros.
+          - php: '8.2'
+            dependencies: lowest
+          - php: '8.4'
+            dependencies: highest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, json, mbstring
+          coverage: none
+          tools: composer:v2
+
+      # o lock é resolvido para PHP 8.2 (config.platform) para poder ser
+      # instalado em toda a matriz. no job highest queremos de fato os pacotes
+      # mais novos no PHP mais novo, então liberamos essa trava antes.
+      - name: Liberar config.platform no job highest
+        if: matrix.dependencies == 'highest'
+        run: composer config --unset platform.php
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+
+      - name: Unit tests (Pest)
+        run: composer test:unit

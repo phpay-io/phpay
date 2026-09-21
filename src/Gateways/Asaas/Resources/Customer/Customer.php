@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use PHPay\Asaas\Requests\AsaasCustomerRequest;
 use PHPay\Asaas\Resources\Customer\Interface\CustomerInterface;
 use PHPay\Asaas\Traits\HasAsaasClient;
+use PHPay\Exceptions\{ApiException, ValidationException};
 
 class Customer implements CustomerInterface
 {
@@ -27,24 +28,25 @@ class Customer implements CustomerInterface
     /**
      * construct
      *
+     * @param string $token
      * @param array<mixed> $customer
+     * @param bool $sandbox
+     * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
         private string $token,
         private array $customer = [],
-        private bool $sandbox = true
+        private bool $sandbox = true,
+        ?Client $client = null
     ) {
-        $this->client = $this->clientAsaasBoot();
-
-        if (!empty($customer)) {
-            $this->customer = $customer;
-        }
+        $this->client = $client ?? $this->clientAsaasBoot();
     }
 
     /**
      * get all customers
      *
-     * @return array<array|mixed>
+     * @return array<mixed>
+     * @throws ApiException
      */
     public function getAll(): array
     {
@@ -55,7 +57,8 @@ class Customer implements CustomerInterface
      * get customer by id
      *
      * @param string $id
-     * @return array<array|mixed>
+     * @return array<mixed>
+     * @throws ApiException
      */
     public function find(string $id): array
     {
@@ -65,7 +68,8 @@ class Customer implements CustomerInterface
     /**
      * create customer
      *
-     * @return array<array|mixed>
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
      * @see available fields in https://docs.asaas.com/reference/criar-novo-cliente
      */
     public function create(): array
@@ -80,6 +84,7 @@ class Customer implements CustomerInterface
      *
      * @param string $id
      * @return array<mixed>
+     * @throws ApiException
      * @see available fields in https://docs.asaas.com/reference/criar-novo-cliente
      */
     public function update(string $id): array
@@ -92,6 +97,7 @@ class Customer implements CustomerInterface
      *
      * @param string $id
      * @return bool
+     * @throws ApiException
      */
     public function destroy(string $id): bool
     {
@@ -103,6 +109,7 @@ class Customer implements CustomerInterface
      *
      * @param string $id
      * @return array<mixed>
+     * @throws ApiException
      */
     public function restore(string $id): array
     {
@@ -113,7 +120,8 @@ class Customer implements CustomerInterface
      * get notifications
      *
      * @param string $id
-     * @return array<array|mixed>
+     * @return array<mixed>
+     * @throws ApiException
      */
     public function getNotifications(string $id): array
     {

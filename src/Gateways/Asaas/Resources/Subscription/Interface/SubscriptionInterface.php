@@ -2,19 +2,23 @@
 
 namespace PHPay\Asaas\Resources\Subscription\Interface;
 
-use PHPay\Asaas\Resources\Subscription\Subscription;
-
 interface SubscriptionInterface
 {
-    public function __construct(string $token, bool $sandbox = true);
+    /**
+     * attach an existing gateway customer to the subscription.
+     *
+     * @param string $customerId
+     * @return SubscriptionInterface
+     */
+    public function setCustomerId(string $customerId): SubscriptionInterface;
 
     /**
-     * set customer
+     * attach a customer to the subscription, reusing it when an id is given.
      *
      * @param array<mixed> $customer
-     * @return Subscription
+     * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): Subscription;
+    public function setCustomer(array $customer): SubscriptionInterface;
 
     /**
      * create subscription
@@ -23,16 +27,4 @@ interface SubscriptionInterface
      * @return array<mixed>
      */
     public function create(array $subscription): array;
-
-    // public function findAll();
-    // public function find(string $subscriptionId);
-    // public function update(string $subscriptionId, array $subscription);
-    // public function destroy(string $subscriptionId);
-    // public function findCharges(string $subscriptionId);
-    // public function generateCarnet(string $subscriptionId);
-    // public function nfeSettings(string $subscriptionId, array $nfeSettings);
-    // public function findNfeSettings(string $subscriptionId);
-    // public function updateNfeSettings(string $subscriptionId, array $nfeSettings);
-    // public function destroyNfeSettings(string $subscriptionId);
-    // public function findNfes(string $subscriptionId);
 }

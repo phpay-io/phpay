@@ -2,123 +2,105 @@
 
 namespace PHPay\Efi;
 
-use Efi\Interface\EfiGatewayInterface;
-use Efi\Resources\Authorization\Authorization;
-use Efi\Resources\Charge\Charge;
-use Efi\Traits\HasEfiClient;
-use Exception;
 use GuzzleHttp\Client;
-use stdClass;
+use PHPay\Efi\Interface\EfiGatewayInterface;
+use PHPay\Efi\Resources\Authorization\Authorization;
+use PHPay\Efi\Resources\Charge\Charge;
+use PHPay\Exceptions\ApiException;
 
 class EfiGateway implements EfiGatewayInterface
 {
-    use HasEfiClient;
-
     /**
-     * client guzzle
+     * credentials exchanged for an access token
+     *
+     * @var array<string, mixed>|null
      */
-    public Client $client;
-
-    /**
-     * @var array<string> $token
-     */
-    private array $token;
+    private ?array $token = null;
 
     /**
      * construct
      *
+     * no network call happens here — the token is fetched lazily on first use.
+     *
      * @param string $clientId
      * @param string $clientSecret
      * @param bool $sandbox
+     * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
         private string $clientId,
         private string $clientSecret,
         private bool $sandbox = true,
+        private ?Client $client = null,
     ) {
-        $this->authorization();
     }
 
     /**
-     * get token
+     * gateway name
      *
-     * @return array<mixed> token
+     * @return string
+     */
+    public function name(): string
+    {
+        return 'Efí';
+    }
+
+    /**
+     * get token, authorizing on first use.
+     *
+     * @return array<string, mixed> token
+     * @throws ApiException
      */
     public function getToken(): array
     {
+        if ($this->token === null) {
+            $this->token = $this->authorize();
+        }
+
         return $this->token;
     }
 
     /**
      * create charge
      *
-     * @param array<string> $charge
+     * @param array<mixed> $charge
      * @return Charge
+     * @throws ApiException
      */
     public function charge(array $charge = []): Charge
     {
         return new Charge(
-            $this->token,
+            $this->getToken(),
             $charge,
-            $this->sandbox
+            $this->sandbox,
+            $this->client
         );
     }
 
     /**
-     * create customer
+     * exchange credentials for an access token.
      *
-     * @param array<string> $customer
-     * @return object customer
+     * @return array<string, mixed>
+     * @throws ApiException
      */
-    public function customer(array $customer = []): object
+    private function authorize(): array
     {
-        return new stdClass();
-    }
-
-    /**
-     * create webhook
-     *
-     * @param array<string> $webhook
-     * @return object webhook
-     */
-    public function webhook(array $webhook = []): object
-    {
-        return new stdClass();
-    }
-
-    /**
-     * authorization
-     *
-     * @return void
-     */
-    private function authorization(): void
-    {
-        $authorization = new Authorization(
+        $token = (new Authorization(
             $this->clientId,
             $this->clientSecret,
-            $this->sandbox
-        );
+            $this->sandbox,
+            $this->client
+        ))->getToken();
 
-        $this->token = $authorization->getToken();
-
-        if (!isset($this->token['access_token'])) {
-            throw new \Exception('Token not generated');
+        if (!isset($token['access_token']) || !isset($token['token_type'])) {
+            throw new ApiException(
+                'Efí: autorização não retornou access_token.',
+                'Efí',
+                0,
+                $token
+            );
         }
-    }
 
-    /**
-     * create pix
-     *
-     * @param array<string> $pix
-     * @return object pix
-     */
-    public function pix(array $pix = []): object
-    {
-        throw new Exception('Not implemented');
-    }
-
-    public function subscription(): object
-    {
-        throw new Exception('Not implemented');
+        return $token;
     }
 }

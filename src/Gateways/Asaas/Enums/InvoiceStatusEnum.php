@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPay\Gateways\Asaas\Enums;
+namespace PHPay\Asaas\Enums;
 
 enum InvoiceStatusEnum: string
 {

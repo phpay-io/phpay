@@ -2,82 +2,80 @@
 
 use PHPay\Asaas\AsaasGateway;
 use PHPay\Asaas\Resources\Charge\Charge;
+use PHPay\Exceptions\PHPayException;
 use PHPay\PHPay;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 require_once __DIR__ . '/credentials.php';
 
+$customer = [
+    'name'    => NAME,
+    'cpfCnpj' => CPF_CNPJ,
+];
+
+$charge = [
+    'billingType' => 'BOLETO',
+    'value'       => 100.00,
+    'dueDate'     => date('Y-m-d', strtotime('+3 days')),
+    'description' => 'Cobrança de teste do PHPay',
+];
+
 /**
  * @var Charge $phpay
  */
 $phpay = (new PHPay(new AsaasGateway(TOKEN_ASAAS_SANDBOX)))->charge();
 
-/**
- * create charge
- */
-$phpay
-    ->setCharge($charge)
-    ->setCustomer($customer)
-    ->create();
+/*
+| Toda falha — validação local ou erro do gateway — vira exceção.
+| Um array de retorno é sempre uma resposta de sucesso.
+*/
+try {
+    /* cria a cobrança criando também o cliente */
+    $chargeCreated = $phpay
+        ->setCharge($charge)
+        ->setCustomer($customer)
+        ->create();
 
-/**
- * find charge
- */
-$phpay->find($chargeId);
+    $chargeId = $chargeCreated['id'];
 
-/**
- * get all charges
- */
-$phpay->getAll();
+    /*
+    | Para novas cobranças do mesmo cliente, reaproveite o id:
+    | ->setCustomerId($chargeCreated['customer'])
+    */
 
-/**
- * get all charges with filters
- */
-$phpay
-    ->setQueryParams(['limit' => 2])
-    ->getAll();
+    /* busca a cobrança */
+    $phpay->find($chargeId);
 
-/**
- * update charge
- */
-$phpay->update($chargeId, $data);
+    /* lista todas as cobranças */
+    $phpay->getAll();
 
-/**
- * destroy charge
- */
-$phpay->destroy($chargeId);
+    /* lista com filtros */
+    $phpay
+        ->setQueryParams(['limit' => 2])
+        ->getAll();
 
-/**
- * restore charge
- */
-$phpay->restore($chargeId);
+    /* atualiza a cobrança */
+    $phpay->update($chargeId, ['value' => 150.00]);
 
-/**
- * get status charge
- */
-$phpay->getStatus($chargeId);
+    /* status, linha digitável e qrcode */
+    $phpay->getStatus($chargeId);
+    $phpay->getDigitableLine($chargeId);
+    $phpay->getQrCodePix($chargeId);
 
-/**
- * get digitable line charge
- */
-$phpay->getDigitableLine($chargeId);
+    /* confirma o recebimento em dinheiro */
+    $phpay->confirmReceipt($chargeId, [
+        'paymentDate'    => date('Y-m-d'),
+        'value'          => 100.00,
+        'notifyCustomer' => true,
+    ]);
 
-/**
- * get qrcode charge
- */
-$phpay->getQrCodePix($chargeId);
+    /* desfaz a confirmação */
+    $phpay->undoConfirmReceipt($chargeId);
 
-/**
- * confirm receipt charge
- */
-$phpay->confirmReceipt($chargeId, [
-    'paymentDate'    => date('Y-m-d'),
-    'value'          => 100.00,
-    'notifyCustomer' => true,
-]);
-
-/**
- * undo confirm receipt
- */
-$phpay->undoConfirmReceipt($chargeId);
+    /* remove e restaura */
+    $phpay->destroy($chargeId);
+    $phpay->restore($chargeId);
+} catch (PHPayException $exception) {
+    echo $exception->getMessage() . PHP_EOL;
+}

@@ -77,8 +77,10 @@ Certifique-se de configurar corretamente o ambiente de desenvolvimento local:
 
 Requisitos básicos:
 
-- PHP ^8.1
-- Composer.
+- PHP ^8.1 para usar a biblioteca
+- PHP ^8.2 para rodar o ambiente de desenvolvimento (Pest 3 e Termwind 2 exigem 8.2+)
+- Composer
+- Node (opcional) para instalar os hooks do Husky com `npm install`
 
 ## 🏗️ Instalando as dependências:
 
@@ -93,8 +95,21 @@ Renomeie o arquivo credentials.example.php para credentials.php e configure suas
 ## Rodando os testes:
 
 ```bash
-composer tests
+composer test
 ```
+
+O `composer test` roda o gate completo — Pint (PSR-12), Pest e PHPStan no nível 9 —
+o mesmo que o CI executa em cada pull request. Para rodar por partes:
+
+```bash
+composer test:lint   # estilo
+composer test:unit   # testes
+composer test:types  # análise estática
+composer lint        # corrige o estilo automaticamente
+```
+
+Nenhum teste pode acessar a rede: os recursos aceitam um `GuzzleHttp\Client` injetado,
+e a suíte usa o helper `mockClient()` de `tests/Pest.php` para responder com dados fixos.
 
 ## ✉️ Entre em contato
 

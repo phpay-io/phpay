@@ -1,8 +1,8 @@
 <?php
 
-namespace Efi\Resources\Charge\Interface;
+namespace PHPay\Efi\Resources\Charge\Interface;
 
-use Efi\Resources\Charge\Charge;
+use PHPay\Efi\Resources\Charge\Charge;
 
 interface ChargeInterface
 {
@@ -36,6 +36,14 @@ interface ChargeInterface
      * @return ChargeInterface
      */
     public function setQueryParams(array $queryParams): ChargeInterface;
+
+    /**
+     * get status charge by id
+     *
+     * @param string $id
+     * @return array<array|mixed>
+     */
+    public function getStatus(string $id): array;
 
     /**
      * @param string $id

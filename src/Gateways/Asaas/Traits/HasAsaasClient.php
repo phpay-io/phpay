@@ -3,9 +3,30 @@
 namespace PHPay\Asaas\Traits;
 
 use GuzzleHttp\Client;
+use PHPay\Http\HasHttpClient;
 
 trait HasAsaasClient
 {
+    /**
+     * shared http verbs
+     */
+    use HasHttpClient;
+
+    /**
+     * base uri for the current environment
+     *
+     * declared as a method, not a constant: constants inside traits only
+     * exist from PHP 8.2 and this library supports 8.1.
+     *
+     * @return string
+     */
+    protected function baseUri(): string
+    {
+        return $this->sandbox
+            ? 'https://sandbox.asaas.com/api/v3/'
+            : 'https://www.asaas.com/api/v3/';
+    }
+
     /**
      * boot client
      *
@@ -13,12 +34,8 @@ trait HasAsaasClient
      */
     protected function clientAsaasBoot(): Client
     {
-        $baseUrl = $this->sandbox ?
-            'https://sandbox.asaas.com/api/v3/' :
-            'https://www.asaas.com/api/v3/';
-
         return new Client([
-            'base_uri' => $baseUrl,
+            'base_uri' => $this->baseUri(),
             'headers'  => [
                 'content-type' => 'application/json',
                 'user-agent'   => 'PHPay',
@@ -28,100 +45,12 @@ trait HasAsaasClient
     }
 
     /**
-     * get data
+     * gateway name used in exception messages.
      *
-     * @param string $endpoint
-     * @param array<mixed> $filters
-     * @return array<array|mixed>
+     * @return string
      */
-    protected function get(string $endpoint, array $filters = []): array
+    protected function gatewayName(): string
     {
-        try {
-            $reposonse = $this->client->get($endpoint, [
-                'query' => $filters,
-            ]);
-
-            $content = $reposonse
-                ->getBody()
-                ->getContents();
-
-            return (array) json_decode($content, true);
-        } catch (\Exception $e) {
-            return [
-                'error'   => $e->getCode(),
-                'message' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * post data
-     *
-     * @param string $endpoint
-     * @param array<mixed> $data
-     * @return array<iterable|mixed>
-     */
-    protected function post(string $endpoint, array $data = []): array
-    {
-        try {
-            $reposonse = $this->client->post($endpoint, [
-                'json' => $data,
-            ]);
-
-            $content = $reposonse
-                ->getBody()
-                ->getContents();
-
-            return (array) json_decode($content, true);
-        } catch (\Exception $e) {
-            return [
-                'error'   => $e->getCode(),
-                'message' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * put data
-     *
-     * @param string $endpoint
-     * @param array<mixed> $data
-     * @return array<mixed>
-     */
-    protected function put(string $endpoint, array $data): array
-    {
-        try {
-            $response = $this->client->put($endpoint, [
-                'json' => $data,
-            ]);
-
-            $content = $response
-                ->getBody()
-                ->getContents();
-
-            return (array) json_decode($content, true);
-        } catch (\Exception $e) {
-            return [
-                'error'   => $e->getCode(),
-                'message' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * delete data
-     *
-     * @param string $endpoint
-     * @return bool
-     */
-    protected function delete(string $endpoint): bool
-    {
-        try {
-            $response = $this->client->delete($endpoint);
-
-            return ($response->getStatusCode() == 200);
-        } catch (\Exception $e) {
-            return false;
-        }
+        return 'Asaas';
     }
 }

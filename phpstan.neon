@@ -1,3 +1,8 @@
 parameters:
-	paths:
-		- src
+    level: 9
+    paths:
+        - src
+    # a lib suporta PHP 8.1+; analisar em faixa evita usar sintaxe mais nova
+    phpVersion:
+        min: 80100
+        max: 80400

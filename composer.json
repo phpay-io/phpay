@@ -1,6 +1,7 @@
 {
     "name": "phpay-io/phpay",
     "type": "library",
+    "description": "Biblioteca PHP para integração simples e padronizada com gateways de pagamento brasileiros.",
     "funding": [
         {
             "url": "https://github.com/sponsors/mariolucasdev",
@@ -22,8 +23,12 @@
             "PHPay\\": "src/",
             "PHPay\\Asaas\\": "src/Gateways/Asaas/",
             "PHPay\\Efi\\": "src/Gateways/Efi/",
-            "Efi\\": "src/Gateways/Efi/",
-            "AsaasCustomer\\": "src/Gateways/Asaas/Resources/Customer/"
+            "PHPay\\MercadoPago\\": "src/Gateways/MercadoPago/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
         }
     },
     "authors": [
@@ -35,24 +40,29 @@
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2"
         }
     },
     "require": {
         "php": "^8.1",
         "ext-curl": "*",
+        "ext-json": "*",
         "guzzlehttp/guzzle": "^7.0"
     },
     "require-dev": {
-        "pestphp/pest": "3.5",
-        "laravel/pint": "^1.18",
-        "phpstan/phpstan": "^2.0",
-        "nunomaduro/termwind": "^2.3"
+        "laravel/pint": "1.30.4",
+        "nunomaduro/termwind": "^2.3",
+        "pestphp/pest": "^3.5",
+        "phpstan/phpstan": "^2.0"
     },
     "scripts": {
         "lint": "pint -v",
         "test:lint": "pint --test -v",
         "test:unit": "pest --colors=always",
-        "test:types": "phpstan analyse --level=9",
+        "test:types": "phpstan analyse",
         "test": [
             "@test:lint",
             "@test:unit",

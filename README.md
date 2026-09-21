@@ -10,8 +10,15 @@ O PHPay é uma biblioteca PHP que tem o objetivo tornar o trabalho de integraç�
 
 ## 💸 Gateways
 
-- Asaas (cobranças, gestão de clientes e webhooks)
+- Asaas (cobranças, clientes, webhooks, chaves Pix e assinaturas)
+- Mercado Pago (cobranças, clientes e assinaturas)
 - Efí (cobranças)
+
+## ⬆️ Vindo da v1?
+
+A v2.0.0 tem breaking changes — a principal é que falhas passaram a ser exceção
+em vez de array de erro. O de-para completo está em
+[UPGRADE.md](./UPGRADE.md).
 
 ## 📦 Instalação
 
@@ -47,6 +54,15 @@ $phpay = (new PHPay(new AsaasGateway(TOKEN_ASAAS_SANDBOX)))->charge();
 $phpay
     ->setCharge($charge)
     ->setCustomer($customer)
+    ->create();
+
+/**
+ * reaproveitando um cliente que já existe no gateway
+ * (setCustomer cria um cliente novo quando o array não traz `id`)
+ */
+$phpay
+    ->setCharge($charge)
+    ->setCustomerId('cus_000006337812')
     ->create();
 
 /**
@@ -130,9 +146,176 @@ $phpay->setCustomer($customer)->create([
 ]);
 ```
 
+### Assinaturas com cliente existente
+
+```php
+$phpay
+    ->setCustomerId('cus_000006337812')
+    ->create([
+        'billingType' => 'BOLETO',
+        'value'       => 100,
+        'nextDueDate' => '2026-04-09',
+        'cycle'       => 'MONTHLY',
+    ]);
+```
+
+## 🧩 Capacidades por gateway
+
+Nem todo gateway oferece todo recurso. Cada gateway **declara** o que suporta
+através de interfaces de capacidade, em vez de o contrato ser a união de tudo:
+
+| Capacidade | Interface | Asaas | Mercado Pago | Efí |
+| --- | --- | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | — |
+
+> O Mercado Pago não expõe CRUD de webhooks por API: eles são configurados no
+> painel "Suas integrações", ou por pagamento através do campo `notification_url`.
+
+> `SupportsPixKeys` é mais estreito que "aceita Pix": ele significa gerenciar
+> chaves e QR Code estático, algo que só um PSP que emite chave própria oferece.
+> Na maioria dos gateways, Pix é uma forma de pagamento da cobrança.
+
+Para decidir em tempo de execução:
+
+```php
+use PHPay\Contracts\Capability;
+
+$phpay = PHPay::gateway(new AsaasGateway(TOKEN_ASAAS_SANDBOX));
+
+$phpay->supports(Capability::SUBSCRIPTIONS);  // true
+$phpay->capabilities();                        // todas as capacidades do gateway
+$phpay->name();                                // 'Asaas'
+```
+
+Chamar um recurso que o gateway não oferece lança `NotImplementedException`
+dizendo o que ele oferece:
+
+```php
+PHPay::gateway(new EfiGateway(CLIENT_ID, CLIENT_SECRET))->pix();
+// NotImplementedException: Efí não suporta chaves Pix.
+//                          Capacidades disponíveis: cobranças.
+```
+
+Se você segurar o gateway concreto em vez da facade, o erro sobe para tempo de
+análise — o PHPStan acusa que o método não existe:
+
+```php
+$efi = new EfiGateway(CLIENT_ID, CLIENT_SECRET);
+$efi->charge();   // ✅
+$efi->pix();      // ❌ o método não existe nesse gateway
+```
+
+## 🚨 Tratamento de erros
+
+Toda falha vira exceção — um array de retorno é **sempre** uma resposta de sucesso.
+Todas as exceções da biblioteca implementam `PHPay\Exceptions\PHPayException`, então
+um único `catch` cobre a integração inteira:
+
+```php
+use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\NotImplementedException;
+use PHPay\Exceptions\PHPayException;
+use PHPay\Exceptions\ValidationException;
+
+try {
+    $charge = $phpay->setCharge($charge)->setCustomer($customer)->create();
+} catch (ValidationException $e) {
+    /* payload inválido: nenhuma requisição foi feita */
+    echo $e->getMessage();
+} catch (ApiException $e) {
+    /* o gateway recusou a requisição ou está inacessível */
+    echo $e->getMessage();
+    echo $e->getStatusCode();       // 400, 401, 404... ou 0 se nem chegou ao gateway
+    print_r($e->getResponse());     // corpo devolvido pelo gateway
+    echo $e->getGateway();          // 'Asaas' ou 'Efí'
+
+    if ($e->isConnectionError()) {
+        /* timeout, DNS, TLS — vale um retry */
+    }
+} catch (NotImplementedException $e) {
+    /* o gateway ainda não implementa esse recurso */
+} catch (PHPayException $e) {
+    /* qualquer outra falha do PHPay */
+}
+```
+
+## 💳 Mercado Pago
+
+O Mercado Pago não tem URL de sandbox — o ambiente vem do próprio token, que é
+prefixado com `TEST-` nas credenciais de teste:
+
+```php
+use PHPay\MercadoPago\Enums\PaymentMethodEnum;
+use PHPay\MercadoPago\MercadoPagoGateway;
+
+$gateway = new MercadoPagoGateway(ACCESS_TOKEN_MERCADO_PAGO);
+
+$gateway->isSandbox();   // true para tokens TEST-
+```
+
+Cobrança via Pix — aqui o Pix é forma de pagamento, não um recurso à parte:
+
+```php
+$charge = PHPay::gateway($gateway)
+    ->charge()
+    ->setCharge([
+        'transaction_amount' => 100.00,
+        'payment_method_id'  => PaymentMethodEnum::PIX->value,
+        'description'        => 'Cobrança de teste',
+        'notification_url'   => 'https://exemplo.test/webhook/mercadopago',
+    ])
+    ->setPayer(['email' => 'comprador@exemplo.test'])
+    ->setIdempotencyKey('pedido-123456')
+    ->create();
+
+$phpay->getPixCode($charge['id']);   // código copia-e-cola
+```
+
+`POST /v1/payments` exige o header `X-Idempotency-Key`. O PHPay gera uma chave
+por chamada; passe a sua com `setIdempotencyKey()` para que um retry da mesma
+operação de negócio não gere duas cobranças.
+
+Para conferir contra o sandbox de verdade — algo que teste com HTTP mockado não
+prova — rode a checagem de conformidade com um token de teste:
+
+```bash
+MP_ACCESS_TOKEN='TEST-...' php examples/mercadopago/sandbox-check.php
+```
+
+O script recusa credenciais de produção e nunca imprime o token.
+
+Assinaturas usam `/preapproval`, com ou sem plano associado:
+
+```php
+$phpay = PHPay::gateway($gateway)->subscription();
+
+$phpay->setPayerEmail('comprador@exemplo.test')->create([
+    'reason'         => 'Assinatura PHPay',
+    'back_url'       => 'https://exemplo.test/retorno',
+    'auto_recurring' => [
+        'frequency'          => 1,
+        'frequency_type'     => 'months',
+        'transaction_amount' => 100.00,
+        'currency_id'        => 'BRL',
+    ],
+]);
+
+/* com plano, a recorrência vem do plano */
+$phpay->setPayerEmail('comprador@exemplo.test')
+    ->setPlan('2c938084726fca480172750000000000')
+    ->create(['back_url' => 'https://exemplo.test/retorno']);
+```
+
 ## 📝 Roadmap
 
 - Definições de Arquitetura ✅
+- Tratamento de erros por exceção ✅
+- Testes com HTTP mockado ✅
+- CI no GitHub Actions ✅
 - Domínios ✅
 - Documentação ✍️
 - Site 🕛
@@ -143,8 +326,16 @@ $phpay->setCustomer($customer)->create([
   - Cobranças ✅
   - Clientes ✅
   - Webhook ✅
-  - Assinaturas ✍️
-  - Pix 🕥
+  - Pix (chaves e QR Code estático) ✅
+  - Assinaturas ✍️ (criação pronta; listar/atualizar/cancelar pendentes)
+
+  - Mercado Pago.
+
+  - Cobranças ✅
+  - Clientes ✅
+  - Assinaturas ✅
+  - Webhook — sem CRUD por API
+  - Pix ✅ (como forma de pagamento)
 
   - Efí.
 
@@ -152,10 +343,10 @@ $phpay->setCustomer($customer)->create([
   - Cobranças ✅
   - Clientes 🕥
   - Webhook 🕥
-  - Assinaturas ✍️
+  - Assinaturas 🕥
   - Pix 🕥
 
-- Lançamento v1.0.0 🚀
+- Lançamento v2.0.0 🚀 (contém breaking changes — veja a seção de tratamento de erros)
 
 ## 🌟 Contribuindo
 

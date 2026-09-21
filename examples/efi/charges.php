@@ -1,6 +1,8 @@
 <?php
 
 use PHPay\Efi\EfiGateway;
+use PHPay\Efi\Resources\Charge\Charge;
+use PHPay\Exceptions\PHPayException;
 use PHPay\PHPay;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -16,67 +18,53 @@ $charge = [
     'value'       => 100.00,
     'description' => 'Teste de fatura',
     'expire_at'   => date('Y-m-d', strtotime('+1 day')),
-    'message'     => 'Teste de mensagem',
 ];
 
 /**
- * @var EfiGateway $phpay
- */
-$phpay = new PHPay(new EfiGateway(CLIENT_ID, CLIENT_SECRET));
-
-$phpay
-    ->charge($charge)
-    ->setCustomer($customer)
-    ->create();
-
-/**
- * get all charges
+ * o gateway não faz chamada de rede aqui — a autorização acontece
+ * na primeira vez que um recurso precisa do token.
  *
- * @return array charges
+ * @var EfiGateway $gateway
  */
-$charges = $phpay
-    ->charge()
-    ->getAll();
+$gateway = new EfiGateway(CLIENT_ID, CLIENT_SECRET);
 
-/**
- * find charge by id
- *
- * @return array charge
- */
-$phpay
-    ->charge()
-    ->find($chargeId);
+$phpay = new PHPay($gateway);
 
-/**
- * confirm receipt
- *
- * @return array charge
- */
-$phpay
-    ->charge()
-    ->confirmReceipt($chargeId);
+try {
+    /**
+     * @var Charge $chargeResource
+     */
+    $chargeResource = $phpay->charge($charge);
 
-/**
- * cancel charge
- */
-$phpay
-    ->charge()
-    ->cancel($chargeId);
+    $chargeCreated = $chargeResource
+        ->setCustomer($customer)
+        ->create();
 
-/**
- * update due date
- */
-$phpay
-    ->charge()
-    ->updateDueDate($chargeId, $dueDate);
+    $chargeId = (string) $chargeCreated['data']['charge_id'];
 
-/**
- * update billet metadata
- * notification_url and custom_id
- */
-$phpay
-    ->charge()
-    ->updateMetadata($chargeId, [
-        'notification_url' => $notificationUrl,
-        'custom_id'        => $customId,
+    /* lista todas as cobranças */
+    $phpay->charge()->getAll();
+
+    /* busca por id */
+    $phpay->charge()->find($chargeId);
+
+    /* status da cobrança */
+    $phpay->charge()->getStatus($chargeId);
+
+    /* atualiza o vencimento */
+    $phpay->charge()->updateDueDate($chargeId, date('Y-m-d', strtotime('+10 days')));
+
+    /* atualiza metadados do boleto */
+    $phpay->charge()->updateMetadata($chargeId, [
+        'notification_url' => 'https://exemplo.test/webhook/efi',
+        'custom_id'        => '123456',
     ]);
+
+    /* confirma o recebimento */
+    $phpay->charge()->confirmReceipt($chargeId);
+
+    /* cancela */
+    $phpay->charge()->cancel($chargeId);
+} catch (PHPayException $exception) {
+    echo $exception->getMessage() . PHP_EOL;
+}

@@ -1,62 +1,61 @@
 <?php
 
-namespace PHPay\Gateways\Asaas\Resources\Subscription\Requests;
+namespace PHPay\Asaas\Resources\Subscription\Requests;
 
-use PHPay\Gateways\Asaas\Enums\{BillingTypeEnum};
+use PHPay\Asaas\Enums\BillingTypeEnum;
+use PHPay\Exceptions\ValidationException;
 
 class StoreSubscriptionAsaasRequest
 {
     /**
-     * validate customer and charge data
+     * validate subscription payload before sending it to the gateway.
      *
-     * @param array<mixed> $charge
+     * @param array<mixed> $subscription
      * @return void
+     * @throws ValidationException
      */
-    public static function validate(array $charge): void
+    public static function validate(array $subscription): void
     {
-        if (!isset($charge['customer']) && !is_string($charge['customer'])) {
-            /** @phpstan-ignore property.notFound */
-            throw new \InvalidArgumentException(self::messages()->charge->customer, 400);
+        $messages = self::messages();
+
+        if (!isset($subscription['customer'])
+            || !is_string($subscription['customer'])
+            || $subscription['customer'] === ''
+        ) {
+            throw ValidationException::make('Asaas', $messages->customer);
         }
 
-        if (!isset($charge['billingType'])) {
-            /** @phpstan-ignore property.notFound */
-            throw new \InvalidArgumentException(self::messages()->charge->billingType, 400);
+        if (!isset($subscription['billingType'])
+            || !is_string($subscription['billingType'])
+            || !BillingTypeEnum::tryFrom($subscription['billingType']) instanceof BillingTypeEnum
+        ) {
+            throw ValidationException::make('Asaas', $messages->billingType);
         }
 
-        if (!BillingTypeEnum::tryFrom($charge['billingType'])) {
-            /** @phpstan-ignore property.notFound */
-            throw new \InvalidArgumentException(self::messages()->charge->billingType, 400);
+        if (!isset($subscription['value'])
+            || !is_numeric($subscription['value'])
+            || (float) $subscription['value'] <= 0
+        ) {
+            throw ValidationException::make('Asaas', $messages->value);
         }
 
-        if (!isset($charge['value']) && !is_numeric($charge['value'])) {
-            /** @phpstan-ignore property.notFound */
-            throw new \InvalidArgumentException(self::messages()->charge->value, 400);
-        }
-
-        if (!isset($charge['nextDueDate']) && !is_string($charge['nextDueDate'])) {
-            /** @phpstan-ignore property.notFound */
-            throw new \InvalidArgumentException(self::messages()->charge->nextDueDate, 400);
+        if (!isset($subscription['nextDueDate']) || !is_string($subscription['nextDueDate'])) {
+            throw ValidationException::make('Asaas', $messages->nextDueDate);
         }
     }
 
     /**
      * messages for validation
      *
-     * @return object
+     * @return object{customer: string, billingType: string, value: string, nextDueDate: string}
      */
     public static function messages(): object
     {
         return (object) [
-            'customer' => (object) [
-                'id' => 'Asaas: O identificador do customer é obrigatório.',
-            ],
-            'charge' => (object) [
-                'customer'    => 'Asaas: O campo customer é obrigatório e deve ser do tipo string.',
-                'billingType' => 'Asaas: O campo billingType é obrigatório, e tem como disponível as seguintes opções: UNDEFINED, BOLETO, CREDIT_CARD, PIX',
-                'value'       => 'Asaas: O campo value é obrigatório e deve ser do tipo numérico.',
-                'nextDueDate' => 'Asaas: O campo nextDueDate é obrigatório e deve ser do tipo string.',
-            ],
+            'customer'    => 'O campo customer é obrigatório e deve ser do tipo string. Use setCustomer() ou setCustomerId() antes de criar a assinatura.',
+            'billingType' => 'O campo billingType é obrigatório, e tem como disponível as seguintes opções: UNDEFINED, BOLETO, CREDIT_CARD, PIX.',
+            'value'       => 'O campo value é obrigatório, deve ser numérico e maior que zero.',
+            'nextDueDate' => 'O campo nextDueDate é obrigatório e deve ser do tipo string.',
         ];
     }
 }
