@@ -4,11 +4,11 @@ namespace PHPay\AbacatePay\Resources\Charge;
 
 use GuzzleHttp\Client;
 use PHPay\AbacatePay\Enums\{BillingFrequencyEnum, BillingMethodEnum};
-use PHPay\AbacatePay\Requests\AbacatePayBillingRequest;
+use PHPay\AbacatePay\Requests\{AbacatePayBillingRequest, AbacatePayCustomerRequest};
 use PHPay\AbacatePay\Resources\Charge\Interface\ChargeInterface;
 use PHPay\AbacatePay\Traits\HasAbacatePayClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\Support\Money;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 /**
  * billings of the AbacatePay API.
@@ -86,8 +86,16 @@ class Charge implements ChargeInterface
      * @param array<mixed> $customer
      * @return ChargeInterface
      */
-    public function setCustomer(array $customer): ChargeInterface
+    public function setCustomer(CustomerData|array $customer): ChargeInterface
     {
+        if ($customer instanceof CustomerData) {
+            if ($customer->id !== null) {
+                return $this->setCustomerId($customer->id);
+            }
+
+            $customer = AbacatePayCustomerRequest::fromCustomer($customer);
+        }
+
         if (isset($customer['id']) && is_string($customer['id']) && $customer['id'] !== '') {
             return $this->setCustomerId($customer['id']);
         }

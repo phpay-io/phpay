@@ -6,6 +6,7 @@ use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsSubscriptions};
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
+use PHPay\Support\Customer as CustomerData;
 
 /**
  * the PagBank gateway offers charges, subscribers and subscriptions.
@@ -28,7 +29,7 @@ interface PagBankGatewayInterface extends
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer;
+    public function customer(CustomerData|array $customer = []): Customer;
 
     /**
      * get resource charge from gateway.

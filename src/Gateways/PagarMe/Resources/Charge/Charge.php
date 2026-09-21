@@ -5,10 +5,10 @@ namespace PHPay\PagarMe\Resources\Charge;
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\PagarMe\Enums\PaymentMethodEnum;
-use PHPay\PagarMe\Requests\PagarMeOrderRequest;
+use PHPay\PagarMe\Requests\{PagarMeCustomerRequest, PagarMeOrderRequest};
 use PHPay\PagarMe\Resources\Charge\Interface\ChargeInterface;
 use PHPay\PagarMe\Traits\HasPagarMeClient;
-use PHPay\Support\Money;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 /**
  * orders and charges of the Pagar.me Core API v5.
@@ -87,8 +87,16 @@ class Charge implements ChargeInterface
      * @param array<mixed> $customer
      * @return ChargeInterface
      */
-    public function setCustomer(array $customer): ChargeInterface
+    public function setCustomer(CustomerData|array $customer): ChargeInterface
     {
+        if ($customer instanceof CustomerData) {
+            if ($customer->id !== null) {
+                return $this->setCustomerId($customer->id);
+            }
+
+            $customer = PagarMeCustomerRequest::fromCustomer($customer);
+        }
+
         if (isset($customer['id']) && is_string($customer['id']) && $customer['id'] !== '') {
             return $this->setCustomerId($customer['id']);
         }

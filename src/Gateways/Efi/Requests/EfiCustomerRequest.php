@@ -3,6 +3,7 @@
 namespace PHPay\Efi\Requests;
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Customer;
 
 class EfiCustomerRequest
 {
@@ -43,4 +44,21 @@ class EfiCustomerRequest
             'cpfCnpjLength' => 'CPF/CNPJ deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ), somente números.',
         ];
     }
+
+    /**
+     * map the library's Customer onto the payload Efí expects.
+     *
+     * @param Customer $customer
+     * @return array<mixed>
+     */
+    public static function fromCustomer(Customer $customer): array
+    {
+        return array_filter([
+            'name'         => $customer->name,
+            'cpf_cnpj'     => $customer->document,
+            'email'        => $customer->email,
+            'phone_number' => $customer->phone,
+        ], fn ($value) => $value !== null) + $customer->extra();
+    }
+
 }

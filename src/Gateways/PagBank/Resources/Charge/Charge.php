@@ -4,10 +4,10 @@ namespace PHPay\PagBank\Resources\Charge;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\PagBank\Requests\PagBankOrderRequest;
+use PHPay\PagBank\Requests\{PagBankCustomerRequest, PagBankOrderRequest};
 use PHPay\PagBank\Resources\Charge\Interface\ChargeInterface;
 use PHPay\PagBank\Traits\HasPagBankClient;
-use PHPay\Support\Money;
+use PHPay\Support\{Customer, Money};
 
 /**
  * orders and charges of the PagBank Orders API.
@@ -69,8 +69,12 @@ class Charge implements ChargeInterface
      * @param array<mixed> $customer
      * @return ChargeInterface
      */
-    public function setCustomer(array $customer): ChargeInterface
+    public function setCustomer(Customer|array $customer): ChargeInterface
     {
+        if ($customer instanceof Customer) {
+            $customer = PagBankCustomerRequest::fromCustomer($customer);
+        }
+
         $this->order['customer'] = $customer;
 
         return $this;

@@ -4,9 +4,10 @@ namespace PHPay\PagBank\Resources\Subscription;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\PagBank\Requests\PagBankSubscriptionRequest;
+use PHPay\PagBank\Requests\{PagBankCustomerRequest, PagBankSubscriptionRequest};
 use PHPay\PagBank\Resources\Subscription\Interface\SubscriptionInterface;
 use PHPay\PagBank\Traits\HasPagBankClient;
+use PHPay\Support\Customer;
 
 /**
  * plans and subscriptions of the PagBank subscriptions API.
@@ -87,8 +88,16 @@ class Subscription implements SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface
+    public function setCustomer(Customer|array $customer): SubscriptionInterface
     {
+        if ($customer instanceof Customer) {
+            if ($customer->id !== null) {
+                return $this->setCustomerId($customer->id);
+            }
+
+            $customer = PagBankCustomerRequest::fromCustomer($customer);
+        }
+
         $this->subscription['customer'] = $customer;
 
         return $this;

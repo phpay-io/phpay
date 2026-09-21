@@ -2,7 +2,7 @@
 
 namespace PHPay\AbacatePay\Resources\Charge\Interface;
 
-use PHPay\Support\Money;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 interface ChargeInterface
 {
@@ -28,7 +28,7 @@ interface ChargeInterface
      * @param array<mixed> $customer
      * @return ChargeInterface
      */
-    public function setCustomer(array $customer): ChargeInterface;
+    public function setCustomer(CustomerData|array $customer): ChargeInterface;
 
     /**
      * set the products being charged

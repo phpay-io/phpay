@@ -3,7 +3,7 @@
 namespace PHPay\Cielo\Resources\Subscription\Interface;
 
 use PHPay\Cielo\Enums\RecurrentIntervalEnum;
-use PHPay\Support\Money;
+use PHPay\Support\{Customer, Money};
 
 interface SubscriptionInterface
 {
@@ -21,7 +21,7 @@ interface SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface;
+    public function setCustomer(Customer|array $customer): SubscriptionInterface;
 
     /**
      * set the credit card the recurrence charges

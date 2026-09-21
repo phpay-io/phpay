@@ -4,9 +4,11 @@ namespace PHPay\MercadoPago;
 
 use GuzzleHttp\Client;
 use PHPay\MercadoPago\Interface\MercadoPagoGatewayInterface;
+use PHPay\MercadoPago\Requests\MercadoPagoCustomerRequest;
 use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
+use PHPay\Support\Customer as CustomerData;
 
 class MercadoPagoGateway implements MercadoPagoGatewayInterface
 {
@@ -57,8 +59,12 @@ class MercadoPagoGateway implements MercadoPagoGatewayInterface
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer
+    public function customer(CustomerData|array $customer = []): Customer
     {
+        if ($customer instanceof CustomerData) {
+            $customer = MercadoPagoCustomerRequest::fromCustomer($customer);
+        }
+
         return new Customer($this->accessToken, $customer, $this->client);
     }
 

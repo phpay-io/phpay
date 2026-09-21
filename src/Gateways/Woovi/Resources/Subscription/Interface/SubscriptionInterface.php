@@ -2,7 +2,7 @@
 
 namespace PHPay\Woovi\Resources\Subscription\Interface;
 
-use PHPay\Support\Money;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 interface SubscriptionInterface
 {
@@ -12,7 +12,7 @@ interface SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface;
+    public function setCustomer(CustomerData|array $customer): SubscriptionInterface;
 
     /**
      * set the day of the month the charge is generated

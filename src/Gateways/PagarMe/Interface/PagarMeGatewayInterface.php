@@ -7,6 +7,7 @@ use PHPay\PagarMe\Resources\Charge\Charge;
 use PHPay\PagarMe\Resources\Customer\Customer;
 use PHPay\PagarMe\Resources\Subscription\Subscription;
 use PHPay\PagarMe\Resources\WebhookDelivery\WebhookDelivery;
+use PHPay\Support\Customer as CustomerData;
 
 /**
  * the Pagar.me gateway offers customers, charges and subscriptions.
@@ -29,7 +30,7 @@ interface PagarMeGatewayInterface extends
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer;
+    public function customer(CustomerData|array $customer = []): Customer;
 
     /**
      * get resource charge from gateway.

@@ -6,6 +6,7 @@ use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsSubscriptions};
 use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
+use PHPay\Support\Customer as CustomerData;
 
 /**
  * the Mercado Pago gateway offers customers, charges and subscriptions.
@@ -28,7 +29,7 @@ interface MercadoPagoGatewayInterface extends
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer;
+    public function customer(CustomerData|array $customer = []): Customer;
 
     /**
      * get resource charge from gateway.

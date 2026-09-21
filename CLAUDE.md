@@ -135,6 +135,25 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   `PHPay\Efi\`, `PHPay\MercadoPago\` → `src/Gateways/<Gateway>/`. Gateway novo
   precisa de um root novo no `composer.json` — não introduza `PHPay\Gateways\...`.
 
+## Cliente
+
+Use **`PHPay\Support\Customer`**. O mesmo campo tem seis grafias entre os gateways
+(`cpfCnpj`, `tax_id`, `document`, `taxId`, `taxID`, `cpf_cnpj`), e o VO é a forma única.
+
+- `Customer::make()` limpa pontuação de documento e telefone; o construtor não.
+- **O mapeamento mora na classe `*CustomerRequest` de cada gateway**, em
+  `fromCustomer(Customer): array` — ela já detém o conhecimento do schema daquele
+  gateway, então validação e mapeamento ficam juntos. Gateway novo com cliente deve
+  ter o mesmo método.
+- Todo `setCustomer()` e `customer()` aceita `Customer|array`. Array continua
+  funcionando; não remova esse caminho sem major.
+- Lógica derivada mora no VO, não nos gateways: `isIndividual()`, `documentType()`,
+  `firstName()`/`lastName()`, `phoneParts()`. Se um gateway novo precisar de outra
+  derivação, acrescente lá em vez de calcular no mapper.
+- `withExtra()` é para campo específico de um gateway. **Nenhum campo obrigatório
+  precisa dele hoje** — se um gateway novo precisar, é sinal de que o VO está
+  faltando algo.
+
 ## Valores monetários
 
 Use **`PHPay\Support\Money`**. Os gateways discordam da unidade — Asaas e Mercado

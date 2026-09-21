@@ -4,9 +4,10 @@ namespace PHPay\PagarMe\Resources\Subscription;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\PagarMe\Requests\PagarMeSubscriptionRequest;
+use PHPay\PagarMe\Requests\{PagarMeCustomerRequest, PagarMeSubscriptionRequest};
 use PHPay\PagarMe\Resources\Subscription\Interface\SubscriptionInterface;
 use PHPay\PagarMe\Traits\HasPagarMeClient;
+use PHPay\Support\Customer as CustomerData;
 
 /**
  * plans and subscriptions of the Pagar.me Core API v5.
@@ -83,8 +84,16 @@ class Subscription implements SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface
+    public function setCustomer(CustomerData|array $customer): SubscriptionInterface
     {
+        if ($customer instanceof CustomerData) {
+            if ($customer->id !== null) {
+                return $this->setCustomerId($customer->id);
+            }
+
+            $customer = PagarMeCustomerRequest::fromCustomer($customer);
+        }
+
         if (isset($customer['id']) && is_string($customer['id']) && $customer['id'] !== '') {
             return $this->setCustomerId($customer['id']);
         }

@@ -3,6 +3,7 @@
 namespace PHPay\Woovi\Interface;
 
 use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
+use PHPay\Support\Customer as CustomerData;
 use PHPay\Woovi\Resources\Charge\Charge;
 use PHPay\Woovi\Resources\Customer\Customer;
 use PHPay\Woovi\Resources\Pix\Pix;
@@ -29,7 +30,7 @@ interface WooviGatewayInterface extends
      * @param array<mixed> $customer
      * @return Customer
      */
-    public function customer(array $customer = []): Customer;
+    public function customer(CustomerData|array $customer = []): Customer;
 
     /**
      * get resource charge from gateway.

@@ -2,6 +2,8 @@
 
 namespace PHPay\PagarMe\Resources\Subscription\Interface;
 
+use PHPay\Support\Customer as CustomerData;
+
 interface SubscriptionInterface
 {
     /**
@@ -26,7 +28,7 @@ interface SubscriptionInterface
      * @param array<mixed> $customer
      * @return SubscriptionInterface
      */
-    public function setCustomer(array $customer): SubscriptionInterface;
+    public function setCustomer(CustomerData|array $customer): SubscriptionInterface;
 
     /**
      * set list filter

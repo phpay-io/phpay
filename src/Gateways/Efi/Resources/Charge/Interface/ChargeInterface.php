@@ -3,7 +3,7 @@
 namespace PHPay\Efi\Resources\Charge\Interface;
 
 use PHPay\Efi\Resources\Charge\Charge;
-use PHPay\Support\Money;
+use PHPay\Support\{Customer, Money};
 
 interface ChargeInterface
 {
@@ -36,7 +36,7 @@ interface ChargeInterface
      * @param array<mixed> $customer
      * @return Charge
      */
-    public function setCustomer(array $customer): Charge;
+    public function setCustomer(Customer|array $customer): Charge;
 
     /**
      * set query params

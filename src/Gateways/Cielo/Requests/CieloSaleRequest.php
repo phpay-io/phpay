@@ -4,6 +4,7 @@ namespace PHPay\Cielo\Requests;
 
 use PHPay\Cielo\Enums\PaymentTypeEnum;
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Customer;
 
 class CieloSaleRequest
 {
@@ -71,4 +72,23 @@ class CieloSaleRequest
             'amount'          => 'O campo Payment.Amount é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. A Cielo não aceita valor decimal: R$ 157,00 é 15700.',
         ];
     }
+
+    /**
+     * map the library's Customer onto the payload Cielo expects.
+     *
+     * Cielo is the only gateway that capitalises the keys.
+     *
+     * @param Customer $customer
+     * @return array<mixed>
+     */
+    public static function fromCustomer(Customer $customer): array
+    {
+        return array_filter([
+            'Name'         => $customer->name,
+            'Email'        => $customer->email,
+            'Identity'     => $customer->document,
+            'IdentityType' => $customer->documentType(),
+        ], fn ($value) => $value !== null) + $customer->extra();
+    }
+
 }

@@ -4,6 +4,7 @@ namespace PHPay\PagarMe\Requests;
 
 use PHPay\Exceptions\ValidationException;
 use PHPay\PagarMe\Enums\CustomerTypeEnum;
+use PHPay\Support\Customer;
 
 class PagarMeCustomerRequest
 {
@@ -58,4 +59,28 @@ class PagarMeCustomerRequest
             'type'     => 'O campo type aceita apenas: individual, company.',
         ];
     }
+
+    /**
+     * map the library's Customer onto the payload Pagar.me expects.
+     *
+     * Pagar.me needs `type`, which Customer derives from the document length.
+     *
+     * @param Customer $customer
+     * @return array<mixed>
+     */
+    public static function fromCustomer(Customer $customer): array
+    {
+        $payload = array_filter([
+            'name'     => $customer->name,
+            'email'    => $customer->email,
+            'document' => $customer->document,
+        ], fn ($value) => $value !== null);
+
+        if ($customer->documentType() !== null) {
+            $payload['type'] = $customer->isCompany() ? 'company' : 'individual';
+        }
+
+        return $payload + $customer->extra();
+    }
+
 }

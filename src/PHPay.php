@@ -4,6 +4,7 @@ namespace PHPay;
 
 use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
 use PHPay\Exceptions\NotImplementedException;
+use PHPay\Support\Customer as CustomerData;
 
 /**
  * entry point of the library.
@@ -78,7 +79,7 @@ class PHPay implements GatewayInterface
      * @return object
      * @throws NotImplementedException
      */
-    public function customer(array $customer = []): object
+    public function customer(CustomerData|array $customer = []): object
     {
         $gateway = $this->gateway;
 

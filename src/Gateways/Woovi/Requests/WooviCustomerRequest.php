@@ -3,6 +3,7 @@
 namespace PHPay\Woovi\Requests;
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Customer;
 
 class WooviCustomerRequest
 {
@@ -54,4 +55,21 @@ class WooviCustomerRequest
             'identificador' => 'O cliente precisa de ao menos um identificador: email, taxID ou phone.',
         ];
     }
+
+    /**
+     * map the library's Customer onto the payload Woovi expects.
+     *
+     * @param Customer $customer
+     * @return array<mixed>
+     */
+    public static function fromCustomer(Customer $customer): array
+    {
+        return array_filter([
+            'name'  => $customer->name,
+            'email' => $customer->email,
+            'taxID' => $customer->document,
+            'phone' => $customer->phone,
+        ], fn ($value) => $value !== null) + $customer->extra();
+    }
+
 }

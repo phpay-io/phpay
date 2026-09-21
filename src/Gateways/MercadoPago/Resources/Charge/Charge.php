@@ -4,10 +4,10 @@ namespace PHPay\MercadoPago\Resources\Charge;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\MercadoPago\Requests\MercadoPagoChargeRequest;
+use PHPay\MercadoPago\Requests\{MercadoPagoChargeRequest, MercadoPagoCustomerRequest};
 use PHPay\MercadoPago\Resources\Charge\Interface\ChargeInterface;
 use PHPay\MercadoPago\Traits\HasMercadoPagoClient;
-use PHPay\Support\Money;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 class Charge implements ChargeInterface
 {
@@ -87,8 +87,12 @@ class Charge implements ChargeInterface
      * @param array<mixed> $payer
      * @return ChargeInterface
      */
-    public function setPayer(array $payer): ChargeInterface
+    public function setPayer(CustomerData|array $payer): ChargeInterface
     {
+        if ($payer instanceof CustomerData) {
+            $payer = MercadoPagoCustomerRequest::fromCustomer($payer);
+        }
+
         $this->charge['payer'] = $payer;
 
         return $this;

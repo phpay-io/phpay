@@ -4,8 +4,8 @@ namespace PHPay\Woovi\Resources\Charge;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\Support\Money;
-use PHPay\Woovi\Requests\WooviChargeRequest;
+use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Woovi\Requests\{WooviChargeRequest, WooviCustomerRequest};
 use PHPay\Woovi\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Woovi\Traits\HasWooviClient;
 
@@ -88,8 +88,12 @@ class Charge implements ChargeInterface
      * @param array<mixed> $customer
      * @return ChargeInterface
      */
-    public function setCustomer(array $customer): ChargeInterface
+    public function setCustomer(CustomerData|array $customer): ChargeInterface
     {
+        if ($customer instanceof CustomerData) {
+            $customer = WooviCustomerRequest::fromCustomer($customer);
+        }
+
         $this->charge['customer'] = $customer;
 
         return $this;
