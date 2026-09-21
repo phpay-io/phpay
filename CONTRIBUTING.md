@@ -111,6 +111,21 @@ composer lint        # corrige o estilo automaticamente
 Nenhum teste pode acessar a rede: os recursos aceitam um `GuzzleHttp\Client` injetado,
 e a suíte usa o helper `mockClient()` de `tests/Pest.php` para responder com dados fixos.
 
+## 📜 Licença e CLA
+
+O PHPay é distribuído sob a [Business Source License 1.1](./LICENSE.md) a
+partir da versão 2.0.0 — *source-available*, com uso em produção liberado e uma
+única restrição: não revender o PHPay como produto concorrente. As versões
+1.0.x permanecem sob MIT.
+
+Contribuições enviadas a partir de 2026-09-20 estão sujeitas ao
+[Contributor License Agreement](./CLA.md). Você **mantém a titularidade** do
+seu código; o que o CLA concede é o direito de sublicenciá-lo junto com o
+projeto, para que a conversão automática para MIT na Change Date seja possível
+sem precisar localizar cada contribuidor.
+
+O aceite é registrado marcando a caixa no template de pull request.
+
 ## ✉️ Entre em contato
 
 Caso tenha dúvidas ou precise de ajuda, sinta-se à vontade para abrir uma issue ou entrar em contato com a equipe de mantenedores.
