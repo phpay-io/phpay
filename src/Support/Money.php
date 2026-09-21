@@ -98,6 +98,19 @@ final class Money
     }
 
     /**
+     * the amount in reais as a decimal string with a dot: "1234.56".
+     *
+     * the shape the BACEN Pix standard expects in `valor.original`. built with
+     * integer arithmetic, so no float ever gets between the cents and the text.
+     *
+     * @return string
+     */
+    public function toDecimal(): string
+    {
+        return intdiv($this->cents, 100) . '.' . str_pad((string) ($this->cents % 100), 2, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * multiply by a whole number of units — a line of N identical products.
      *
      * @param int $times

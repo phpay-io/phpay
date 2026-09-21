@@ -98,3 +98,13 @@ it('impede o erro que motivou o value object', function () {
     expect($valor->toCentavos())->toBe(10050)
         ->and($valor->toReais())->toBe(100.50);
 })->group('support');
+
+it('formata em decimal com ponto, como o padrão Pix do BACEN', function (int $centavos, string $decimal) {
+    expect(Money::centavos($centavos)->toDecimal())->toBe($decimal);
+})->with([
+    [12345, '123.45'],
+    [100, '1.00'],
+    [7, '0.07'],
+    [0, '0.00'],
+    [123456789, '1234567.89'],
+])->group('support');
