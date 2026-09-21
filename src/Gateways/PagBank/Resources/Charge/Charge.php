@@ -7,6 +7,7 @@ use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\PagBank\Requests\PagBankOrderRequest;
 use PHPay\PagBank\Resources\Charge\Interface\ChargeInterface;
 use PHPay\PagBank\Traits\HasPagBankClient;
+use PHPay\Support\Money;
 
 /**
  * orders and charges of the PagBank Orders API.
@@ -96,7 +97,7 @@ class Charge implements ChargeInterface
      * @param int $quantity
      * @return ChargeInterface
      */
-    public function addItem(string $name, int $unitAmount, int $quantity = 1): ChargeInterface
+    public function addItem(string $name, Money|int $unitAmount, int $quantity = 1): ChargeInterface
     {
         $items = $this->order['items'] ?? [];
 
@@ -108,7 +109,7 @@ class Charge implements ChargeInterface
             'reference_id' => uniqid('item_'),
             'name'         => $name,
             'quantity'     => $quantity,
-            'unit_amount'  => $unitAmount,
+            'unit_amount'  => Money::asCentavos($unitAmount),
         ];
 
         $this->order['items'] = $items;
@@ -141,9 +142,9 @@ class Charge implements ChargeInterface
      * @param string|null $expiresAt defaults to 23:59:59 of the next day
      * @return ChargeInterface
      */
-    public function setQrCode(int $amount, ?string $expiresAt = null): ChargeInterface
+    public function setQrCode(Money|int $amount, ?string $expiresAt = null): ChargeInterface
     {
-        $qrCode = ['amount' => ['value' => $amount]];
+        $qrCode = ['amount' => ['value' => Money::asCentavos($amount)]];
 
         if ($expiresAt !== null) {
             $qrCode['expiration_date'] = $expiresAt;
@@ -265,11 +266,11 @@ class Charge implements ChargeInterface
      * @throws ApiException
      * @see https://developer.pagbank.com.br/reference/cancelar-pagamento
      */
-    public function refund(string $id, ?int $amount = null): array
+    public function refund(string $id, Money|int|null $amount = null): array
     {
         return $this->post(
             "charges/{$id}/cancel",
-            $amount === null ? [] : ['amount' => ['value' => $amount]]
+            $amount === null ? [] : ['amount' => ['value' => Money::asCentavos($amount)]]
         );
     }
 }

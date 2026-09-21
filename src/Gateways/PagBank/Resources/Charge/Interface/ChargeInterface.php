@@ -2,6 +2,8 @@
 
 namespace PHPay\PagBank\Resources\Charge\Interface;
 
+use PHPay\Support\Money;
+
 interface ChargeInterface
 {
     /**
@@ -36,7 +38,7 @@ interface ChargeInterface
      * @param int $quantity
      * @return ChargeInterface
      */
-    public function addItem(string $name, int $unitAmount, int $quantity = 1): ChargeInterface;
+    public function addItem(string $name, Money|int $unitAmount, int $quantity = 1): ChargeInterface;
 
     /**
      * set the charges of the order (card or boleto)
@@ -53,7 +55,7 @@ interface ChargeInterface
      * @param string|null $expiresAt
      * @return ChargeInterface
      */
-    public function setQrCode(int $amount, ?string $expiresAt = null): ChargeInterface;
+    public function setQrCode(Money|int $amount, ?string $expiresAt = null): ChargeInterface;
 
     /**
      * set the urls notified about order events
@@ -109,5 +111,5 @@ interface ChargeInterface
      * @param int|null $amount amount in cents
      * @return array<mixed>
      */
-    public function refund(string $id, ?int $amount = null): array;
+    public function refund(string $id, Money|int|null $amount = null): array;
 }
