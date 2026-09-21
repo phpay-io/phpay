@@ -4,6 +4,7 @@ namespace PHPay\Http;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\ApiException;
+use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
 /**
@@ -103,6 +104,20 @@ trait HasHttpClient
     }
 
     /**
+     * get a file: the raw body, for endpoints that answer with a PDF or an
+     * image instead of JSON.
+     *
+     * @param string $endpoint
+     * @param array<mixed> $filters
+     * @return string
+     * @throws ApiException
+     */
+    protected function download(string $endpoint, array $filters = []): string
+    {
+        return $this->send('GET', $endpoint, ['query' => $filters])->getBody()->getContents();
+    }
+
+    /**
      * perform the request and decode the response body.
      *
      * @param string $method
@@ -119,18 +134,7 @@ trait HasHttpClient
         array $options = [],
         ?Client $client = null
     ): array {
-        try {
-            $response = ($client ?? $this->client)->request($method, $endpoint, $options);
-        } catch (Throwable $exception) {
-            throw ApiException::fromThrowable(
-                $exception,
-                $this->gatewayName(),
-                $method,
-                $endpoint
-            );
-        }
-
-        $content = $response->getBody()->getContents();
+        $content = $this->send($method, $endpoint, $options, $client)->getBody()->getContents();
 
         if ($content === '') {
             return [];
@@ -139,5 +143,33 @@ trait HasHttpClient
         $decoded = json_decode($content, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * perform the request, turning every failure into an ApiException.
+     *
+     * @param string $method
+     * @param string $endpoint
+     * @param array<mixed> $options
+     * @param Client|null $client
+     * @return ResponseInterface
+     * @throws ApiException
+     */
+    private function send(
+        string $method,
+        string $endpoint,
+        array $options = [],
+        ?Client $client = null
+    ): ResponseInterface {
+        try {
+            return ($client ?? $this->client)->request($method, $endpoint, $options);
+        } catch (Throwable $exception) {
+            throw ApiException::fromThrowable(
+                $exception,
+                $this->gatewayName(),
+                $method,
+                $endpoint
+            );
+        }
     }
 }
