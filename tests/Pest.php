@@ -3,6 +3,7 @@
 use GuzzleHttp\{Client, HandlerStack, Middleware};
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Response;
+use PHPay\Efi\EfiGateway;
 
 /*
 |--------------------------------------------------------------------------
@@ -169,4 +170,51 @@ function abacateClient(array $responses, array &$history = []): Client
 function wooviClient(array $responses, array &$history = []): Client
 {
     return mockClient($responses, $history, 'https://api.woovi-sandbox.com/');
+}
+
+/**
+ * mock client already pointed at the Efí Pix API sandbox host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function efiPixClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://pix-h.api.efipay.com.br/');
+}
+
+/**
+ * token response of the Efí Pix API.
+ *
+ * @param string $token
+ * @param int $expiresIn
+ * @return Response
+ */
+function efiPixToken(string $token = 'pix_tok', int $expiresIn = 3600): Response
+{
+    return jsonResponse([
+        'access_token' => $token,
+        'token_type'   => 'Bearer',
+        'expires_in'   => $expiresIn,
+        'scope'        => 'cob.write cob.read pix.write pix.read webhook.write webhook.read',
+    ]);
+}
+
+/**
+ * Efí gateway whose Pix API answers with a token first, then the responses.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return EfiGateway
+ */
+function efiPixGateway(array $responses, array &$history = []): EfiGateway
+{
+    return new EfiGateway(
+        'client-id',
+        'client-secret',
+        true,
+        mockClient([]),
+        pixClient: efiPixClient([efiPixToken(), ...$responses], $history),
+    );
 }

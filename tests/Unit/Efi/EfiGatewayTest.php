@@ -73,30 +73,24 @@ it('devolve o recurso de cobrança', function () {
         ->toBeInstanceOf(Charge::class);
 })->group('efi');
 
-it('declara apenas a capacidade de cobranças', function () {
+it('declara as capacidades das duas APIs, menos clientes', function () {
     $gateway = new EfiGateway('id', 'secret', true, mockClient([]));
 
-    expect(Capability::of($gateway))->toBe([Capability::CHARGES]);
+    expect(Capability::of($gateway))->toBe([
+        Capability::CHARGES,
+        Capability::WEBHOOKS,
+        Capability::PIX_KEYS,
+        Capability::SUBSCRIPTIONS,
+    ]);
 })->group('efi');
 
-it('avisa pela facade quais capacidades a efí oferece', function (Capability $capability) {
+it('avisa pela facade que a efí não tem clientes', function () {
     $phpay = PHPay::gateway(new EfiGateway('id', 'secret', true, mockClient([])));
 
-    expect($phpay->supports($capability))->toBeFalse();
-
-    expect(fn () => match ($capability) {
-        Capability::CUSTOMERS     => $phpay->customer(),
-        Capability::WEBHOOKS      => $phpay->webhook(),
-        Capability::PIX_KEYS      => $phpay->pix(),
-        Capability::SUBSCRIPTIONS => $phpay->subscription(),
-        default                   => null,
-    })->toThrow(NotImplementedException::class, 'Capacidades disponíveis: cobranças.');
-})->with([
-    Capability::CUSTOMERS,
-    Capability::WEBHOOKS,
-    Capability::PIX_KEYS,
-    Capability::SUBSCRIPTIONS,
-])->group('efi');
+    expect($phpay->supports(Capability::CUSTOMERS))->toBeFalse()
+        ->and(fn () => $phpay->customer())
+        ->toThrow(NotImplementedException::class, 'Capacidades disponíveis: cobranças, webhooks, chaves Pix, assinaturas.');
+})->group('efi');
 
 it('monta o payload de pessoa física na cobrança', function () {
     $history = [];

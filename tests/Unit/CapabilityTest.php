@@ -32,9 +32,14 @@ it('responde supports() e capabilities() pela facade', function () {
 
     expect($asaas->supports(Capability::PIX_KEYS))->toBeTrue()
         ->and($asaas->capabilities())->toHaveCount(5)
-        ->and($efi->supports(Capability::PIX_KEYS))->toBeFalse()
-        ->and($efi->supports(Capability::CHARGES))->toBeTrue()
-        ->and($efi->capabilities())->toBe([Capability::CHARGES]);
+        ->and($efi->supports(Capability::PIX_KEYS))->toBeTrue()
+        ->and($efi->supports(Capability::CUSTOMERS))->toBeFalse()
+        ->and($efi->capabilities())->toBe([
+            Capability::CHARGES,
+            Capability::WEBHOOKS,
+            Capability::PIX_KEYS,
+            Capability::SUBSCRIPTIONS,
+        ]);
 })->group('phpay');
 
 it('expõe o nome do gateway através da facade', function () {
@@ -46,12 +51,11 @@ it('nomeia o gateway e as capacidades disponíveis ao recusar um recurso', funct
     $phpay = PHPay::gateway(new EfiGateway('id', 'secret', true, mockClient([])));
 
     try {
-        $phpay->pix();
+        $phpay->customer();
         $this->fail('NotImplementedException não foi lançada');
     } catch (NotImplementedException $exception) {
         expect($exception->getMessage())
-            ->toContain('Efí')
-            ->toContain('chaves Pix')
-            ->toContain('cobranças');
+            ->toContain('Efí não suporta clientes')
+            ->toContain('cobranças, webhooks, chaves Pix, assinaturas');
     }
 })->group('phpay');
