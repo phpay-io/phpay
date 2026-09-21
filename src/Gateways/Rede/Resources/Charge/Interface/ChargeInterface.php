@@ -3,6 +3,7 @@
 namespace PHPay\Rede\Resources\Charge\Interface;
 
 use PHPay\Rede\Enums\TransactionKindEnum;
+use PHPay\Support\Money;
 
 interface ChargeInterface
 {
@@ -50,7 +51,7 @@ interface ChargeInterface
      * @return ChargeInterface
      */
     public function setPayment(
-        int $amount,
+        Money|int $amount,
         TransactionKindEnum $kind = TransactionKindEnum::CREDIT,
         int $installments = 1,
         bool $capture = true
@@ -102,7 +103,7 @@ interface ChargeInterface
      * @param int|null $amount amount in cents
      * @return array<mixed>
      */
-    public function capture(string $tid, ?int $amount = null): array;
+    public function capture(string $tid, Money|int|null $amount = null): array;
 
     /**
      * refund a transaction, fully or partially
@@ -111,5 +112,5 @@ interface ChargeInterface
      * @param int|null $amount amount in cents
      * @return array<mixed>
      */
-    public function refund(string $tid, ?int $amount = null): array;
+    public function refund(string $tid, Money|int|null $amount = null): array;
 }

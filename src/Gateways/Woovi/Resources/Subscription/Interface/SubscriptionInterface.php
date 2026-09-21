@@ -2,6 +2,8 @@
 
 namespace PHPay\Woovi\Resources\Subscription\Interface;
 
+use PHPay\Support\Money;
+
 interface SubscriptionInterface
 {
     /**
@@ -26,7 +28,7 @@ interface SubscriptionInterface
      * @param int $value amount in cents
      * @return array<mixed>
      */
-    public function create(int $value): array;
+    public function create(Money|int $value): array;
 
     /**
      * find a subscription by id

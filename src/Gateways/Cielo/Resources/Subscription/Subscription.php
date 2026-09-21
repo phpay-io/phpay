@@ -8,6 +8,7 @@ use PHPay\Cielo\Requests\CieloRecurrentRequest;
 use PHPay\Cielo\Resources\Subscription\Interface\SubscriptionInterface;
 use PHPay\Cielo\Traits\HasCieloClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 
 /**
  * recurrences of the Cielo E-commerce API 3.0.
@@ -135,7 +136,7 @@ class Subscription implements SubscriptionInterface
      * @return array<mixed>
      * @throws ValidationException|ApiException
      */
-    public function create(int $amount): array
+    public function create(Money|int $amount): array
     {
         $this->sale['MerchantOrderId'] = $this->sale['MerchantOrderId'] ?? uniqid('phpay_');
 
@@ -146,7 +147,7 @@ class Subscription implements SubscriptionInterface
 
         $this->sale['Payment'] = [
             'Type'             => PaymentTypeEnum::CREDIT_CARD->value,
-            'Amount'           => $amount,
+            'Amount'           => Money::asCentavos($amount),
             'Installments'     => 1,
             'CreditCard'       => $this->card,
             'RecurrentPayment' => $recurrent,
@@ -201,11 +202,13 @@ class Subscription implements SubscriptionInterface
      * @return array<mixed>
      * @throws ValidationException|ApiException
      */
-    public function updateAmount(string $recurrentPaymentId, int $amount): array
+    public function updateAmount(string $recurrentPaymentId, Money|int $amount): array
     {
-        CieloRecurrentRequest::validateAmount($amount);
+        $centavos = Money::asCentavos($amount);
 
-        return $this->putValue("1/RecurrentPayment/{$recurrentPaymentId}/Amount", $amount);
+        CieloRecurrentRequest::validateAmount($centavos);
+
+        return $this->putValue("1/RecurrentPayment/{$recurrentPaymentId}/Amount", $centavos);
     }
 
     /**

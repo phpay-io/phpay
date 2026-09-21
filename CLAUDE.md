@@ -135,6 +135,23 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   `PHPay\Efi\`, `PHPay\MercadoPago\` → `src/Gateways/<Gateway>/`. Gateway novo
   precisa de um root novo no `composer.json` — não introduza `PHPay\Gateways\...`.
 
+## Valores monetários
+
+Use **`PHPay\Support\Money`**. Os gateways discordam da unidade — Asaas e Mercado
+Pago querem reais decimais, os outros sete querem centavos inteiros — e errar não
+quebra a integração, cobra o valor errado.
+
+- Fábricas: `Money::reais()` (aceita float, int e string em notação brasileira) e
+  `Money::centavos()`. Acessores na instância: `toReais()` e `toCentavos()`.
+- **Dentro dos gateways**, normalize com `Money::asReais()` ou `Money::asCentavos()`,
+  que aceitam `Money` ou número cru. Nunca leia o valor direto do parâmetro.
+- Todo método que recebe valor aceita `Money|int` (ou `Money|int|float` nos de reais).
+  Número cru é lido na unidade que aquele gateway sempre esperou — compatibilidade.
+- Onde o valor vive dentro do array de payload (Asaas, Mercado Pago, Efí), existe
+  `setAmount()`. Gateway novo com valor em array deve ter o mesmo.
+- `Money::reais()` **recusa mais de duas casas decimais** de propósito. Não "conserte"
+  isso com arredondamento: é o que impede erro de um centavo na conciliação.
+
 ## Particularidades por gateway
 
 - **Asaas** — `$sandbox` troca a base URL. Único com chaves Pix, porque é PSP.

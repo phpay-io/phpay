@@ -2,6 +2,8 @@
 
 namespace PHPay\Cielo\Resources\Charge\Interface;
 
+use PHPay\Support\Money;
+
 interface ChargeInterface
 {
     /**
@@ -34,7 +36,7 @@ interface ChargeInterface
      * @param int $amount amount in cents
      * @return ChargeInterface
      */
-    public function setPix(int $amount): ChargeInterface;
+    public function setPix(Money|int $amount): ChargeInterface;
 
     /**
      * pay with boleto
@@ -43,7 +45,7 @@ interface ChargeInterface
      * @param array<mixed> $options
      * @return ChargeInterface
      */
-    public function setBoleto(int $amount, array $options = []): ChargeInterface;
+    public function setBoleto(Money|int $amount, array $options = []): ChargeInterface;
 
     /**
      * pay with a credit card
@@ -55,7 +57,7 @@ interface ChargeInterface
      * @return ChargeInterface
      */
     public function setCreditCard(
-        int $amount,
+        Money|int $amount,
         array $card,
         int $installments = 1,
         bool $capture = false
@@ -115,7 +117,7 @@ interface ChargeInterface
      * @param int|null $amount amount in cents
      * @return array<mixed>
      */
-    public function capture(string $paymentId, ?int $amount = null): array;
+    public function capture(string $paymentId, Money|int|null $amount = null): array;
 
     /**
      * cancel or refund a sale
@@ -124,5 +126,5 @@ interface ChargeInterface
      * @param int|null $amount amount in cents
      * @return array<mixed>
      */
-    public function cancel(string $paymentId, ?int $amount = null): array;
+    public function cancel(string $paymentId, Money|int|null $amount = null): array;
 }

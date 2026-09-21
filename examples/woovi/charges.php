@@ -2,6 +2,7 @@
 
 use PHPay\Exceptions\PHPayException;
 use PHPay\PHPay;
+use PHPay\Support\Money;
 use PHPay\Woovi\Enums\PixKeyTypeEnum;
 use PHPay\Woovi\WooviGateway;
 
@@ -27,7 +28,7 @@ try {
     $cobranca = $phpay->charge()
         ->setCorrelationId('pedido-' . time())
         ->setCustomer(['name' => NAME, 'email' => EMAIL])
-        ->create(10050);   /* R$ 100,50 */
+        ->create(Money::reais(100.50));   /* R$ 100,50 */
 
     echo $phpay->charge()->getPixCode($cobranca) . PHP_EOL;
 
@@ -47,7 +48,7 @@ try {
 
     /* QR Code estático: sem valor, o pagador escolhe quanto pagar */
     $phpay->pix()->staticQrCode('Caixa 1');
-    $phpay->pix()->staticQrCode('Mensalidade', 4990, 'mensalidade-2026');
+    $phpay->pix()->staticQrCode('Mensalidade', Money::reais(49.90), 'mensalidade-2026');
 
     /* Webhooks com CRUD por API — também só aqui e no Asaas */
     $phpay->webhook([
@@ -61,7 +62,7 @@ try {
     $phpay->subscription()
         ->setCustomer(['name' => NAME, 'email' => EMAIL])
         ->setDayGenerateCharge(10)
-        ->create(4990);
+        ->create(Money::reais(49.90));
 
     /* Cliente avulso */
     $phpay->customer(['name' => NAME, 'email' => EMAIL])->create();

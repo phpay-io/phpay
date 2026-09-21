@@ -3,9 +3,18 @@
 namespace PHPay\Efi\Resources\Charge\Interface;
 
 use PHPay\Efi\Resources\Charge\Charge;
+use PHPay\Support\Money;
 
 interface ChargeInterface
 {
+    /**
+     * set the amount of the charge, in cents
+     *
+     * @param Money|int $amount
+     * @return ChargeInterface
+     */
+    public function setAmount(Money|int $amount): ChargeInterface;
+
     /**
      * get all charges
      *

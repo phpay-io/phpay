@@ -4,6 +4,7 @@ namespace PHPay\Woovi\Resources\Subscription;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 use PHPay\Woovi\Requests\WooviSubscriptionRequest;
 use PHPay\Woovi\Resources\Subscription\Interface\SubscriptionInterface;
 use PHPay\Woovi\Traits\HasWooviClient;
@@ -77,9 +78,9 @@ class Subscription implements SubscriptionInterface
      * @return array<mixed>
      * @throws ValidationException|ApiException
      */
-    public function create(int $value): array
+    public function create(Money|int $value): array
     {
-        $this->subscription['value'] = $value;
+        $this->subscription['value'] = Money::asCentavos($value);
 
         WooviSubscriptionRequest::validate($this->subscription);
 

@@ -8,6 +8,7 @@ use PHPay\PagarMe\Enums\PaymentMethodEnum;
 use PHPay\PagarMe\Requests\PagarMeOrderRequest;
 use PHPay\PagarMe\Resources\Charge\Interface\ChargeInterface;
 use PHPay\PagarMe\Traits\HasPagarMeClient;
+use PHPay\Support\Money;
 
 /**
  * orders and charges of the Pagar.me Core API v5.
@@ -120,7 +121,7 @@ class Charge implements ChargeInterface
      * @param int $quantity
      * @return ChargeInterface
      */
-    public function addItem(string $description, int $amount, int $quantity = 1): ChargeInterface
+    public function addItem(string $description, Money|int $amount, int $quantity = 1): ChargeInterface
     {
         $items = $this->order['items'] ?? [];
 
@@ -131,7 +132,7 @@ class Charge implements ChargeInterface
         $items[] = [
             'code'        => uniqid('item_'),
             'description' => $description,
-            'amount'      => $amount,
+            'amount'      => Money::asCentavos($amount),
             'quantity'    => $quantity,
         ];
 
@@ -318,11 +319,11 @@ class Charge implements ChargeInterface
      * @return array<mixed>
      * @throws ApiException
      */
-    public function capture(string $id, ?int $amount = null): array
+    public function capture(string $id, Money|int|null $amount = null): array
     {
         return $this->post(
             "charges/{$id}/capture",
-            $amount === null ? [] : ['amount' => $amount]
+            $amount === null ? [] : ['amount' => Money::asCentavos($amount)]
         );
     }
 
@@ -337,12 +338,12 @@ class Charge implements ChargeInterface
      * @return array<mixed>
      * @throws ApiException
      */
-    public function cancel(string $id, ?int $amount = null): array
+    public function cancel(string $id, Money|int|null $amount = null): array
     {
         return $this->request(
             'DELETE',
             "charges/{$id}",
-            ['json' => $amount === null ? [] : ['amount' => $amount]]
+            ['json' => $amount === null ? [] : ['amount' => Money::asCentavos($amount)]]
         );
     }
 }

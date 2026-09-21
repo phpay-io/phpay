@@ -4,6 +4,7 @@ namespace PHPay\Woovi\Resources\Pix;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 use PHPay\Woovi\Enums\PixKeyTypeEnum;
 use PHPay\Woovi\Requests\WooviPixKeyRequest;
 use PHPay\Woovi\Resources\Pix\Interface\PixInterface;
@@ -104,12 +105,12 @@ class Pix implements PixInterface
      * @return array<mixed>
      * @throws ValidationException|ApiException
      */
-    public function staticQrCode(string $name, ?int $value = null, ?string $correlationId = null): array
+    public function staticQrCode(string $name, Money|int|null $value = null, ?string $correlationId = null): array
     {
         $payload = ['name' => $name];
 
         if ($value !== null) {
-            $payload['value'] = $value;
+            $payload['value'] = Money::asCentavos($value);
         }
 
         if ($correlationId !== null) {

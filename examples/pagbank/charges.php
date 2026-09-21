@@ -5,6 +5,7 @@ use PHPay\PagBank\Enums\PaymentMethodEnum;
 use PHPay\PagBank\PagBankGateway;
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PHPay;
+use PHPay\Support\Money;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -31,8 +32,8 @@ try {
     */
     $pedido = $phpay
         ->setCustomer($customer)
-        ->addItem('Assinatura PHPay', 10050)
-        ->setQrCode(10050)
+        ->addItem('Assinatura PHPay', Money::reais(100.50))
+        ->setQrCode(Money::reais(100.50))
         /* sem CRUD de webhook na API: a notificação é por pedido */
         ->setNotificationUrls(['https://exemplo.test/webhook/pagbank'])
         ->create();
@@ -52,7 +53,7 @@ try {
     $comCartao = PHPay::gateway(new PagBankGateway(TOKEN_PAGBANK_SANDBOX))
         ->charge()
         ->setCustomer($customer)
-        ->addItem('Camiseta', 5990, 2)
+        ->addItem('Camiseta', Money::reais(59.90), 2)
         ->setCharges([[
             'reference_id'   => 'cobranca-1',
             'description'    => 'Camiseta',

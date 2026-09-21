@@ -8,6 +8,7 @@ use PHPay\Asaas\Resources\Charge\Interface\ChargeInterface;
 use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Traits\HasAsaasClient;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Support\Money;
 
 class Charge implements ChargeInterface
 {
@@ -55,6 +56,22 @@ class Charge implements ChargeInterface
     public function setCharge(array $charge): ChargeInterface
     {
         $this->charge = $charge;
+
+        return $this;
+    }
+
+    /**
+     * set the amount of the charge.
+     *
+     * Asaas takes reais as a decimal — pass a Money and the unit is handled
+     * for you, or a raw number, which is read as reais.
+     *
+     * @param Money|int|float $amount
+     * @return ChargeInterface
+     */
+    public function setAmount(Money|int|float $amount): ChargeInterface
+    {
+        $this->charge['value'] = Money::asReais($amount);
 
         return $this;
     }

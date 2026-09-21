@@ -4,6 +4,7 @@ use PHPay\Exceptions\PHPayException;
 use PHPay\PagarMe\PagarMeGateway;
 use PHPay\PagarMe\Resources\Charge\Charge;
 use PHPay\PHPay;
+use PHPay\Support\Money;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -33,7 +34,7 @@ try {
     */
     $pedido = $phpay
         ->setCustomer($customer)
-        ->addItem('Assinatura PHPay', 10050)
+        ->addItem('Assinatura PHPay', Money::reais(100.50))
         ->setPix(1800)
         ->create();
 
@@ -56,7 +57,7 @@ try {
     /* boleto, reaproveitando um cliente que já existe */
     PHPay::gateway($gateway)->charge()
         ->setCustomerId((string) $pedido['customer']['id'])
-        ->addItem('Camiseta', 5990, 2)
+        ->addItem('Camiseta', Money::reais(59.90), 2)
         ->setBoleto(date('Y-m-d', strtotime('+5 days')), ['Não receber após o vencimento'])
         ->create();
 

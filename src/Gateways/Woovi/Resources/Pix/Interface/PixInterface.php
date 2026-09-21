@@ -2,6 +2,7 @@
 
 namespace PHPay\Woovi\Resources\Pix\Interface;
 
+use PHPay\Support\Money;
 use PHPay\Woovi\Enums\PixKeyTypeEnum;
 
 interface PixInterface
@@ -38,7 +39,7 @@ interface PixInterface
      * @param string|null $correlationId
      * @return array<mixed>
      */
-    public function staticQrCode(string $name, ?int $value = null, ?string $correlationId = null): array;
+    public function staticQrCode(string $name, Money|int|null $value = null, ?string $correlationId = null): array;
 
     /**
      * list static QR Codes

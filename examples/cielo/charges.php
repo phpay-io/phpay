@@ -5,6 +5,7 @@ use PHPay\Cielo\Enums\SaleStatusEnum;
 use PHPay\Cielo\Resources\Charge\Charge;
 use PHPay\Exceptions\PHPayException;
 use PHPay\PHPay;
+use PHPay\Support\Money;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -25,7 +26,7 @@ try {
     $venda = $phpay
         ->setOrderId('pedido-' . time())
         ->setCustomer(['Name' => NAME])
-        ->setPix(15700)
+        ->setPix(Money::reais(157.00))
         /* use uma chave estável do seu domínio para tornar o retry seguro */
         ->setRequestId('pedido-123456')
         ->create();
@@ -52,7 +53,7 @@ try {
     $comCartao = PHPay::gateway(new CieloGateway(CIELO_MERCHANT_ID, CIELO_MERCHANT_KEY))
         ->charge()
         ->setCustomer(['Name' => NAME])
-        ->setCreditCard(15700, [
+        ->setCreditCard(Money::reais(157.00), [
             'CardNumber'     => '0000000000000001',
             'Holder'         => 'Mario Lucas',
             'ExpirationDate' => '12/2030',

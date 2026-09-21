@@ -2,6 +2,8 @@
 
 namespace PHPay\Woovi\Resources\Charge\Interface;
 
+use PHPay\Support\Money;
+
 interface ChargeInterface
 {
     /**
@@ -42,7 +44,7 @@ interface ChargeInterface
      * @param int $value amount in cents
      * @return array<mixed>
      */
-    public function create(int $value): array;
+    public function create(Money|int $value): array;
 
     /**
      * find a charge by correlationID or by the gateway id
