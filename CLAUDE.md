@@ -145,6 +145,12 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   inteiro em centavos** — os validadores recusam decimal, porque mandar `10.50` onde
   se espera `1050` cobra onze centavos. Pix é `qr_codes` do pedido (um só por pedido,
   copia-e-cola em `qr_codes[0].text`), não uma `charge`.
+- **Woovi/OpenPix** — **segundo gateway com as cinco capacidades**, junto com o Asaas.
+  AppID vai **cru** no `Authorization`, sem esquema. Sandbox tem **domínio próprio**
+  (`api.woovi-sandbox.com`). O webhook fica em `api/openpix/v1/` enquanto os demais
+  recursos ficam em `api/v1/` — herança da fusão das marcas, não erro. Todo objeto é
+  endereçável pelo `correlationID` (id do sistema de quem integra), então `find()` e
+  `destroy()` aceitam os dois ids. Valores em centavos.
 - **AbacatePay** — host único e **sem prefixo de chave**: não dá para derivar o
   ambiente da credencial, então **não existe `isSandbox()`** — inventar convenção aqui
   seria mentira. A resposta da cobrança traz `devMode`, e é isso que `isDevMode()` lê.
