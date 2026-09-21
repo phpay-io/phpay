@@ -75,13 +75,13 @@ Trocar de gateway é trocar a linha do construtor.
 | --- | :---: | :---: | :---: | :---: | :---: |
 | **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Efí** | — | ✅ | ✅ | ✅ | ✅ |
 | **Mercado Pago** | ✅ | ✅ | ✅ | — | — |
 | **PagBank** | ✅ | ✅ | ✅ | — | — |
 | **Pagar.me** | ✅ | ✅ | ✅ | — | — |
 | **AbacatePay** | ✅ | ✅ | — | — | — |
 | **Cielo** | — | ✅ | ✅ | — | — |
 | **Rede** | — | ✅ | — | — | — |
-| **Efí** | — | ✅ | — | — | — |
 
 As interfaces correspondentes são `SupportsCustomers`, `SupportsCharges`,
 `SupportsSubscriptions`, `SupportsWebhooks` e `SupportsPixKeys`.
@@ -167,9 +167,9 @@ interface que o gateway implementa **se, e só se,** oferecer:
 ```php
 use PHPay\Contracts\Capability;
 
-$phpay = PHPay::gateway(new EfiGateway(CLIENT_ID, CLIENT_SECRET));
+$phpay = PHPay::gateway(new RedeGateway(REDE_PV, REDE_TOKEN));
 
-$phpay->name();                                 // 'Efí'
+$phpay->name();                                 // 'Rede'
 $phpay->supports(Capability::SUBSCRIPTIONS);    // false
 $phpay->capabilities();                          // [Capability::CHARGES]
 ```
@@ -179,7 +179,7 @@ oferece:
 
 ```php
 $phpay->pix();
-// NotImplementedException: Efí não suporta chaves Pix.
+// NotImplementedException: Rede não suporta chaves Pix.
 //                          Capacidades disponíveis: cobranças.
 ```
 
@@ -187,10 +187,10 @@ Se você segurar o **gateway concreto** em vez da facade, o erro sobe para tempo
 de análise — o PHPStan acusa que o método não existe naquele tipo:
 
 ```php
-$efi = new EfiGateway(CLIENT_ID, CLIENT_SECRET);
+$rede = new RedeGateway(REDE_PV, REDE_TOKEN);
 
-$efi->charge();   // ✅
-$efi->pix();      // ❌ o método não existe nesse gateway
+$rede->charge();   // ✅
+$rede->pix();      // ❌ o método não existe nesse gateway
 ```
 
 Para injeção de dependência, tipe a capacidade em vez do gateway:
@@ -244,7 +244,7 @@ que cada um faz em vez de inventar um padrão:
 | **Asaas** | `$sandbox` no construtor — troca a URL |
 | **PagBank** | `$sandbox` no construtor — troca a URL |
 | **Cielo** | `$sandbox` no construtor — troca **as duas** URLs |
-| **Efí** | `$sandbox` no construtor — troca a URL |
+| **Efí** | `$sandbox` no construtor — troca **as duas** URLs (Cobranças e Pix) |
 | **Rede** | `$sandbox` no construtor — troca **as duas** URLs e o caminho do token |
 | **Mercado Pago** | Prefixo do token (`TEST-`); host único, sem `$sandbox` |
 | **Pagar.me** | Prefixo da chave (`sk_test_`); host único, sem `$sandbox` |
@@ -356,6 +356,11 @@ Continua funcionando, e cada gateway lê na unidade que sempre esperou:
 
 Nos que usam centavos, o PHPay recusa decimal na validação. Mas é justamente
 essa tabela que o `Money` torna desnecessária — **prefira o value object**.
+
+A exceção é a [API Pix do Efí](#api-pix), que **não aceita número cru, só
+`Money`**. Ela quer reais (`"100.50"`) enquanto a API de Cobranças do mesmo
+gateway quer centavos, e um número solto ali seria a ambiguidade que o value
+object existe para eliminar.
 
 ---
 
@@ -689,7 +694,7 @@ $phpay->deactivate($id);
 $phpay->reactivate($id);
 ### Rede
 
-Adquirente, e a forma mais estreita da biblioteca junto com o Efí: **só
+Adquirente, e a forma mais estreita da biblioteca: **só
 cobranças**. Não há recurso de cliente nem assinatura gerenciável — a
 transação tem um campo `subscription`, mas é uma flag para a adquirente, não
 algo que você liste ou cancele.
@@ -848,21 +853,148 @@ $phpay->webhook()->getAll();
 
 ### Efí
 
-Só cobranças, por enquanto. O gateway **não faz chamada de rede no construtor**
-— a autorização acontece na primeira vez que o token é necessário, e uma vez só.
+**Duas APIs com as mesmas credenciais**, e é isso que dá ao Efí quatro das
+cinco capacidades:
+
+| API | Host | Autenticação | Recursos |
+| --- | --- | --- | --- |
+| **Cobranças** | `cobrancas.api.efipay.com.br` | OAuth2 | `charge()` — boleto |
+| **Pix** | `pix.api.efipay.com.br` | OAuth2 **+ mTLS** | `pix()`, `webhook()`, `subscription()`, `pixCharge()` |
+
+Clientes ficam de fora: nenhuma das duas APIs mantém cadastro de cliente.
+
+O gateway **não faz chamada de rede no construtor**. Cada API tem o seu token,
+pedido na primeira vez que é necessário e **renovado sozinho quando expira** —
+um gateway vivo num worker de fila não passa a tomar 401.
+
+#### Cobranças (boleto)
 
 ```php
 use PHPay\Efi\EfiGateway;
+use PHPay\Support\{Customer, Money};
 
 $gateway = new EfiGateway(CLIENT_ID, CLIENT_SECRET);
 
 $cobranca = PHPay::gateway($gateway)->charge([
-    'value'       => 10050,   // R$ 100,50 — o Efí usa centavos
     'description' => 'Assinatura PHPay',
     'expire_at'   => date('Y-m-d', strtotime('+3 days')),
 ])
-    ->setCustomer(['name' => 'Mário Lucas', 'cpf_cnpj' => '12345678901'])
+    ->setAmount(Money::reais('100,50'))
+    ->setCustomer(new Customer('Mário Lucas', '12345678909'))
     ->create();
+```
+
+#### API Pix
+
+**Toda requisição da API Pix é por mTLS**, inclusive a do token. Passe o
+certificado `.p12` (ou `.pem`) da aplicação, que você baixa no painel do Efí:
+
+```php
+$gateway = new EfiGateway(CLIENT_ID, CLIENT_SECRET, certificate: '/caminho/certificado.p12');
+```
+
+Com senha, ou vindo de uma variável de ambiente — o comum em container e
+serverless:
+
+```php
+use PHPay\Http\Certificate;
+
+new EfiGateway(CLIENT_ID, CLIENT_SECRET, certificate: new Certificate('/caminho/certificado.p12', 'senha'));
+
+new EfiGateway(CLIENT_ID, CLIENT_SECRET, certificate: Certificate::fromBase64(getenv('EFI_CERTIFICATE_BASE64')));
+```
+
+> O `fromBase64()` grava o certificado num arquivo temporário com permissão
+> `0600`, apagado quando o processo termina. A senha nunca aparece num
+> `var_dump()`.
+
+Certificado de homologação só funciona com `$sandbox = true`, e o de produção,
+com `false`. Sem certificado, a API de Cobranças continua funcionando e a API
+Pix responde com uma `ValidationException` clara, não com um erro de TLS.
+
+**Cobrança Pix** — imediata por padrão, com vencimento quando há `setDueDate()`:
+
+```php
+$cobranca = $gateway->pixCharge()
+    ->setAmount(Money::reais('123,45'))
+    ->setKey('sua-chave-pix')                       // chave da conta Efí que recebe
+    ->setCustomer(new Customer('Mário Lucas', '12345678909'))
+    ->setDescription('Pedido 1234')
+    ->setExpiration(3600)                           // segundos
+    ->create();
+
+$qr = $gateway->pixCharge()->qrCode($cobranca['loc']['id']);
+$qr['qrcode'];         // copia e cola
+$qr['imagemQrcode'];   // PNG em base64
+
+/* com vencimento: multa, juros e desconto como num boleto */
+$gateway->pixCharge()
+    ->setAmount(Money::reais(250))
+    ->setKey('sua-chave-pix')
+    ->setCustomer(new Customer('Sixtec LTDA', '12345678000199'))
+    ->setDueDate('2026-12-31', validityAfterDue: 15)
+    ->create();
+
+/* devolução, total ou parcial */
+$gateway->pixCharge()->refund($endToEndId, Money::reais(10));
+```
+
+`pixCharge()` é um **extra do gateway concreto**, como o `webhookDeliveries()`
+do Pagar.me: o `charge()` da facade já é o boleto, e mudar o retorno dele
+quebraria quem está na v2.
+
+**Chaves Pix** — só chaves aleatórias (EVP) são gerenciáveis pela API:
+
+```php
+$chave = PHPay::gateway($gateway)->pix()->createKey()['chave'];
+
+PHPay::gateway($gateway)->pix()->getAll();
+PHPay::gateway($gateway)->pix()->destroy($chave);
+```
+
+**Webhooks** — um por chave Pix, endereçado pela própria chave:
+
+```php
+PHPay::gateway($gateway)
+    ->webhook(['chave' => $chave, 'webhookUrl' => 'https://loja.com/webhook/pix'])
+    ->create();
+```
+
+> O mTLS vale **nos dois sentidos**: por padrão o Efí só entrega para um
+> servidor que valide o certificado dele. Se o seu não consegue (hospedagem
+> compartilhada, balanceador que termina o TLS), `skipMtlsChecking()` desliga a
+> checagem — e aí valide a origem de outro jeito, como um `hmac` na URL.
+
+**Pix Automático** — o pagador autoriza uma vez no app do banco, e cada ciclo
+é debitado sem nova aprovação:
+
+```php
+use PHPay\Efi\Enums\{AccountTypeEnum, PeriodicityEnum};
+
+$assinaturas = PHPay::gateway($gateway)->subscription();
+
+/* 1. o location que o QR Code de autorização aponta */
+$location = $assinaturas->createLocation();
+
+/* 2. a recorrência: o que o pagador autoriza */
+$recorrencia = $assinaturas
+    ->setCustomer(new Customer('Mário Lucas', '12345678909'))
+    ->setContract('CONTRATO-2026-001')              // até 35 caracteres
+    ->setDescription('Plano mensal')
+    ->setAmount(Money::reais('49,90'))               // ou setMinimumAmount(), para valor variável
+    ->setPeriodicity(PeriodicityEnum::MONTHLY, '2026-10-01')
+    ->allowRetries()                                 // até 3 tentativas em 7 dias
+    ->setLocation($location['id'])
+    ->create();
+
+$assinaturas->find($recorrencia['idRec'])['dadosQR'];   // copia e cola para o pagador autorizar
+
+/* 3. a cobrança de cada ciclo */
+$assinaturas
+    ->setReceiver('12345-6', AccountTypeEnum::CHECKING, '0001')
+    ->createCharge($recorrencia['idRec'], Money::reais('49,90'), '2026-11-05');
+
+$assinaturas->cancel($recorrencia['idRec']);
 ```
 
 ---
@@ -932,7 +1064,7 @@ Dois pontos merecem auditoria de quem vem da v1:
 | **AbacatePay** | ✅ | ✅ | — | — | ✅ |
 | **Cielo** | ✅ | — | ✅ | — | ✅ |
 | **Rede** | ✅ | — | — | — | 🕥 |
-| **Efí** | ✅ | 🕥 | 🕥 | 🕥 | 🕥 |
+| **Efí** | ✅ | — | ✅ | ✅ | ✅ |
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
 
