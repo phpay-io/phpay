@@ -14,8 +14,12 @@ $customer = [
     'cpf_cnpj' => CPF_CNPJ,
 ];
 
+/*
+| Atenção: o Efí trabalha com valores em CENTAVOS, como inteiro.
+| R$ 100,50 é 10050 — passar 100.50 cobraria um real.
+*/
 $charge = [
-    'value'       => 100.00,
+    'value'       => 10050,
     'description' => 'Teste de fatura',
     'expire_at'   => date('Y-m-d', strtotime('+1 day')),
 ];
