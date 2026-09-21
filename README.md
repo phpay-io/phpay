@@ -31,6 +31,7 @@
   - [Mercado Pago](#mercado-pago)
   - [PagBank](#pagbank)
   - [Pagar.me](#pagarme)
+  - [Rede](#rede)
   - [Efí](#efí)
 - [Exemplos executáveis](#exemplos-executáveis)
 - [Migrando da v1](#migrando-da-v1)
@@ -67,13 +68,13 @@ Trocar de gateway é trocar a linha do construtor.
 
 ## Gateways suportados
 
-| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Efí |
-| --- | --- | :---: | :---: | :---: | :---: | :---: |
-| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — |
-| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | — |
-| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — |
-| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — |
+| Capacidade | Interface | Asaas | Mercado Pago | PagBank | Pagar.me | Rede | Efí |
+| --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Clientes | `SupportsCustomers` | ✅ | ✅ | ✅ | ✅ | — | — |
+| Cobranças | `SupportsCharges` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Assinaturas | `SupportsSubscriptions` | ✅ | ✅ | ✅ | ✅ | — | — |
+| Webhooks | `SupportsWebhooks` | ✅ | — | — | — | — | — |
+| Chaves Pix | `SupportsPixKeys` | ✅ | — | — | — | — | — |
 
 Duas colunas merecem explicação, porque a ausência de ✅ **não** quer dizer que o
 gateway não aceita Pix ou não manda webhook:
@@ -233,6 +234,7 @@ que cada um faz em vez de inventar um padrão:
 | **Asaas** | `$sandbox` no construtor — troca a URL |
 | **PagBank** | `$sandbox` no construtor — troca a URL |
 | **Efí** | `$sandbox` no construtor — troca a URL |
+| **Rede** | `$sandbox` no construtor — troca **as duas** URLs e o caminho do token |
 | **Mercado Pago** | Prefixo do token (`TEST-`); host único, sem `$sandbox` |
 | **Pagar.me** | Prefixo da chave (`sk_test_`); host único, sem `$sandbox` |
 
@@ -257,6 +259,7 @@ em vez de falhar:
 | **Mercado Pago** | Reais (decimal) | `100.50` |
 | **PagBank** | Centavos (inteiro) | `10050` |
 | **Pagar.me** | Centavos (inteiro) | `10050` |
+| **Rede** | Centavos (inteiro) | `10050` |
 | **Efí** | Centavos (inteiro) | `10050` |
 
 Nos gateways que usam centavos, o PHPay **recusa valor decimal na validação**,
@@ -538,6 +541,56 @@ $gateway->webhookDeliveries()->resend($hookId);
 É assim que o modelo de capacidades abre espaço para o que só um gateway
 oferece: quem segura `PagarMeGateway` alcança, quem tipa uma capacidade não.
 
+### Rede
+
+Adquirente, e a forma mais estreita da biblioteca junto com o Efí: **só
+cobranças**. Não há recurso de cliente nem assinatura gerenciável — a
+transação tem um campo `subscription`, mas é uma flag para a adquirente, não
+algo que você liste ou cancele.
+
+A particularidade é a autenticação: **OAuth2 `client_credentials` num host
+separado do de API**, com o caminho do token diferente em cada ambiente. E o
+token **expira** — o PHPay renegocia sozinho quando isso acontece.
+
+```php
+use PHPay\Rede\Enums\TransactionKindEnum;
+use PHPay\Rede\RedeGateway;
+
+/* nenhuma chamada de rede aqui: o token é negociado no primeiro uso */
+$gateway = new RedeGateway(REDE_PV, REDE_TOKEN);
+
+$transacao = PHPay::gateway($gateway)->charge()
+    ->setReference('pedido-1')
+    ->setCard('5448280000000007', 'MARIO LUCAS', '12', '2030', '123')
+    ->setPayment(2099, TransactionKindEnum::CREDIT)   // R$ 20,99
+    ->setSoftDescriptor('PHPAY')
+    ->create();
+```
+
+Fluxo em duas etapas — autoriza agora, captura quando o pedido for separado:
+
+```php
+$phpay->setPayment(5000, capture: false)->create();
+
+$phpay->capture($tid);
+$phpay->refund($tid, 1000);   // estorna R$ 10,00
+```
+
+O código de retorno `"00"` significa aprovada:
+
+```php
+use PHPay\Rede\Enums\TransactionStatusEnum;
+
+TransactionStatusEnum::approved($phpay->getStatus($tid));
+```
+
+Num processo longo, dá para inspecionar ou descartar o token em mãos:
+
+```php
+$gateway->authorization()->hasValidToken();
+$gateway->authorization()->forget();
+```
+
 ### Efí
 
 Só cobranças, por enquanto. O gateway **não faz chamada de rede no construtor**
@@ -614,13 +667,13 @@ Dois pontos merecem auditoria de quem vem da v1:
 
 ### Cobertura por gateway
 
-| | Asaas | Mercado Pago | PagBank | Pagar.me | Efí |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Clientes | ✅ | ✅ | ✅ | ✅ | 🕥 |
-| Assinaturas | ✍️ | ✅ | ✅ | ✅ | 🕥 |
-| Webhooks | ✅ | — | — | leitura ✅ | 🕥 |
-| Pix | ✅ | ✅ | ✅ | ✅ | 🕥 |
+| | Asaas | Mercado Pago | PagBank | Pagar.me | Rede | Efí |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Cobranças | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Clientes | ✅ | ✅ | ✅ | ✅ | — | 🕥 |
+| Assinaturas | ✍️ | ✅ | ✅ | ✅ | — | 🕥 |
+| Webhooks | ✅ | — | — | leitura ✅ | — | 🕥 |
+| Pix | ✅ | ✅ | ✅ | ✅ | 🕥 | 🕥 |
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
 
