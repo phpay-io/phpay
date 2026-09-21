@@ -2,7 +2,7 @@
 
 namespace PHPay\Asaas\Resources\Subscription\Requests;
 
-use PHPay\Asaas\Enums\BillingTypeEnum;
+use PHPay\Asaas\Enums\{BillingTypeEnum, SubscriptionCycleEnum};
 use PHPay\Exceptions\ValidationException;
 
 class StoreSubscriptionAsaasRequest
@@ -42,12 +42,19 @@ class StoreSubscriptionAsaasRequest
         if (!isset($subscription['nextDueDate']) || !is_string($subscription['nextDueDate'])) {
             throw ValidationException::make('Asaas', $messages->nextDueDate);
         }
+
+        if (!isset($subscription['cycle'])
+            || !is_string($subscription['cycle'])
+            || !SubscriptionCycleEnum::tryFrom($subscription['cycle']) instanceof SubscriptionCycleEnum
+        ) {
+            throw ValidationException::make('Asaas', $messages->cycle);
+        }
     }
 
     /**
      * messages for validation
      *
-     * @return object{customer: string, billingType: string, value: string, nextDueDate: string}
+     * @return object{customer: string, billingType: string, value: string, nextDueDate: string, cycle: string}
      */
     public static function messages(): object
     {
@@ -56,6 +63,7 @@ class StoreSubscriptionAsaasRequest
             'billingType' => 'O campo billingType é obrigatório, e tem como disponível as seguintes opções: UNDEFINED, BOLETO, CREDIT_CARD, PIX.',
             'value'       => 'O campo value é obrigatório, deve ser numérico e maior que zero.',
             'nextDueDate' => 'O campo nextDueDate é obrigatório e deve ser do tipo string.',
+            'cycle'       => 'O campo cycle é obrigatório: use setCycle() com SubscriptionCycleEnum (WEEKLY, BIWEEKLY, MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUALLY ou YEARLY).',
         ];
     }
 }

@@ -28,7 +28,7 @@ it('reaproveita o cliente quando o array traz um id', function () {
 
     (new Subscription('token', true, $client))
         ->setCustomer(['id' => 'cus_abc'])
-        ->create(['billingType' => 'PIX', 'value' => 10, 'nextDueDate' => '2026-01-10']);
+        ->create(['billingType' => 'PIX', 'value' => 10, 'nextDueDate' => '2026-01-10', 'cycle' => 'MONTHLY']);
 
     expect($history)->toHaveCount(1)
         ->and(recordedBody($history)['customer'])->toBe('cus_abc');
@@ -39,7 +39,7 @@ it('exige um cliente antes de criar a assinatura', function () {
     $client  = mockClient([jsonResponse([])], $history);
 
     expect(fn () => (new Subscription('token', true, $client))
-        ->create(['billingType' => 'BOLETO', 'value' => 100, 'nextDueDate' => '2026-01-10']))
+        ->create(['billingType' => 'BOLETO', 'value' => 100, 'nextDueDate' => '2026-01-10', 'cycle' => 'MONTHLY']))
         ->toThrow(ValidationException::class, 'O campo customer é obrigatório');
 
     expect($history)->toBeEmpty();

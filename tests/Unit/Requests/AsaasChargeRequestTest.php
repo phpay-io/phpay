@@ -75,6 +75,7 @@ it('valida a assinatura do asaas', function () {
         'billingType' => 'BOLETO',
         'value'       => 100,
         'nextDueDate' => '2026-01-10',
+        'cycle'       => 'MONTHLY',
     ]))->not->toThrow(ValidationException::class);
 
     expect(fn () => StoreSubscriptionAsaasRequest::validate([
@@ -82,7 +83,16 @@ it('valida a assinatura do asaas', function () {
         'billingType' => 'BOLETO',
         'value'       => 100,
         'nextDueDate' => 20260110,
+        'cycle'       => 'MONTHLY',
     ]))->toThrow(ValidationException::class);
+
+    /* sem cycle o Asaas recusa — a validação barra antes */
+    expect(fn () => StoreSubscriptionAsaasRequest::validate([
+        'customer'    => 'cus_001',
+        'billingType' => 'BOLETO',
+        'value'       => 100,
+        'nextDueDate' => '2026-01-10',
+    ]))->toThrow(ValidationException::class, 'O campo cycle é obrigatório');
 })->group('asaas');
 
 it('prefixa toda mensagem de validação com o gateway', function () {
