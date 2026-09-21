@@ -7,7 +7,7 @@ Orientações para o Claude Code trabalhar neste repositório.
 PHPay (`phpay-io/phpay`) é uma **biblioteca PHP** (não uma aplicação) que padroniza a
 integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** (as cinco
 capacidades), **Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças,
-assinaturas), **Cielo** (cobranças e recorrência) e **Efí** (cobranças).
+assinaturas), **Cielo** (cobranças e recorrência), **Rede** e **Efí** (cobranças).
 
 Requisitos: PHP `^8.1` para consumir a lib; `^8.2` para rodar o ambiente de dev
 (Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`, `ext-json`,
@@ -144,6 +144,12 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   inteiro em centavos** — os validadores recusam decimal, porque mandar `10.50` onde
   se espera `1050` cobra onze centavos. Pix é `qr_codes` do pedido (um só por pedido,
   copia-e-cola em `qr_codes[0].text`), não uma `charge`.
+- **Rede** — **host de OAuth separado do host de API**, e o caminho do token muda por
+  ambiente (`oauth2/token` vs `redelabs/oauth2/token`) — está em `RedeEnvironment`,
+  fora do trait, para o gateway ler sem puxar os verbos HTTP. **O token expira**: é o
+  único gateway com ciclo de vida de credencial, tratado em `Resources/Authorization`
+  com margem de 30s antes do vencimento. O `Charge` pede um token a cada chamada e
+  injeta como Bearer por requisição, em vez de fixar no header do client.
 - **Cielo** — **dois hosts separados por tipo de operação**, não por domínio: escritas
   em `api.cieloecommerce...`, consultas em `apiquery.cieloecommerce...`. O **mesmo
   recurso** usa os dois, por isso `HasHttpClient::request()` aceita um client opcional

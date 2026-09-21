@@ -122,3 +122,27 @@ function cieloQueryClient(array $responses, array &$history = []): Client
 {
     return mockClient($responses, $history, 'https://apiquerysandbox.cieloecommerce.cielo.com.br/');
 }
+
+/**
+ * mock client already pointed at the Rede sandbox transactions host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function redeClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://sandbox-erede.useredecloud.com.br/v2/');
+}
+
+/**
+ * mock client already pointed at the Rede sandbox OAuth host.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function redeOauthClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://rl7-sandbox-api.useredecloud.com.br/');
+}
