@@ -316,7 +316,7 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   header, então o middleware não o vê.
 - `SupportsWebhookSignature` fica em cinco gateways: Asaas, PagBank, Mercado Pago,
   Woovi e AbacatePay. Efí (mTLS), Cielo, Rede e Pagar.me ficam fora, cada um pelo
-  seu motivo, e os motivos estão no README. O HMAC-SHA1 da Woovi é aceito, mas é
+  seu motivo, e os motivos estão em `docs/webhooks.md`. O HMAC-SHA1 da Woovi é aceito, mas é
   depreciado pela própria Woovi.
 - `SupportsWebhooks` e `SupportsPixKeys` só no Asaas, no Woovi e na Efí — os três são
   PSP. Mercado Pago, PagBank e Pagar.me registram endpoints por painel, e Pix neles é
