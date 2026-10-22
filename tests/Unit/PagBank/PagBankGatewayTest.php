@@ -8,13 +8,14 @@ use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
 use PHPay\PHPay;
 
-it('declara apenas clientes, cobranças e assinaturas', function () {
+it('declara clientes, cobranças, assinaturas e verificação de assinatura', function () {
     $gateway = new PagBankGateway('token', true, pagbankClient([]));
 
     expect(Capability::of($gateway))->toBe([
         Capability::CUSTOMERS,
         Capability::CHARGES,
         Capability::SUBSCRIPTIONS,
+        Capability::WEBHOOK_SIGNATURE,
     ]);
 })->group('pagbank');
 

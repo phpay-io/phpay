@@ -8,6 +8,7 @@ use PHPay\AbacatePay\Requests\AbacatePayCustomerRequest;
 use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\AbacatePay\Resources\Coupon\Coupon;
 use PHPay\AbacatePay\Resources\Customer\Customer;
+use PHPay\AbacatePay\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Http\MasksCredentials;
 use PHPay\Support\Customer as CustomerData;
 
@@ -79,5 +80,15 @@ class AbacatePayGateway implements AbacatePayGatewayInterface
     public function coupons(): Coupon
     {
         return new Coupon($this->token, $this->client);
+    }
+
+    /**
+     * webhook signature
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature
+    {
+        return new WebhookSignature();
     }
 }

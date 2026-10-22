@@ -2,7 +2,7 @@
 
 namespace PHPay;
 
-use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
+use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Exceptions\NotImplementedException;
 use PHPay\Support\Customer as CustomerData;
 
@@ -157,5 +157,22 @@ class PHPay implements GatewayInterface
         }
 
         return $gateway->subscription();
+    }
+
+    /**
+     * get resource webhook signature from gateway.
+     *
+     * @return object
+     * @throws NotImplementedException
+     */
+    public function webhookSignature(): object
+    {
+        $gateway = $this->gateway;
+
+        if (!$gateway instanceof SupportsWebhookSignature) {
+            throw NotImplementedException::forCapability($gateway, Capability::WEBHOOK_SIGNATURE);
+        }
+
+        return $gateway->webhookSignature();
     }
 }

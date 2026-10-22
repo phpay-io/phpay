@@ -9,6 +9,7 @@ use PHPay\MercadoPago\Requests\MercadoPagoCustomerRequest;
 use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
+use PHPay\MercadoPago\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Support\Customer as CustomerData;
 
 class MercadoPagoGateway implements MercadoPagoGatewayInterface
@@ -93,5 +94,15 @@ class MercadoPagoGateway implements MercadoPagoGatewayInterface
     public function subscription(): Subscription
     {
         return new Subscription($this->accessToken, $this->client);
+    }
+
+    /**
+     * webhook signature
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature
+    {
+        return new WebhookSignature();
     }
 }

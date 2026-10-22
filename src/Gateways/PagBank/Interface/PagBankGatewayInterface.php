@@ -2,10 +2,11 @@
 
 namespace PHPay\PagBank\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsSubscriptions};
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsSubscriptions, SupportsWebhookSignature};
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
+use PHPay\PagBank\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Support\Customer as CustomerData;
 
 /**
@@ -21,7 +22,8 @@ use PHPay\Support\Customer as CustomerData;
 interface PagBankGatewayInterface extends
     SupportsCustomers,
     SupportsCharges,
-    SupportsSubscriptions
+    SupportsSubscriptions,
+    SupportsWebhookSignature
 {
     /**
      * get resource customer from gateway.
@@ -44,4 +46,11 @@ interface PagBankGatewayInterface extends
      * @return Subscription
      */
     public function subscription(): Subscription;
+
+    /**
+     * get resource webhook signature from gateway.
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature;
 }

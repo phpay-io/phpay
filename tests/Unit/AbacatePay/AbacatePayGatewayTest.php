@@ -8,12 +8,13 @@ use PHPay\Contracts\Capability;
 use PHPay\Exceptions\NotImplementedException;
 use PHPay\PHPay;
 
-it('declara apenas clientes e cobranças', function () {
+it('declara clientes, cobranças e verificação de assinatura', function () {
     $gateway = new AbacatePayGateway('token', abacateClient([]));
 
     expect(Capability::of($gateway))->toBe([
         Capability::CUSTOMERS,
         Capability::CHARGES,
+        Capability::WEBHOOK_SIGNATURE,
     ]);
 })->group('abacatepay');
 

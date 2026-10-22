@@ -10,6 +10,7 @@ use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
+use PHPay\Asaas\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Http\MasksCredentials;
 use PHPay\Support\Customer as CustomerData;
 
@@ -99,5 +100,15 @@ class AsaasGateway implements AsaasGatewayInterface
     public function subscription(): Subscription
     {
         return new Subscription($this->token, $this->sandbox, $this->client);
+    }
+
+    /**
+     * webhook signature
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature
+    {
+        return new WebhookSignature();
     }
 }

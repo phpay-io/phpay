@@ -7,7 +7,8 @@ use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
+use PHPay\Asaas\Resources\WebhookSignature\WebhookSignature;
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Support\Customer as CustomerData;
 
 /**
@@ -18,7 +19,8 @@ interface AsaasGatewayInterface extends
     SupportsCharges,
     SupportsWebhooks,
     SupportsPixKeys,
-    SupportsSubscriptions
+    SupportsSubscriptions,
+    SupportsWebhookSignature
 {
     /**
      * get resource customer from gateway.
@@ -56,4 +58,11 @@ interface AsaasGatewayInterface extends
      * @return Pix
      */
     public function pix(): Pix;
+
+    /**
+     * get resource webhook signature from gateway.
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature;
 }

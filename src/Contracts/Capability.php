@@ -10,11 +10,12 @@ namespace PHPay\Contracts;
  */
 enum Capability: string
 {
-    case CUSTOMERS     = 'customers';
-    case CHARGES       = 'charges';
-    case WEBHOOKS      = 'webhooks';
-    case PIX_KEYS      = 'pix-keys';
-    case SUBSCRIPTIONS = 'subscriptions';
+    case CUSTOMERS         = 'customers';
+    case CHARGES           = 'charges';
+    case WEBHOOKS          = 'webhooks';
+    case PIX_KEYS          = 'pix-keys';
+    case SUBSCRIPTIONS     = 'subscriptions';
+    case WEBHOOK_SIGNATURE = 'webhook-signature';
 
     /**
      * interface that declares this capability.
@@ -24,11 +25,12 @@ enum Capability: string
     public function contract(): string
     {
         return match ($this) {
-            self::CUSTOMERS     => SupportsCustomers::class,
-            self::CHARGES       => SupportsCharges::class,
-            self::WEBHOOKS      => SupportsWebhooks::class,
-            self::PIX_KEYS      => SupportsPixKeys::class,
-            self::SUBSCRIPTIONS => SupportsSubscriptions::class,
+            self::CUSTOMERS         => SupportsCustomers::class,
+            self::CHARGES           => SupportsCharges::class,
+            self::WEBHOOKS          => SupportsWebhooks::class,
+            self::PIX_KEYS          => SupportsPixKeys::class,
+            self::SUBSCRIPTIONS     => SupportsSubscriptions::class,
+            self::WEBHOOK_SIGNATURE => SupportsWebhookSignature::class,
         };
     }
 
@@ -40,11 +42,12 @@ enum Capability: string
     public function label(): string
     {
         return match ($this) {
-            self::CUSTOMERS     => 'clientes',
-            self::CHARGES       => 'cobranças',
-            self::WEBHOOKS      => 'webhooks',
-            self::PIX_KEYS      => 'chaves Pix',
-            self::SUBSCRIPTIONS => 'assinaturas',
+            self::CUSTOMERS         => 'clientes',
+            self::CHARGES           => 'cobranças',
+            self::WEBHOOKS          => 'webhooks',
+            self::PIX_KEYS          => 'chaves Pix',
+            self::SUBSCRIPTIONS     => 'assinaturas',
+            self::WEBHOOK_SIGNATURE => 'assinatura de webhook',
         };
     }
 

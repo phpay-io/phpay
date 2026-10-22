@@ -29,22 +29,24 @@ it('declara apenas cobranças', function () {
     expect(Capability::of(redeGateway()))->toBe([Capability::CHARGES]);
 })->group('rede');
 
-it('recusa as outras quatro capacidades pela facade', function (Capability $capability) {
+it('recusa as outras cinco capacidades pela facade', function (Capability $capability) {
     $phpay = PHPay::gateway(redeGateway());
 
     expect($phpay->supports($capability))->toBeFalse();
 
     expect(fn () => match ($capability) {
-        Capability::CUSTOMERS     => $phpay->customer(),
-        Capability::WEBHOOKS      => $phpay->webhook(),
-        Capability::SUBSCRIPTIONS => $phpay->subscription(),
-        default                   => $phpay->pix(),
+        Capability::CUSTOMERS         => $phpay->customer(),
+        Capability::WEBHOOKS          => $phpay->webhook(),
+        Capability::SUBSCRIPTIONS     => $phpay->subscription(),
+        Capability::WEBHOOK_SIGNATURE => $phpay->webhookSignature(),
+        default                       => $phpay->pix(),
     })->toThrow(NotImplementedException::class, 'Rede não suporta');
 })->with([
     Capability::CUSTOMERS,
     Capability::WEBHOOKS,
     Capability::SUBSCRIPTIONS,
     Capability::PIX_KEYS,
+    Capability::WEBHOOK_SIGNATURE,
 ])->group('rede');
 
 it('separa o host de autorização do host de api, com caminho de token por ambiente', function () {
