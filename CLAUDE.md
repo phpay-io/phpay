@@ -55,8 +55,8 @@ Regras que valem para todo código novo:
   suíte testável sem rede — não crie Resource sem esse parâmetro.
 - **O `<gateway>Boot()` monta o client com `PHPay\Http\ClientFactory::make()`**, nunca
   com `new Client(`. A fábrica põe `timeout` de 60s e `connect_timeout` de 10s, porque o
-  padrão do Guzzle é esperar para sempre. Um teste varre `src/` e reprova `new Client(`
-  fora dela.
+  padrão do Guzzle é esperar para sempre, e instala o middleware da `RetryPolicy`. Um
+  teste varre `src/` e reprova `new Client(` fora dela.
 - **Validação de payload vive em classes `*Request` estáticas**, com o par
   `validate(array): void` + `messages(): object`. As mensagens são em **português** e
   **não** carregam o prefixo do gateway: quem prefixa é
@@ -184,6 +184,41 @@ quebra a integração, cobra o valor errado.
 - `Money::reais()` **recusa mais de duas casas decimais** de propósito. Não "conserte"
   isso com arredondamento: é o que impede erro de um centavo na conciliação.
 
+## Retry e idempotência
+
+A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra na
+`ClientFactory` — então os dez gateways herdam a política de uma vez.
+
+- **Repetir é sobre dinheiro, não sobre resiliência.** Um `POST` repetido que o
+  gateway já processou cobra o cliente duas vezes. Só é repetido: leitura
+  (`GET`/`HEAD`/`OPTIONS`), erro que provou não ter saído da máquina, `429`, e
+  escrita com chave de idempotência.
+- **`ConnectException` do Guzzle não significa "não chegou".** O `CurlFactory`
+  mapeia `CURLE_OPERATION_TIMEOUTED` e `CURLE_GOT_NOTHING` para a mesma exceção dos
+  erros de conexão. A política lê o `errno` do `getHandlerContext()`: `5`, `6`, `7` e
+  `35` nunca saíram; `28` só é seguro com `connect_time` zerado; `52` é tratado como
+  enviado. **Não simplifique isso para `instanceof ConnectException`** — é o caminho
+  direto para a cobrança duplicada.
+- **`PUT`, `PATCH` e `DELETE` não são repetidos**, apesar do HTTP. A doc do Asaas
+  pede para não tratar a exclusão de cobrança como idempotente sem conferir a
+  resposta.
+- **`Retry-After` maior que o teto faz desistir**, em vez de repetir antes da janela
+  pedida.
+- O middleware é empurrado **por último** na pilha, o que o deixa mais interno que o
+  `http_errors`: ele vê o 5xx como resposta, antes de virar exceção. Teste que precise
+  ver cada tentativa tem que empurrar o gravador **depois** da fábrica, senão fica
+  fora do retry e só vê a chamada externa.
+- Client injetado em teste não passa pela fábrica, então não tem retry. É de
+  propósito: a suíte não espera.
+
+Chave de idempotência, só onde o gateway documenta: Mercado Pago
+(`X-Idempotency-Key`, sempre enviada, a API exige), Pagar.me (`Idempotency-Key`, 24h)
+e PagBank (`x-idempotency-key`, 48h). Nos dois últimos é **opt-in** por
+`setIdempotencyKey()`: no PagBank o OpenAPI de criar pedido não lista o header, e
+mandar chave em toda requisição esbarraria no `409 idempotency_key_in_use`. Gateway
+novo só ganha setter se a documentação dele descrever o mecanismo — e a geração da
+chave vem de `PHPay\Http\Idempotency::key()`, não de `random_bytes` espalhado.
+
 ## Assinatura de webhook
 
 Use **`webhookSignature()`**. Cadastrar o endpoint é `SupportsWebhooks`; provar que
@@ -275,6 +310,10 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
   (`webhookrec`, `webhookcobr`), envio de Pix e split.
+- Chave de idempotência existe em três gateways: Mercado Pago, Pagar.me e PagBank. Nos
+  outros sete, `POST` só é repetido quando o erro provou que a requisição não saiu da
+  máquina. O `correlationID` da Woovi deduplica de fato, mas vive no corpo e não em
+  header, então o middleware não o vê.
 - `SupportsWebhookSignature` fica em cinco gateways: Asaas, PagBank, Mercado Pago,
   Woovi e AbacatePay. Efí (mTLS), Cielo, Rede e Pagar.me ficam fora, cada um pelo
   seu motivo, e os motivos estão no README. O HMAC-SHA1 da Woovi é aceito, mas é
