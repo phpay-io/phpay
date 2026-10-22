@@ -10,9 +10,14 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
-Já no `develop`, ainda sem release. **Nenhuma das mudanças altera assinatura de
-método**: quem não chama `webhookSignature()` e já mandava valor em centavos
-inteiros não vê diferença.
+Nada ainda.
+
+## [2.3.0] - 2026-10-22
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.3.0) ·
+Verificação de assinatura de webhook, prazo em toda requisição e credencial fora
+de dump. **Nenhuma das mudanças altera assinatura de método**: quem não chama
+`webhookSignature()` e já mandava valor em centavos inteiros não vê diferença.
 
 Dois pontos para quem vai atualizar:
 
@@ -339,7 +344,8 @@ Primeira versão publicada no Packagist, sob licença MIT.
 - Exemplos manuais em `examples/`, contra o sandbox de cada gateway ([#23],
   [#25], [#42]).
 
-[Não lançado]: https://github.com/phpay-io/phpay/compare/v2.2.0...develop
+[Não lançado]: https://github.com/phpay-io/phpay/compare/v2.3.0...develop
+[2.3.0]: https://github.com/phpay-io/phpay/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/phpay-io/phpay/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/phpay-io/phpay/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/phpay-io/phpay/compare/v1.0.1...v2.0.0
