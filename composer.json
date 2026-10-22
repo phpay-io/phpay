@@ -73,10 +73,12 @@
         "test:lint": "pint --test -v",
         "test:unit": "pest --colors=always",
         "test:types": "phpstan analyse",
+        "test:links": "@php .github/scripts/check-links.php",
         "test": [
             "@test:lint",
             "@test:unit",
-            "@test:types"
+            "@test:types",
+            "@test:links"
         ]
     }
 }

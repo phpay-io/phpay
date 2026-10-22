@@ -43,6 +43,12 @@ jobs:
       - name: Static analysis (PHPStan)
         run: composer test:types
 
+      # a documentação são 17 arquivos com link relativo entre eles; link
+      # quebrado não aparece em teste nem em análise estática, só no 404 de
+      # quem clicar.
+      - name: Links da documentação
+        run: composer test:links
+
   test:
     name: PHP ${{ matrix.php }} - ${{ matrix.dependencies }}
     runs-on: ubuntu-latest
