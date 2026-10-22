@@ -136,6 +136,9 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
 - **Mensagens de commit:** o hook `commit-msg` exige que a branch contenha um número de
   issue e prefixa automaticamente `PHPAY-<id>: `. Formato do corpo: `tipo(escopo): descrição`
   (`feat`, `fix`, `refactor`, `doc`, `wip`, `test`). Branch base de PR: **`develop`**.
+  **Assunto e corpo em inglês**, como os comentários e o PHPDoc do `src/`; em português
+  ficam só as mensagens de validação, a documentação (README, CLAUDE.md, UPGRADE.md), as
+  issues e o corpo do PR.
   **Nunca adicione linhas de co-autoria ou atribuição em commits e PRs.**
 - **Hooks Husky:** `pre-commit` (pint + phpstan), `pre-push` (pest), `commit-msg`.
   Instalados por `npm install`.
