@@ -1,0 +1,422 @@
+# Changelog
+
+Todas as mudanças relevantes do PHPay são registradas neste arquivo.
+
+O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e o
+projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
+
+O de-para completo da v1 para a v2, quebra por quebra, está no
+[UPGRADE.md](UPGRADE.md).
+
+## [Não lançado]
+
+Já no `develop`, ainda sem release. **Nenhuma das mudanças altera assinatura de
+método**: quem não chama `webhookSignature()` e já mandava valor em centavos
+inteiros não vê diferença.
+
+Dois pontos para quem vai atualizar:
+
+- **`ext-openssl` passou a ser requisito de runtime**, por causa da verificação
+  RSA da Woovi. Habilite a extensão antes de atualizar.
+- **Valor decimal na Efí, no PagBank e no Pagar.me agora lança
+  `ValidationException`** em vez de emitir uma cobrança com o valor errado.
+
+### Adicionado
+
+- Capacidade `webhookSignature()` — o lado que *recebe* o webhook. Cadastrar o
+  endpoint é `SupportsWebhooks`; provar que a notificação veio do gateway é a
+  nova `SupportsWebhookSignature`, com o case `Capability::WEBHOOK_SIGNATURE`
+  ([#101], [#102]).
+- Verificação de assinatura em cinco gateways, cada um no esquema que a própria
+  documentação descreve ([#102]):
+
+  | Gateway | Esquema | O que prova |
+  | --- | --- | --- |
+  | Asaas | token no header `asaas-access-token` | que o remetente conhece o token — o corpo não é assinado |
+  | PagBank | `x-authenticity-token`: SHA-256 de `{token}-{corpo cru}` | que o corpo chegou inteiro |
+  | Mercado Pago | `x-signature`: HMAC-SHA256 de `id:…;request-id:…;ts:…;` | que é da sua aplicação e aponta para aquele recurso |
+  | Woovi | `x-webhook-signature`: RSA-SHA256 do corpo, contra as chaves publicadas | que o corpo veio da Woovi |
+  | AbacatePay | `webhookSecret` na query, mais o HMAC do corpo quando a chave é dada | que a URL é a sua e, com a chave, que o corpo não mudou |
+
+- `PHPay\Webhooks\Headers::find()`, que normaliza caixa, prefixo `HTTP_` e
+  `_`/`-` ao procurar o header de assinatura — o mesmo header chega como
+  `x-signature`, `X-Signature` e `HTTP_X_SIGNATURE` ([#102]).
+- `PHPay\Webhooks\SignatureRequest`, que recusa segredo ausente, corpo vazio e
+  header de assinatura que não chegou com `ValidationException`. O corpo
+  verificado é sempre o cru: reserializar o JSON muda o hash ([#102]).
+- `setPublicKeys()` na Woovi, para verificar sem buscar as chaves por HTTP. A
+  Woovi é a única que consulta a API para verificar, e aceita qualquer chave da
+  lista publicada, por causa da rotação ([#102]).
+- `PHPay\Http\ClientFactory` como único lugar onde um client HTTP nasce, com
+  `timeout` de 60s e `connect_timeout` de 10s — o padrão do Guzzle é esperar
+  para sempre, e um gateway travado prendia o worker até o processo morrer. Um
+  teste varre `src/` e reprova `new Client(` fora da fábrica ([#99], [#100]).
+- `PHPay\Http\MasksCredentials`, que dá `__debugInfo()` a todo gateway e, pelo
+  `HasHttpClient`, a todo recurso: a credencial vira `********` e o `Client`
+  inteiro fica oculto, porque ele carrega o token nos headers. O `dd()` do
+  Symfony VarDumper lê propriedade privada por conta própria e **não** é
+  coberto ([#100]).
+- `#[\SensitiveParameter]` em todo parâmetro que recebe credencial, para não
+  aparecer em stack trace ([#100]).
+
+### Alterado
+
+- **`ext-openssl` entra nos requisitos de runtime**, ao lado de `ext-curl` e
+  `ext-json`, por causa da verificação RSA da Woovi ([#102]).
+- **Valor decimal passa a ser recusado na validação da Efí, do PagBank e do
+  Pagar.me**, com mensagem que ensina a conversão e aceitando `Money`. Antes
+  `10.50` onde se espera `1050` seguia para o gateway e cobrava onze centavos,
+  sem erro nenhum ([#100]).
+- Os gateways que declaravam as cinco capacidades passam a declarar seis.
+  Código que afirma a lista exata de capacidades precisa ser ajustado ([#102]).
+- O HMAC-SHA1 da Woovi (`x-openpix-signature`) é aceito como fallback, mas é
+  depreciado pela própria Woovi ([#102]).
+
+### Corrigido
+
+- `Money` recusa `NAN`, `INF` e valor que estouraria os centavos num inteiro de
+  64 bits. `NAN` e `INF` convertiam para `0`, e acima de `PHP_INT_MAX` o cast
+  dava a volta e virava valor negativo — os dois passavam por todas as
+  checagens existentes ([#100]).
+- A `ApiException` da Efí deixa de carregar `access_token` e `refresh_token` no
+  corpo da resposta ([#100]).
+
+## [2.2.0] - 2026-09-21
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.2.0) ·
+Efí Pix com mTLS e assinaturas completas do Asaas. Tudo aditivo para quem
+chama a biblioteca.
+
+### Adicionado
+
+- **Efí: API Pix por mTLS**, que leva o gateway de 1 para 4 das 5 capacidades.
+  As duas APIs da Efí usam as mesmas credenciais, cada uma com o seu token
+  ([#95], [#96]):
+  - `pixCharge()` — cobrança Pix imediata ou com vencimento, QR Code e
+    devolução. É um extra do gateway concreto, porque `charge()` já é o boleto.
+  - `pix()` — chaves Pix aleatórias (EVP).
+  - `webhook()` — um webhook por chave Pix, endereçado pela chave, com
+    `skipMtlsChecking()` para servidores que não validam o certificado da Efí.
+  - `subscription()` — Pix Automático: o pagador autoriza uma vez no app do
+    banco e cada ciclo é debitado sem nova aprovação. Cobre a recorrência, o QR
+    Code de autorização e a cobrança de cada ciclo.
+- `PHPay\Http\Certificate`, mTLS genérico e não exclusivo da Efí — o padrão do
+  BACEN para API Pix exige mTLS, e Inter, BB, Itaú, Sicoob e Sicredi seguem o
+  mesmo esquema. `Certificate::fromBase64()` grava o certificado num temporário
+  `0600`, apagado ao fim do processo, para container e serverless. A senha nunca
+  aparece num `var_dump()`. Aceita `.p12` e `.pem` ([#96]).
+- Parâmetros opcionais `certificate` e `pixClient` no fim do construtor de
+  `EfiGateway` ([#96]).
+- **Asaas: assinaturas completas**, dos 14 endpoints da API — antes só existia
+  `create()` ([#97], [#98]):
+  - `getAll()`, `find()`, `update()`, `destroy()`, `deactivate()` e
+    `reactivate()`. `destroy()` leva as cobranças pendentes e vencidas; a pausa
+    é `deactivate()`, e reativar exige um novo `nextDueDate`.
+  - `getPayments()` — as cobranças já geradas pela assinatura.
+  - `paymentBook()` — o carnê, como os bytes do PDF.
+  - `updateCreditCard()` — troca o cartão sem cobrar.
+  - Nota fiscal emitida a cada cobrança: `create/get/update/destroyInvoiceSettings()`
+    e `getInvoices()`.
+
+### Alterado
+
+- **Guzzle mínimo sobe de `^7.0` para `^7.3`**, a primeira versão que entrega
+  `.p12` ao cURL pela extensão — e o mTLS depende disso. A 7.3 é de março de
+  2021 ([#96]).
+- **Na API Pix da Efí o valor entra só como `Money`.** Ela quer reais em string
+  (`"123.45"`), enquanto a API de Cobranças do mesmo gateway quer centavos;
+  aceitar número cru ali recriaria o erro que o `Money` existe para evitar
+  ([#96]).
+- **`cycle` passa a ser obrigatório na criação de assinatura do Asaas**, como na
+  especificação. O payload sem ele agora lança `ValidationException` antes da
+  chamada, em vez de `ApiException` do gateway — a requisição já falhava, só
+  falha mais cedo e com mensagem melhor ([#98]).
+- `SubscriptionInterface` do Asaas: `create(array $subscription = [])` ganhou
+  default e a interface ganhou os métodos novos. Afeta só quem implementa a
+  interface fora da biblioteca ([#98]).
+
+### Corrigido
+
+- **Efí: o token da API de Cobranças ficava em cache para sempre.** Um gateway
+  vivo num worker de fila passava a tomar 401 quando a Efí expirava o token.
+  Agora é renovado sozinho, com margem de 30s, e o da API Pix também ([#96]).
+
+## [2.1.0] - 2026-09-21
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.1.0) ·
+`Money`, `Customer` e Woovi/OpenPix. A v2.0.0 normalizou os *nomes dos
+métodos* entre gateways, mas deixou os *payloads* crus; esta versão fecha isso.
+
+### Adicionado
+
+- **`PHPay\Support\Money`**, que elimina no tipo o erro de centavos vs reais.
+  Dois gateways usam reais decimais e os outros sete usam centavos inteiros, e
+  mandar `100.50` num gateway de centavos não quebra a integração — **cobra
+  R$ 1,00**, e só aparece na conciliação ([#91], [#92]):
+  - `Money::reais()` (aceita float, int e string em notação brasileira, como
+    `'1.234,56'`) e `Money::centavos()`.
+  - `multiply()`, `plus()`, `equals()` e `format()` → `'R$ 100,50'`.
+  - **Recusa mais de duas casas decimais** em vez de arredondar calado:
+    `Money::reais(10 / 3)` lança exceção. É o que impede erro de um centavo na
+    conciliação.
+- `setAmount()` no Asaas, no Mercado Pago e na Efí, onde o valor vivia dentro do
+  array de payload ([#92]).
+- **`PHPay\Support\Customer`**, uma forma só para o cliente — o mesmo campo
+  tinha seis grafias entre os gateways (`cpfCnpj`, `tax_id`, `document`,
+  `taxId`, `taxID`, `cpf_cnpj`). Cobre todos os campos obrigatórios de cliente
+  dos gateways que têm cliente ([#93], [#94]):
+  - `Customer::make()` limpa pontuação de documento e telefone.
+  - Carrega o que cada gateway deriva: `isIndividual()`, `documentType()`,
+    `firstName()`/`lastName()` e `phoneParts()`.
+  - `withExtra()` para campo opcional específico de um gateway, como endereço.
+- **Gateway Woovi/OpenPix** — o segundo com as cinco capacidades, ao lado do
+  Asaas. AppID vai cru no `Authorization`, o sandbox tem domínio próprio, e todo
+  objeto é endereçável pelo `correlationID` do sistema de quem integra, então
+  `find()` e `destroy()` aceitam os dois ids ([#89], [#90]).
+
+### Alterado
+
+- Todo método que recebe valor aceita `Money|int` (ou `Money|int|float` nos
+  gateways de reais), e todo `setCustomer()` aceita `Customer|array`. **Número
+  cru e array continuam funcionando**, lidos na unidade que aquele gateway
+  sempre esperou ([#92], [#94]).
+- **Quebra para quem implementou `SupportsCustomers` num gateway próprio**:
+  `customer(array $customer = [])` virou
+  `customer(Customer|array $customer = [])`. Uma implementação com
+  `customer(array ...)` passa a dar erro fatal no autoload, porque não pode
+  aceitar menos que a interface — ajuste a assinatura. Pela regra estrita do
+  SemVer isso seria major; saiu como minor porque o contrato havia sido
+  publicado na v2.0.0 horas antes e a falha é imediata, não silenciosa ([#94]).
+
+## [2.0.0] - 2026-09-21
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.0.0) ·
+**Primeira versão com quebras de compatibilidade.** De 2 para 8 gateways,
+falhas passam a ser exceção, e o projeto ganha CI, guia de migração e licença
+nova. O de-para completo está no [UPGRADE.md](UPGRADE.md).
+
+### Adicionado
+
+- **Seis gateways novos**: Mercado Pago, PagBank, Pagar.me, AbacatePay, Cielo e
+  Rede ([#74], [#75], [#76], [#77], [#78], [#79], [#81], [#83], [#84], [#85],
+  [#86], [#87], [#88]).
+- **Interfaces de capacidade**: cada recurso é uma interface que o gateway
+  implementa se — e só se — oferecer (`SupportsCustomers`, `SupportsCharges`,
+  `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`), mais a enum
+  `Capability` para descoberta em runtime e `supports()`, `capabilities()` e
+  `name()` na facade. Quem segura o gateway concreto ganha a checagem em tempo
+  de análise: `(new RedeGateway(...))->pix()` virou erro de PHPStan, não de
+  produção ([#72], [#73]).
+- **Exceções tipadas**, todas implementando `PHPayException`:
+  `ValidationException` (payload inválido, antes de qualquer HTTP),
+  `ApiException` (gateway recusou ou está inacessível) e
+  `NotImplementedException` (recurso não suportado, com a mensagem nomeando o
+  que aquele gateway oferece). `ApiException` carrega `getStatusCode()`,
+  `getResponse()`, `getGateway()` e `isConnectionError()` ([#70], [#71]).
+- Recusa de valor decimal na validação dos gateways que usam centavos, antes da
+  chamada ([#71]).
+- **CI no GitHub Actions**, matriz 8.2/8.3/8.4 com dependências `locked`,
+  `lowest` e `highest`; PHPStan nível 9 como fonte única, com `phpVersion`
+  mínimo 8.1 garantindo a compatibilidade declarada; e checagem de conformidade
+  contra sandbox para Mercado Pago e PagBank, que recusa credenciais de
+  produção ([#71], [#77]).
+- `UPGRADE.md` com o de-para completo, `CLA.md` e template de pull request
+  ([#71], [#81], [#82]).
+- Documentação da unidade monetária de cada gateway, que não estava em lugar
+  nenhum — e errar não quebra a integração, cobra o valor errado ([#71]).
+
+### Alterado
+
+Os sete itens abaixo **quebram compatibilidade**.
+
+1. **Falhas viram exceção, não array de erro.** Um array retornado é sempre
+   sucesso. `destroy()` continua devolvendo `bool`, mas agora só `false` quando
+   o gateway de fato recusou a exclusão — erro de rede lança. Quem não tratava
+   o array de erro tinha uma falha silenciosa, que na v2 passa a interromper o
+   fluxo ([#71]).
+2. **`GatewayInterface` reduzido a `name()`.** Quem tipava `GatewayInterface` e
+   chamava recursos precisa passar a tipar a capacidade (`SupportsCharges`,
+   por exemplo), ou usar a facade `PHPay` ([#73]).
+3. **Namespaces unificados.** `PHPay\Gateways\Asaas\*` → `PHPay\Asaas\*`, e
+   `Efi\Resources\*`, `Efi\Traits\*`, `Efi\Interface\*` → `PHPay\Efi\*`.
+   `PHPay\Asaas\*`, `PHPay\Efi\*` e `PHPay\PHPay` não mudaram ([#71]).
+4. **`pix()` não recebe mais argumento** — o array era aceito e descartado em
+   toda a cadeia ([#71]).
+5. **`messages()` de cobrança e assinatura ficou plano**:
+   `AsaasChargeRequest::messages()->charge->customer` virou
+   `::messages()->customer`. As mensagens também deixaram de carregar o prefixo
+   do gateway no texto — quem prefixa agora é a exceção ([#71]).
+6. **`AsaasGateway` perdeu as propriedades públicas `$client` e `$customer`**,
+   que eram sem uso e colidiam com o método de mesmo nome. Use os métodos
+   ([#71]).
+7. **Licença MIT → Business Source License 1.1**, source-available com uma
+   única restrição comercial: ninguém pode oferecer o PHPay, ou um derivado,
+   como biblioteca/SDK/serviço de integração de pagamentos concorrente. Usar em
+   produção, inclusive em software fechado e comercial, continua liberado. Em
+   2030-09-20 converte automaticamente para MIT, e cada versão converte no
+   máximo quatro anos após ser publicada. **As v1.0.0 e v1.0.1 permanecem sob
+   MIT** — licença nova não é retroativa. Contribuições passam a estar sujeitas
+   ao CLA ([#80], [#81], [#82]).
+
+E duas mudanças de comportamento que não quebram chamada:
+
+- **Efí: autorização sob demanda.** O construtor de `EfiGateway` fazia uma
+  requisição HTTP; agora autoriza na primeira vez que o token é necessário, e
+  só uma vez. Construir o gateway deixou de ser uma operação que pode falhar
+  ([#71]).
+- **`setCustomer()` reaproveita o cliente** quando o array traz `id`, e existe
+  `setCustomerId()` para o caminho explícito ([#71]).
+
+### Corrigido
+
+- **A validação de tipo não funcionava.** `AsaasChargeRequest` usava `&&` onde
+  deveria usar `||`: um campo presente com o tipo errado passava batido e
+  seguia para a API ([#71]).
+- **`setCustomer()` criava cliente duplicado** a cada chamada — duas cobranças
+  para a mesma pessoa geravam dois cadastros no gateway. Vale auditar
+  integrações da v1 que chamavam `setCustomer()` em laço ([#71]).
+- **`EfiGateway` fazia chamada de rede no construtor** ([#71]).
+- **`Efi\Resources\Charge\Charge::getStatus()`** apontava para
+  `payments/{id}/status`, endpoint do Asaas — sempre 404 na base da Efí. Agora
+  usa `v1/charge/{id}` ([#71]).
+- **`WebhookEventsEnum`** usava namespace fora do autoload e não carregava
+  ([#71]).
+- **`EfiGateway::customer()` e `webhook()`** devolviam `stdClass` vazio,
+  causando "undefined method" adiante ([#71]).
+- **`examples/efi/charges.php`** passava `100.00` num gateway que usa centavos —
+  cobraria R$ 1,00 ([#71]).
+
+### Removido
+
+- `PHPay\Exceptions\AsaasExceptions` — não era usada, e declarava retornar
+  `Exception` num método que lançava ([#71]).
+- `PHPay\Gateways\Asaas\Requests\AsaasPixRequest` — não era chamada, e seus
+  campos não correspondem a nenhum endpoint de Pix do Asaas ([#71]).
+- Os quatro stubs de `NotImplementedException` da Efí, substituídos pelas
+  interfaces de capacidade ([#73]).
+- Os roots PSR-4 `Efi\` e `AsaasCustomer\` ([#71]).
+- O ramo `->customer->id` de `messages()`, que nenhum código lia ([#71]).
+
+## [1.0.1] - 2025-05-08
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v1.0.1)
+
+### Adicionado
+
+- **Asaas: criação de assinatura** — recurso `Subscription` com `create()`,
+  `StoreSubscriptionAsaasRequest`, `subscription()` no `GatewayInterface` e na
+  facade, e o exemplo `examples/asaas/subscriptions.php` ([#66]).
+- Primeiros testes com Pest, cobrindo a facade e os dois gateways ([#63]).
+
+### Corrigido
+
+- **Asaas: os filtros de `getAll()` de clientes não eram aplicados.** O array
+  de filtros ia aninhado numa chave `query` que o trait já montava, então a
+  listagem voltava sem filtro nenhum ([#69]).
+- Exemplo de clientes do Asaas: import do gateway e construção da facade por
+  `PHPay::gateway()` ([#67]).
+
+## [1.0.0] - 2025-02-12
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v1.0.0) ·
+Primeira versão publicada no Packagist, sob licença MIT.
+
+### Adicionado
+
+- Facade `PHPay`, que delega tudo para o gateway injetado no construtor, e
+  `GatewayInterface` como contrato comum ([#14], [#24]).
+- **Gateway Asaas** — clientes, cobranças (criar, listar, buscar e QR Code),
+  webhooks e chaves Pix ([#2], [#5], [#6], [#7], [#8], [#9], [#11], [#12],
+  [#28], [#52], [#53], [#58]).
+- **Gateway Efí** — autorização por token e cobranças: criar, listar, buscar,
+  marcar como paga, cancelar, remover e atualizar vencimento e metadados
+  ([#18], [#22], [#29], [#30], [#32], [#33], [#34], [#35], [#41], [#42],
+  [#43], [#44], [#49], [#50]).
+- Validação de payload em classes `*Request` estáticas, com mensagens em
+  português ([#5], [#10]).
+- Ambiente de desenvolvimento com Docker e Makefile, Pint (PSR-12), PHPStan
+  nível 9 e hooks do Husky ([#1], [#4], [#15], [#17], [#55], [#56]).
+- Exemplos manuais em `examples/`, contra o sandbox de cada gateway ([#23],
+  [#25], [#42]).
+
+[Não lançado]: https://github.com/phpay-io/phpay/compare/v2.2.0...develop
+[2.2.0]: https://github.com/phpay-io/phpay/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/phpay-io/phpay/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/phpay-io/phpay/compare/v1.0.1...v2.0.0
+[1.0.1]: https://github.com/phpay-io/phpay/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/phpay-io/phpay/commits/v1.0.0
+
+[#1]: https://github.com/phpay-io/phpay/pull/1
+[#2]: https://github.com/phpay-io/phpay/pull/2
+[#4]: https://github.com/phpay-io/phpay/pull/4
+[#5]: https://github.com/phpay-io/phpay/pull/5
+[#6]: https://github.com/phpay-io/phpay/pull/6
+[#7]: https://github.com/phpay-io/phpay/pull/7
+[#8]: https://github.com/phpay-io/phpay/pull/8
+[#9]: https://github.com/phpay-io/phpay/pull/9
+[#10]: https://github.com/phpay-io/phpay/pull/10
+[#11]: https://github.com/phpay-io/phpay/pull/11
+[#12]: https://github.com/phpay-io/phpay/pull/12
+[#14]: https://github.com/phpay-io/phpay/pull/14
+[#15]: https://github.com/phpay-io/phpay/pull/15
+[#17]: https://github.com/phpay-io/phpay/pull/17
+[#18]: https://github.com/phpay-io/phpay/pull/18
+[#22]: https://github.com/phpay-io/phpay/pull/22
+[#23]: https://github.com/phpay-io/phpay/pull/23
+[#24]: https://github.com/phpay-io/phpay/pull/24
+[#25]: https://github.com/phpay-io/phpay/pull/25
+[#28]: https://github.com/phpay-io/phpay/pull/28
+[#29]: https://github.com/phpay-io/phpay/issues/29
+[#30]: https://github.com/phpay-io/phpay/pull/30
+[#32]: https://github.com/phpay-io/phpay/issues/32
+[#33]: https://github.com/phpay-io/phpay/issues/33
+[#34]: https://github.com/phpay-io/phpay/issues/34
+[#35]: https://github.com/phpay-io/phpay/issues/35
+[#41]: https://github.com/phpay-io/phpay/pull/41
+[#42]: https://github.com/phpay-io/phpay/pull/42
+[#43]: https://github.com/phpay-io/phpay/pull/43
+[#44]: https://github.com/phpay-io/phpay/pull/44
+[#49]: https://github.com/phpay-io/phpay/issues/49
+[#50]: https://github.com/phpay-io/phpay/pull/50
+[#52]: https://github.com/phpay-io/phpay/issues/52
+[#53]: https://github.com/phpay-io/phpay/pull/53
+[#55]: https://github.com/phpay-io/phpay/issues/55
+[#56]: https://github.com/phpay-io/phpay/pull/56
+[#58]: https://github.com/phpay-io/phpay/pull/58
+[#63]: https://github.com/phpay-io/phpay/pull/63
+[#66]: https://github.com/phpay-io/phpay/pull/66
+[#67]: https://github.com/phpay-io/phpay/pull/67
+[#69]: https://github.com/phpay-io/phpay/pull/69
+[#70]: https://github.com/phpay-io/phpay/issues/70
+[#71]: https://github.com/phpay-io/phpay/pull/71
+[#72]: https://github.com/phpay-io/phpay/issues/72
+[#73]: https://github.com/phpay-io/phpay/pull/73
+[#74]: https://github.com/phpay-io/phpay/issues/74
+[#75]: https://github.com/phpay-io/phpay/pull/75
+[#76]: https://github.com/phpay-io/phpay/issues/76
+[#77]: https://github.com/phpay-io/phpay/pull/77
+[#78]: https://github.com/phpay-io/phpay/issues/78
+[#79]: https://github.com/phpay-io/phpay/pull/79
+[#80]: https://github.com/phpay-io/phpay/issues/80
+[#81]: https://github.com/phpay-io/phpay/pull/81
+[#82]: https://github.com/phpay-io/phpay/pull/82
+[#83]: https://github.com/phpay-io/phpay/issues/83
+[#84]: https://github.com/phpay-io/phpay/pull/84
+[#85]: https://github.com/phpay-io/phpay/issues/85
+[#86]: https://github.com/phpay-io/phpay/pull/86
+[#87]: https://github.com/phpay-io/phpay/issues/87
+[#88]: https://github.com/phpay-io/phpay/pull/88
+[#89]: https://github.com/phpay-io/phpay/issues/89
+[#90]: https://github.com/phpay-io/phpay/pull/90
+[#91]: https://github.com/phpay-io/phpay/issues/91
+[#92]: https://github.com/phpay-io/phpay/pull/92
+[#93]: https://github.com/phpay-io/phpay/issues/93
+[#94]: https://github.com/phpay-io/phpay/pull/94
+[#95]: https://github.com/phpay-io/phpay/issues/95
+[#96]: https://github.com/phpay-io/phpay/pull/96
+[#97]: https://github.com/phpay-io/phpay/issues/97
+[#98]: https://github.com/phpay-io/phpay/pull/98
+[#99]: https://github.com/phpay-io/phpay/issues/99
+[#100]: https://github.com/phpay-io/phpay/pull/100
+[#101]: https://github.com/phpay-io/phpay/issues/101
+[#102]: https://github.com/phpay-io/phpay/pull/102
