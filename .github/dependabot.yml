@@ -23,7 +23,7 @@ updates:
       # RetryPolicy separa "não saiu da máquina" de "deu timeout depois de
       # enviar o corpo" — e é essa distinção que impede repetir um POST já
       # processado, ou seja, cobrar duas vezes. Suportar a 8 é trabalho de
-      # código (ver a issue #119), não de bump, então o Dependabot para de
+      # código (ver a issue #121), não de bump, então o Dependabot para de
       # propor major. Patch e minor continuam vindo.
       - dependency-name: guzzlehttp/guzzle
         update-types:
