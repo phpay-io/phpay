@@ -45,7 +45,7 @@ use PHPay\PagarMe\PagarMeGateway;
 use PHPay\PagBank\PagBankGateway;
 use PHPay\PHPay;
 use PHPay\Rede\RedeGateway;
-use PHPay\Support\{Customer, Money};
+use PHPay\Support\{Customer, Money, StaticPixCode};
 use PHPay\Woovi\WooviGateway;
 
 /** @var list<string> $failures */
@@ -243,6 +243,40 @@ $check('Customer: documento e telefone são derivados', function () use ($ensure
     $ensure($customer->documentType() === 'CPF', 'documentType() deveria ser CPF');
     $ensure($customer->firstName() === 'Fulano', 'firstName() deveria ser Fulano');
     $ensure($customer->phoneParts() !== null, 'phoneParts() não deveria ser nulo');
+});
+
+$check('StaticPixCode: reproduz o vetor de teste do manual do BACEN', function () use ($ensure): void {
+    /*
+     * byte a byte, porque é o único jeito de provar o CRC: ele cobre o
+     * literal `6304` que o anuncia, e parar antes dele dá 4AAD em vez de
+     * 1D3D — um QR Code que simplesmente não lê.
+     */
+    $esperado = '00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-'
+        . '4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***63041D3D';
+
+    $payload = StaticPixCode::make('123e4567-e12b-12d1-a456-426655440000', 'Fulano de Tal', 'BRASILIA')
+        ->payload();
+
+    $ensure($payload === $esperado, sprintf('payload divergente do manual: %s', $payload));
+});
+
+$check('StaticPixCode: valor em reais com ponto e txid no campo 62', function () use ($ensure): void {
+    $payload = StaticPixCode::make('fale@phpay.io', 'Sixtec LTDA', 'BRASILIA')
+        ->withAmount(Money::reais('100,50'))
+        ->withTxid('PEDIDO1234')
+        ->payload();
+
+    $ensure(str_contains($payload, '5406100.50'), 'campo 54 deveria ser 06 e 100.50');
+    $ensure(str_contains($payload, '62140510PEDIDO1234'), 'campo 62 deveria levar o txid em 05');
+    $ensure(!str_contains($payload, '0503***'), 'com txid, não deveria sobrar o *** do padrão');
+});
+
+$check('StaticPixCode: chave vazia e txid fora do padrão são recusados', function () use ($expect): void {
+    $expect(ValidationException::class, static fn () => StaticPixCode::make('', 'Sixtec LTDA', 'BRASILIA'));
+    $expect(
+        ValidationException::class,
+        static fn () => StaticPixCode::make('fale@phpay.io', 'Sixtec LTDA', 'BRASILIA')->withTxid('PEDIDO-1234')
+    );
 });
 
 echo "\nassinatura de webhook\n";
