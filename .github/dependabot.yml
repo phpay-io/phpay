@@ -18,6 +18,16 @@ updates:
       prefix-development: chore(deps-dev)
     labels:
       - dependências
+    ignore:
+      # o Guzzle 8 removeu ConnectException::getHandlerContext(), que é como a
+      # RetryPolicy separa "não saiu da máquina" de "deu timeout depois de
+      # enviar o corpo" — e é essa distinção que impede repetir um POST já
+      # processado, ou seja, cobrar duas vezes. Suportar a 8 é trabalho de
+      # código (ver a issue #119), não de bump, então o Dependabot para de
+      # propor major. Patch e minor continuam vindo.
+      - dependency-name: guzzlehttp/guzzle
+        update-types:
+          - version-update:semver-major
     groups:
       composer-patch:
         patterns:
