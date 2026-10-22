@@ -31,13 +31,45 @@ class PagBankOrderRequest
         if ($hasQrCodes && count($order['qr_codes']) > 1) {
             throw ValidationException::make('PagBank', $messages->singleQrCode);
         }
+
+        if ($hasCharges) {
+            self::validateAmounts($order['charges'], $messages->chargeAmount);
+        }
+
+        if ($hasQrCodes) {
+            self::validateAmounts($order['qr_codes'], $messages->qrCodeAmount);
+        }
+    }
+
+    /**
+     * every entry must carry amount.value as an integer in cents.
+     *
+     * the amount of a charge or a QR Code is what the payer is actually
+     * billed — a decimal here would charge a hundredth of the intended value.
+     *
+     * @param array<mixed> $entries charges or qr_codes of the order
+     * @param string $message
+     * @return void
+     * @throws ValidationException
+     */
+    private static function validateAmounts(array $entries, string $message): void
+    {
+        foreach ($entries as $entry) {
+            $value = is_array($entry) && isset($entry['amount']) && is_array($entry['amount'])
+                ? $entry['amount']['value'] ?? null
+                : null;
+
+            if (!is_int($value) || $value < 1) {
+                throw ValidationException::make('PagBank', $message);
+            }
+        }
     }
 
     /**
      * validate the customer embedded in the order.
      *
      * @param array<mixed> $order
-     * @param object{customer: string, customerName: string, customerEmail: string, customerTaxId: string, items: string, itemName: string, itemQuantity: string, itemAmount: string, payment: string, singleQrCode: string} $messages
+     * @param object{customer: string, customerName: string, customerEmail: string, customerTaxId: string, items: string, itemName: string, itemQuantity: string, itemAmount: string, payment: string, singleQrCode: string, chargeAmount: string, qrCodeAmount: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -72,7 +104,7 @@ class PagBankOrderRequest
      * validate the items of the order.
      *
      * @param array<mixed> $order
-     * @param object{customer: string, customerName: string, customerEmail: string, customerTaxId: string, items: string, itemName: string, itemQuantity: string, itemAmount: string, payment: string, singleQrCode: string} $messages
+     * @param object{customer: string, customerName: string, customerEmail: string, customerTaxId: string, items: string, itemName: string, itemQuantity: string, itemAmount: string, payment: string, singleQrCode: string, chargeAmount: string, qrCodeAmount: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -104,7 +136,7 @@ class PagBankOrderRequest
     /**
      * messages for validation
      *
-     * @return object{customer: string, customerName: string, customerEmail: string, customerTaxId: string, items: string, itemName: string, itemQuantity: string, itemAmount: string, payment: string, singleQrCode: string}
+     * @return object{customer: string, customerName: string, customerEmail: string, customerTaxId: string, items: string, itemName: string, itemQuantity: string, itemAmount: string, payment: string, singleQrCode: string, chargeAmount: string, qrCodeAmount: string}
      */
     public static function messages(): object
     {
@@ -119,6 +151,8 @@ class PagBankOrderRequest
             'itemAmount'    => 'O campo items[].unit_amount é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. O PagBank não aceita valor decimal: R$ 10,50 é 1050.',
             'payment'       => 'O pedido precisa de charges (cartão ou boleto) ou de um qr_code (Pix). Use setCharges() ou setQrCode().',
             'singleQrCode'  => 'O PagBank aceita apenas um QR Code por pedido.',
+            'chargeAmount'  => 'O campo charges[].amount.value é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. O PagBank não aceita valor decimal: R$ 10,50 é 1050.',
+            'qrCodeAmount'  => 'O campo qr_codes[].amount.value é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. Use setQrCode(Money::reais(10.50)) para não errar a unidade.',
         ];
     }
 }

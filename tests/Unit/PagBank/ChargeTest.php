@@ -168,3 +168,22 @@ it('recusa mais de um qr code por pedido', function () {
         ->create())
         ->toThrow(ValidationException::class, 'apenas um QR Code');
 })->group('pagbank');
+
+it('recusa valor decimal na cobrança e no qr code do pedido', function (array $pagamento, string $campo) {
+    $history = [];
+    $client  = pagbankClient([jsonResponse([])], $history);
+
+    expect(fn () => (new Charge('token', true, $client))
+        ->setOrder([
+            'customer' => pagbankCustomer(),
+            'items'    => [['name' => 'Item', 'quantity' => 1, 'unit_amount' => 1050]],
+        ] + $pagamento)
+        ->create())
+        ->toThrow(ValidationException::class, $campo);
+
+    expect($history)->toBeEmpty();
+})->with([
+    'cobrança com decimal' => [['charges' => [['amount' => ['value' => 10.50, 'currency' => 'BRL']]]], 'charges[].amount.value'],
+    'cobrança sem valor'   => [['charges' => [['payment_method' => ['type' => 'BOLETO']]]], 'charges[].amount.value'],
+    'qr code com decimal'  => [['qr_codes' => [['amount' => ['value' => 10.50]]]], 'qr_codes[].amount.value'],
+])->group('pagbank');

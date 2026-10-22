@@ -134,3 +134,24 @@ it('faz o crud completo de clientes, com cartões salvos', function () {
         ->and((string) $history[2]['request']->getUri())->toContain('size=10')
         ->and((string) $history[3]['request']->getUri())->toEndWith('/customers/cus_1/cards');
 })->group('pagarme');
+
+it('recusa preço decimal na assinatura sem plano', function () {
+    $history = [];
+    $client  = pagarmeClient([jsonResponse([])], $history);
+
+    expect(fn () => (new Subscription('sk_test_abc', $client))
+        ->setCustomerId('cus_1')
+        ->create([
+            'payment_method' => PaymentMethodEnum::PIX->value,
+            'interval'       => IntervalEnum::MONTH->value,
+            'interval_count' => 1,
+            'items'          => [[
+                'name'           => 'Mensalidade',
+                'quantity'       => 1,
+                'pricing_scheme' => ['price' => 49.90],
+            ]],
+        ]))
+        ->toThrow(ValidationException::class, 'pricing_scheme.price da assinatura');
+
+    expect($history)->toBeEmpty();
+})->group('pagarme');
