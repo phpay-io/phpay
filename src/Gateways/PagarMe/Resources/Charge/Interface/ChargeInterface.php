@@ -144,4 +144,12 @@ interface ChargeInterface
      * @return array<mixed>
      */
     public function cancel(string $id, Money|int|null $amount = null): array;
+
+    /**
+     * set the idempotency key sent when creating the order
+     *
+     * @param string $key
+     * @return ChargeInterface
+     */
+    public function setIdempotencyKey(string $key): ChargeInterface;
 }

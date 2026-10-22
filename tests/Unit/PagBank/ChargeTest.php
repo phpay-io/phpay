@@ -187,3 +187,30 @@ it('recusa valor decimal na cobrança e no qr code do pedido', function (array $
     'cobrança sem valor'   => [['charges' => [['payment_method' => ['type' => 'BOLETO']]]], 'charges[].amount.value'],
     'qr code com decimal'  => [['qr_codes' => [['amount' => ['value' => 10.50]]]], 'qr_codes[].amount.value'],
 ])->group('pagbank');
+
+it('manda a chave de idempotência no header quando ela é informada', function () {
+    $history = [];
+    $client  = pagbankClient([jsonResponse(['id' => 'ORDE_1'])], $history);
+
+    (new Charge('token', true, $client))
+        ->setCustomer(pagbankCustomer())
+        ->addItem('Assinatura PHPay', 10050)
+        ->setQrCode(10050)
+        ->setIdempotencyKey('pedido-4211')
+        ->create();
+
+    expect($history[0]['request']->getHeaderLine('x-idempotency-key'))->toBe('pedido-4211');
+})->group('pagbank');
+
+it('não manda header de idempotência sem chave', function () {
+    $history = [];
+    $client  = pagbankClient([jsonResponse(['id' => 'ORDE_1'])], $history);
+
+    (new Charge('token', true, $client))
+        ->setCustomer(pagbankCustomer())
+        ->addItem('Assinatura PHPay', 10050)
+        ->setQrCode(10050)
+        ->create();
+
+    expect($history[0]['request']->hasHeader('x-idempotency-key'))->toBeFalse();
+})->group('pagbank');

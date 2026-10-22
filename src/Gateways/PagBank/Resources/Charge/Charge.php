@@ -33,6 +33,11 @@ class Charge implements ChargeInterface
     private array $order = [];
 
     /**
+     * key that lets the gateway recognise a repeat of this very order
+     */
+    private ?string $idempotencyKey = null;
+
+    /**
      * construct
      *
      * @param string $token
@@ -182,13 +187,49 @@ class Charge implements ChargeInterface
      * @throws ValidationException|ApiException
      * @see https://developer.pagbank.com.br/reference/criar-pedido-simples
      */
+    /**
+     * set the idempotency key sent when creating the order.
+     *
+     * within 48 horas the gateway answers a request carrying a key it has seen
+     * before with the result of the first one, instead of creating a second
+     * order. It also lets the retry policy repeat this POST, which it refuses
+     * to do without a key.
+     *
+     * Use a key of your own, stored next to the pending record: one generated
+     * here would cover only the retries inside this single call, and a retry
+     * from your side — another process, another create() — would arrive with a
+     * new key and charge again.
+     *
+     * @param string $key
+     * @return ChargeInterface
+     * @see https://developer.pagbank.com.br/docs/chaves-publicas-e-de-idempotencia
+     */
+    public function setIdempotencyKey(string $key): ChargeInterface
+    {
+        $this->idempotencyKey = $key;
+
+        return $this;
+    }
+
+    /**
+     * the idempotency header, when a key was set.
+     *
+     * @return array<string, string>
+     */
+    private function idempotencyHeader(): array
+    {
+        return $this->idempotencyKey === null
+            ? []
+            : ['x-idempotency-key' => $this->idempotencyKey];
+    }
+
     public function create(): array
     {
         $this->order['reference_id'] = $this->order['reference_id'] ?? uniqid('phpay_');
 
         PagBankOrderRequest::validate($this->order);
 
-        return $this->post('orders', $this->order);
+        return $this->post('orders', $this->order, $this->idempotencyHeader());
     }
 
     /**
