@@ -10,7 +10,17 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
-Nada ainda.
+### Adicionado
+
+- **Suporte ao Guzzle 8**, ao lado do 7: o `composer.json` passa a aceitar
+  `^7.3 || ^8.0`. A `RetryPolicy` continua distinguindo "não saiu da máquina" de
+  "deu timeout depois de enviar" nas duas majors — o 8 removeu o
+  `getHandlerContext()` que o 7 usa e trocou o `errno` do cURL por classes de
+  exceção, então a política pergunta na língua de cada uma, com o
+  `NetworkExceptionInterface` do PSR-18 como gatilho comum. A suíte passa nas duas e
+  o CI ganhou um job na major de cima. O PHPStan nível 9 ainda roda na major do
+  lock ([#121]).
+
 
 ## [2.4.0] - 2026-10-22
 
@@ -483,4 +493,5 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#112]: https://github.com/phpay-io/phpay/pull/112
 [#113]: https://github.com/phpay-io/phpay/issues/113
 [#114]: https://github.com/phpay-io/phpay/pull/114
+[#121]: https://github.com/phpay-io/phpay/issues/121
 [#124]: https://github.com/phpay-io/phpay/issues/124

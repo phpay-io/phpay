@@ -19,6 +19,12 @@ documentação do Asaas pede para
 [não tratar a exclusão de cobrança como idempotente](https://docs.asaas.com/reference/excluir-cobranca)
 sem conferir a resposta, e esse aviso vale mais que a teoria.
 
+Funciona igual no Guzzle 7 e no 8, apesar de as duas majors responderem de formas
+diferentes à pergunta "a requisição chegou a sair?". O 7 joga tudo numa
+`ConnectException` e só o `errno` do cURL separa os casos; o 8 removeu esse acessor
+e separou em classes. A política pergunta na língua de cada uma — você não precisa
+saber qual está instalada.
+
 São 3 tentativas no total — 200ms, 400ms, teto de 2s, com jitter. Se o gateway
 mandar um `Retry-After` maior que o teto, a biblioteca **desiste** em vez de
 repetir antes da janela pedida, porque repetir cedo só seria recusado de novo.
