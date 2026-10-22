@@ -8,7 +8,7 @@ Se você encontrar problemas, dúvidas ou precisa de ajuda, siga estas etapas:
 
 1. **Consulte a documentação**:
 
-   - Leia o [README.md](./README.md) do repositório para instruções de uso e soluções comuns.
+   - Leia o [README.md](../README.md) do repositório para instruções de uso e soluções comuns.
 
 2. **Pesquise nas issues**:
 

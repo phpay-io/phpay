@@ -187,7 +187,7 @@ quebra a integração, cobra o valor errado.
 ## Retry e idempotência
 
 A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra na
-`ClientFactory` — então os dez gateways herdam a política de uma vez.
+`ClientFactory` — então os nove gateways herdam a política de uma vez.
 
 - **Repetir é sobre dinheiro, não sobre resiliência.** Um `POST` repetido que o
   gateway já processou cobra o cliente duas vezes. Só é repetido: leitura
@@ -316,7 +316,7 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   header, então o middleware não o vê.
 - `SupportsWebhookSignature` fica em cinco gateways: Asaas, PagBank, Mercado Pago,
   Woovi e AbacatePay. Efí (mTLS), Cielo, Rede e Pagar.me ficam fora, cada um pelo
-  seu motivo, e os motivos estão no README. O HMAC-SHA1 da Woovi é aceito, mas é
+  seu motivo, e os motivos estão em `docs/webhooks.md`. O HMAC-SHA1 da Woovi é aceito, mas é
   depreciado pela própria Woovi.
 - `SupportsWebhooks` e `SupportsPixKeys` só no Asaas, no Woovi e na Efí — os três são
   PSP. Mercado Pago, PagBank e Pagar.me registram endpoints por painel, e Pix neles é
