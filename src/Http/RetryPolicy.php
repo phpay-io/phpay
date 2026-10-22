@@ -3,6 +3,7 @@
 namespace PHPay\Http;
 
 use GuzzleHttp\Exception\ConnectException;
+use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\{RequestInterface, ResponseInterface};
 use Throwable;
 
@@ -21,7 +22,17 @@ use Throwable;
  * idempotent without checking the response, and that warning is worth more
  * than the spec.
  *
+ * The two Guzzle majors answer "did it leave the machine?" differently, and
+ * this class asks each one in its own language. Guzzle 7 throws a single
+ * ConnectException for everything from a failed DNS lookup to a read timeout,
+ * so only the cURL errno in its handler context separates them. Guzzle 8
+ * removed that accessor and split the cases into classes instead, with its own
+ * upgrade guide saying to classify by class and not by error code — there,
+ * ConnectException means the connection never happened, and that is the whole
+ * question. Neither path names a class that exists in only one major.
+ *
  * @see https://docs.asaas.com/reference/excluir-cobranca
+ * @see https://github.com/guzzle/guzzle/blob/8.3.0/UPGRADING.md
  */
 final class RetryPolicy
 {
@@ -100,7 +111,12 @@ final class RetryPolicy
             return false;
         }
 
-        if ($exception instanceof ConnectException) {
+        /*
+         * PSR-18: falha de transporte sem resposta. No Guzzle 7 isso é só a
+         * ConnectException; no 8, também a NetworkException e as de timeout.
+         * O contrato é o mesmo nas duas majors, a classe não.
+         */
+        if ($exception instanceof NetworkExceptionInterface) {
             return $this->neverSent($exception) || $this->repeatable($request);
         }
 
@@ -200,11 +216,23 @@ final class RetryPolicy
     /**
      * whether the request provably never reached the gateway.
      *
-     * @param ConnectException $exception
+     * @param Throwable $exception a transport failure, in either Guzzle major
      * @return bool
      */
-    private function neverSent(ConnectException $exception): bool
+    private function neverSent(Throwable $exception): bool
     {
+        /*
+         * Guzzle 8 não tem getHandlerContext(): ele trocou o errno por
+         * classes, e a própria migração manda classificar pela classe. Lá a
+         * ConnectException significa o que o nome diz — a conexão não se
+         * estabeleceu, nada saiu — e a ConnectTimeoutException herda dela.
+         * Todo o resto (NetworkException, NetworkTimeoutException e a família
+         * Response*) aconteceu com a requisição já na linha.
+         */
+        if (!method_exists($exception, 'getHandlerContext')) {
+            return $exception instanceof ConnectException;
+        }
+
         $context = $exception->getHandlerContext();
         $errno   = $context['errno'] ?? null;
 
