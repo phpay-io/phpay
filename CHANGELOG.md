@@ -17,9 +17,10 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   mas o job valida o `composer.json`, instala só as dependências de runtime,
   confere a sintaxe de `src/` e roda um smoke test que carrega o autoload e
   instancia os nove gateways. Nada muda para quem usa a biblioteca: o requisito
-  segue `^8.1`, agora verificado por execução e não só pelo PHPStan ([#111]).
+  segue `^8.1`, agora verificado por execução e não só pelo PHPStan
+  ([#111], [#112]).
 - Cobertura de testes medida no CI, num job só, com o número no log e no resumo
-  do job. Sem mínimo que reprove o build ([#111]).
+  do job. Sem mínimo que reprove o build ([#111], [#112]).
 
 ## [2.3.0] - 2026-10-22
 
@@ -436,3 +437,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#101]: https://github.com/phpay-io/phpay/issues/101
 [#102]: https://github.com/phpay-io/phpay/pull/102
 [#111]: https://github.com/phpay-io/phpay/issues/111
+[#112]: https://github.com/phpay-io/phpay/pull/112
