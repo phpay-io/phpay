@@ -261,6 +261,15 @@ Nos dois últimos, `isSandbox()` diz em qual ambiente você está:
 > **Nunca** versione credenciais. Os arquivos `examples/*/credentials.php` são
 > ignorados pelo git por padrão.
 
+`var_dump()` e `print_r()` de um gateway ou recurso mostram `********` no lugar
+da credencial, e o client HTTP, que a carrega nos headers, aparece oculto. O
+`dd()` do Symfony VarDumper lê as propriedades por conta própria e **não** passa
+por essa máscara: não despeje o gateway em log.
+
+Toda requisição tem prazo: 60 segundos no total e 10 para conectar. Sem isso, um
+gateway que trava prenderia o worker indefinidamente. Um estouro de prazo chega
+como `ApiException` com `isConnectionError()` verdadeiro.
+
 ### Cliente
 
 O mesmo campo tem **seis grafias** entre os gateways: `cpfCnpj` no Asaas,

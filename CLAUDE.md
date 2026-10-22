@@ -51,6 +51,10 @@ Regras que valem para todo código novo:
 - **Todo Resource aceita `?Client $client = null` como último parâmetro do construtor**
   e faz `$this->client = $client ?? $this->client<Gateway>Boot()`. É isso que torna a
   suíte testável sem rede — não crie Resource sem esse parâmetro.
+- **O `<gateway>Boot()` monta o client com `PHPay\Http\ClientFactory::make()`**, nunca
+  com `new Client(`. A fábrica põe `timeout` de 60s e `connect_timeout` de 10s, porque o
+  padrão do Guzzle é esperar para sempre. Um teste varre `src/` e reprova `new Client(`
+  fora dela.
 - **Validação de payload vive em classes `*Request` estáticas**, com o par
   `validate(array): void` + `messages(): object`. As mensagens são em **português** e
   **não** carregam o prefixo do gateway: quem prefixa é
@@ -100,7 +104,7 @@ Rodar um subconjunto:
 
 ```bash
 ./vendor/bin/pest --filter="reaproveita o cliente"
-./vendor/bin/pest --group=asaas   # grupos: phpay, asaas, efi
+./vendor/bin/pest --group=asaas   # phpay, support, ou o nome do gateway
 ```
 
 Exemplos manuais contra o sandbox (`examples/`): copie
@@ -114,7 +118,9 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   `jsonResponse(array $data, int $status)` e `recordedBody(array $history, int $index)`.
 - O padrão é: montar o Resource com o client mockado, executar, e **asseverar sobre o
   histórico de requisições** (método, URI, corpo) além do retorno.
-- Todo teste declara um grupo: `->group('phpay' | 'asaas' | 'efi')`.
+- Todo teste declara um grupo: `phpay` (núcleo), `support` (`Money`, `Customer`) ou o do
+  gateway (`asaas`, `efi`, `woovi`, `mercadopago`, `pagbank`, `pagarme`, `cielo`, `rede`,
+  `abacatepay`).
 - O PHPStan analisa só `src` — o Pest usa `__call` para `group()`/`with()` e o nível 9
   não consegue resolver isso em `tests`.
 
@@ -271,3 +277,15 @@ esquema — por isso o certificado é genérico, não da Efí.
 Biblioteca de pagamentos: nunca logar, imprimir ou commitar tokens, `access_token`,
 `clientSecret` ou CPF/CNPJ reais. `$sandbox = true` é o default em todos os construtores —
 mantenha assim.
+
+- **`PHPay\Http\MasksCredentials`** dá `__debugInfo()` a todo gateway e, pelo
+  `HasHttpClient`, a todo Resource. No `var_dump`/`print_r`, ele troca por `********` as
+  propriedades listadas em `credentialProperties()` e esconde todo `Client`, que carrega a
+  credencial nos headers. **Credencial com nome novo precisa entrar nessa lista.** Gateway
+  novo usa o trait.
+- O `dd()` do Symfony VarDumper lê propriedade privada por conta própria e **não** é
+  coberto — não prometa isso na documentação.
+- Parâmetro que recebe credencial leva `#[\SensitiveParameter]`, para não aparecer em stack
+  trace. O atributo é ignorado no 8.1 sem erro.
+- Exceção nunca carrega resposta com token: antes de passar o corpo para a
+  `ApiException`, tire `access_token`/`refresh_token` (ver `EfiGateway::withoutCredentials()`).
