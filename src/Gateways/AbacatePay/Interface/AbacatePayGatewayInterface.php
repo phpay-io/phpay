@@ -5,7 +5,8 @@ namespace PHPay\AbacatePay\Interface;
 use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\AbacatePay\Resources\Coupon\Coupon;
 use PHPay\AbacatePay\Resources\Customer\Customer;
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers};
+use PHPay\AbacatePay\Resources\WebhookSignature\WebhookSignature;
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsWebhookSignature};
 use PHPay\Support\Customer as CustomerData;
 
 /**
@@ -21,7 +22,8 @@ use PHPay\Support\Customer as CustomerData;
  */
 interface AbacatePayGatewayInterface extends
     SupportsCustomers,
-    SupportsCharges
+    SupportsCharges,
+    SupportsWebhookSignature
 {
     /**
      * get resource customer from gateway.
@@ -47,4 +49,11 @@ interface AbacatePayGatewayInterface extends
      * @return Coupon
      */
     public function coupons(): Coupon;
+
+    /**
+     * get resource webhook signature from gateway.
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature;
 }

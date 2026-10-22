@@ -8,13 +8,14 @@ use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
 use PHPay\PHPay;
 
-it('declara apenas clientes, cobranças e assinaturas', function () {
+it('declara clientes, cobranças, assinaturas e verificação de assinatura', function () {
     $gateway = new MercadoPagoGateway('TEST-token', mpClient([]));
 
     expect(Capability::of($gateway))->toBe([
         Capability::CUSTOMERS,
         Capability::CHARGES,
         Capability::SUBSCRIPTIONS,
+        Capability::WEBHOOK_SIGNATURE,
     ]);
 })->group('mercadopago');
 

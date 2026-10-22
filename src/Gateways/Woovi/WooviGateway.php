@@ -12,6 +12,7 @@ use PHPay\Woovi\Resources\Customer\Customer;
 use PHPay\Woovi\Resources\Pix\Pix;
 use PHPay\Woovi\Resources\Subscription\Subscription;
 use PHPay\Woovi\Resources\Webhook\Webhook;
+use PHPay\Woovi\Resources\WebhookSignature\WebhookSignature;
 
 class WooviGateway implements WooviGatewayInterface
 {
@@ -99,5 +100,15 @@ class WooviGateway implements WooviGatewayInterface
     public function subscription(): Subscription
     {
         return new Subscription($this->appId, $this->sandbox, $this->client);
+    }
+
+    /**
+     * webhook signature
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature
+    {
+        return new WebhookSignature($this->appId, $this->sandbox, $this->client);
     }
 }

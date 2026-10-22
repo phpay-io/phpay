@@ -9,6 +9,7 @@ use PHPay\PagBank\Requests\PagBankCustomerRequest;
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
+use PHPay\PagBank\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Support\Customer as CustomerData;
 
 class PagBankGateway implements PagBankGatewayInterface
@@ -76,5 +77,15 @@ class PagBankGateway implements PagBankGatewayInterface
     public function subscription(): Subscription
     {
         return new Subscription($this->token, $this->sandbox, $this->client);
+    }
+
+    /**
+     * webhook signature
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature
+    {
+        return new WebhookSignature();
     }
 }

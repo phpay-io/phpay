@@ -2,10 +2,11 @@
 
 namespace PHPay\MercadoPago\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsSubscriptions};
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsSubscriptions, SupportsWebhookSignature};
 use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
+use PHPay\MercadoPago\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Support\Customer as CustomerData;
 
 /**
@@ -21,7 +22,8 @@ use PHPay\Support\Customer as CustomerData;
 interface MercadoPagoGatewayInterface extends
     SupportsCustomers,
     SupportsCharges,
-    SupportsSubscriptions
+    SupportsSubscriptions,
+    SupportsWebhookSignature
 {
     /**
      * get resource customer from gateway.
@@ -51,4 +53,11 @@ interface MercadoPagoGatewayInterface extends
      * @return bool
      */
     public function isSandbox(): bool;
+
+    /**
+     * get resource webhook signature from gateway.
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature;
 }

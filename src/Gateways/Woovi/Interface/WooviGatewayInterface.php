@@ -2,13 +2,14 @@
 
 namespace PHPay\Woovi\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Support\Customer as CustomerData;
 use PHPay\Woovi\Resources\Charge\Charge;
 use PHPay\Woovi\Resources\Customer\Customer;
 use PHPay\Woovi\Resources\Pix\Pix;
 use PHPay\Woovi\Resources\Subscription\Subscription;
 use PHPay\Woovi\Resources\Webhook\Webhook;
+use PHPay\Woovi\Resources\WebhookSignature\WebhookSignature;
 
 /**
  * the Woovi/OpenPix gateway offers every capability the library models.
@@ -22,7 +23,8 @@ interface WooviGatewayInterface extends
     SupportsCharges,
     SupportsWebhooks,
     SupportsPixKeys,
-    SupportsSubscriptions
+    SupportsSubscriptions,
+    SupportsWebhookSignature
 {
     /**
      * get resource customer from gateway.
@@ -60,4 +62,11 @@ interface WooviGatewayInterface extends
      * @return Subscription
      */
     public function subscription(): Subscription;
+
+    /**
+     * get resource webhook signature from gateway.
+     *
+     * @return WebhookSignature
+     */
+    public function webhookSignature(): WebhookSignature;
 }
