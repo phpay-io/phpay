@@ -10,6 +10,15 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+Nada ainda.
+
+## [2.4.0] - 2026-10-22
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.4.0) ·
+QR Code estático composto localmente, CI no PHP 8.1 de verdade e a documentação
+em `docs/`. Nenhuma assinatura de método mudou; o que mudou de lugar foi a
+documentação.
+
 ### Adicionado
 
 - O CI passa a rodar no PHP 8.1, a versão mínima que o `composer.json` promete.
@@ -386,7 +395,8 @@ Primeira versão publicada no Packagist, sob licença MIT.
 - Exemplos manuais em `examples/`, contra o sandbox de cada gateway ([#23],
   [#25], [#42]).
 
-[Não lançado]: https://github.com/phpay-io/phpay/compare/v2.3.0...develop
+[Não lançado]: https://github.com/phpay-io/phpay/compare/v2.4.0...develop
+[2.4.0]: https://github.com/phpay-io/phpay/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/phpay-io/phpay/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/phpay-io/phpay/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/phpay-io/phpay/compare/v2.0.0...v2.1.0
