@@ -3,7 +3,7 @@
 namespace PHPay\MercadoPago\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\{ClientFactory, HasHttpClient};
+use PHPay\Http\{ClientFactory, HasHttpClient, Idempotency};
 
 trait HasMercadoPagoClient
 {
@@ -60,6 +60,6 @@ trait HasMercadoPagoClient
      */
     protected function idempotencyKey(): string
     {
-        return bin2hex(random_bytes(16));
+        return Idempotency::key();
     }
 }
