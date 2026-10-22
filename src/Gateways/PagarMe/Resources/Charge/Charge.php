@@ -38,6 +38,11 @@ class Charge implements ChargeInterface
     private array $queryParams = [];
 
     /**
+     * key that lets the gateway recognise a repeat of this very order
+     */
+    private ?string $idempotencyKey = null;
+
+    /**
      * construct
      *
      * @param string $secretKey
@@ -226,11 +231,47 @@ class Charge implements ChargeInterface
      * @throws ValidationException|ApiException
      * @see https://docs.pagar.me/reference/criar-pedido-2
      */
+    /**
+     * set the idempotency key sent when creating the order.
+     *
+     * within 24 horas the gateway answers a request carrying a key it has seen
+     * before with the result of the first one, instead of creating a second
+     * order. It also lets the retry policy repeat this POST, which it refuses
+     * to do without a key.
+     *
+     * Use a key of your own, stored next to the pending record: one generated
+     * here would cover only the retries inside this single call, and a retry
+     * from your side — another process, another create() — would arrive with a
+     * new key and charge again.
+     *
+     * @param string $key
+     * @return ChargeInterface
+     * @see https://docs.pagar.me/docs/o-que-%C3%A9
+     */
+    public function setIdempotencyKey(string $key): ChargeInterface
+    {
+        $this->idempotencyKey = $key;
+
+        return $this;
+    }
+
+    /**
+     * the idempotency header, when a key was set.
+     *
+     * @return array<string, string>
+     */
+    private function idempotencyHeader(): array
+    {
+        return $this->idempotencyKey === null
+            ? []
+            : ['Idempotency-Key' => $this->idempotencyKey];
+    }
+
     public function create(): array
     {
         PagarMeOrderRequest::validate($this->order);
 
-        return $this->post('orders', $this->order);
+        return $this->post('orders', $this->order, $this->idempotencyHeader());
     }
 
     /**

@@ -192,3 +192,30 @@ it('recusa valor decimal no pagamento do pedido', function () {
 
     expect($history)->toBeEmpty();
 })->group('pagarme');
+
+it('manda a chave de idempotência no header quando ela é informada', function () {
+    $history = [];
+    $client  = pagarmeClient([jsonResponse(['id' => 'or_1'])], $history);
+
+    (new Charge('sk_test_abc', $client))
+        ->setCustomer(pagarmeCustomer())
+        ->addItem('Assinatura PHPay', 10050)
+        ->setPix(1800)
+        ->setIdempotencyKey('pedido-4211')
+        ->create();
+
+    expect($history[0]['request']->getHeaderLine('Idempotency-Key'))->toBe('pedido-4211');
+})->group('pagarme');
+
+it('não manda header de idempotência sem chave', function () {
+    $history = [];
+    $client  = pagarmeClient([jsonResponse(['id' => 'or_1'])], $history);
+
+    (new Charge('sk_test_abc', $client))
+        ->setCustomer(pagarmeCustomer())
+        ->addItem('Assinatura PHPay', 10050)
+        ->setPix(1800)
+        ->create();
+
+    expect($history[0]['request']->hasHeader('Idempotency-Key'))->toBeFalse();
+})->group('pagarme');
