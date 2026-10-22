@@ -89,10 +89,11 @@ Rodar direto no host (requer PHP 8.2+ e Composer):
 
 ```bash
 composer install
-composer test        # lint + unit + types — mesmo gate do CI
+composer test        # lint + unit + types + links — mesmo gate do CI
 composer test:lint   # pint --test (PSR-12 + regras do pint.json)
 composer test:unit   # pest
 composer test:types  # phpstan (nível e phpVersion vêm do phpstan.neon)
+composer test:links  # links relativos e âncoras dos markdowns (.github/scripts/check-links.php)
 composer lint        # pint -v (corrige)
 ```
 
