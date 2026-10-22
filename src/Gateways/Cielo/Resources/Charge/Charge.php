@@ -50,6 +50,7 @@ class Charge implements ChargeInterface
      */
     public function __construct(
         private string $merchantId,
+        #[\SensitiveParameter]
         private string $merchantKey,
         private bool $sandbox = true,
         ?Client $client = null,

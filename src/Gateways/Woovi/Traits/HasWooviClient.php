@@ -3,7 +3,7 @@
 namespace PHPay\Woovi\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 trait HasWooviClient
 {
@@ -21,7 +21,7 @@ trait HasWooviClient
      */
     protected function clientWooviBoot(): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->baseUri(),
             'headers'  => [
                 'content-type'  => 'application/json',

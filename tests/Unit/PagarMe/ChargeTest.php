@@ -178,3 +178,17 @@ it('lê e reenvia entregas de webhook', function () {
         ->and($history[2]['request']->getMethod())->toBe('POST')
         ->and((string) $history[2]['request']->getUri())->toEndWith('/hooks/hook_1/resend');
 })->group('pagarme');
+
+it('recusa valor decimal no pagamento do pedido', function () {
+    $history = [];
+    $client  = pagarmeClient([jsonResponse([])], $history);
+
+    expect(fn () => (new Charge('sk_test_abc', $client))
+        ->setCustomerId('cus_1')
+        ->addItem('Item', 1050)
+        ->setPayments([['payment_method' => 'pix', 'amount' => 10.50]])
+        ->create())
+        ->toThrow(ValidationException::class, 'payments[].amount');
+
+    expect($history)->toBeEmpty();
+})->group('pagarme');

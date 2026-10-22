@@ -46,6 +46,7 @@ class Subscription implements SubscriptionInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $token,
         private bool $sandbox = true,
         ?Client $client = null,

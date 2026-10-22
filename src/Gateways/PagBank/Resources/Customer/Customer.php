@@ -41,6 +41,7 @@ class Customer implements CustomerInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $token,
         private array $customer = [],
         private bool $sandbox = true,

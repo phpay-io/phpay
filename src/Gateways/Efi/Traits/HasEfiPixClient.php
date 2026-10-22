@@ -4,7 +4,7 @@ namespace PHPay\Efi\Traits;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\ValidationException;
-use PHPay\Http\{Certificate, HasHttpClient};
+use PHPay\Http\{Certificate, ClientFactory, HasHttpClient};
 
 /**
  * http client of the Efí Pix API.
@@ -30,11 +30,13 @@ trait HasEfiPixClient
      * @throws ValidationException
      */
     protected function clientEfiPixAuthorize(
+        #[\SensitiveParameter]
         string $clientId,
+        #[\SensitiveParameter]
         string $clientSecret,
         ?Certificate $certificate
     ): Client {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->pixBaseUri(),
             'auth'     => [$clientId, $clientSecret],
             'headers'  => [
@@ -51,7 +53,7 @@ trait HasEfiPixClient
      * @return Client
      * @throws ValidationException
      */
-    protected function clientEfiPixBoot(array $token, ?Certificate $certificate): Client
+    protected function clientEfiPixBoot(#[\SensitiveParameter] array $token, ?Certificate $certificate): Client
     {
         $accessToken = $token['access_token'] ?? null;
         $tokenType   = $token['token_type'] ?? null;
@@ -63,7 +65,7 @@ trait HasEfiPixClient
             );
         }
 
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->pixBaseUri(),
             'headers'  => [
                 'Authorization' => "{$tokenType} {$accessToken}",

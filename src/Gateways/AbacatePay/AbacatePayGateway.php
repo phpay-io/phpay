@@ -8,10 +8,16 @@ use PHPay\AbacatePay\Requests\AbacatePayCustomerRequest;
 use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\AbacatePay\Resources\Coupon\Coupon;
 use PHPay\AbacatePay\Resources\Customer\Customer;
+use PHPay\Http\MasksCredentials;
 use PHPay\Support\Customer as CustomerData;
 
 class AbacatePayGateway implements AbacatePayGatewayInterface
 {
+    /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
     /**
      * construct
      *
@@ -24,6 +30,7 @@ class AbacatePayGateway implements AbacatePayGatewayInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $token,
         private ?Client $client = null,
     ) {

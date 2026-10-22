@@ -17,6 +17,11 @@ use Throwable;
 trait HasHttpClient
 {
     /**
+     * keeps the token and the client that carries it out of dumps
+     */
+    use MasksCredentials;
+
+    /**
      * gateway name used in exception messages.
      *
      * @return string

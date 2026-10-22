@@ -12,10 +12,15 @@ use PHPay\Efi\Resources\PixCharge\PixCharge;
 use PHPay\Efi\Resources\Subscription\Subscription;
 use PHPay\Efi\Resources\Webhook\Webhook;
 use PHPay\Exceptions\{ApiException, ValidationException};
-use PHPay\Http\Certificate;
+use PHPay\Http\{Certificate, MasksCredentials};
 
 class EfiGateway implements EfiGatewayInterface
 {
+    /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
     /**
      * credentials exchanged for an access token
      *
@@ -66,7 +71,9 @@ class EfiGateway implements EfiGatewayInterface
      * @throws ValidationException when the certificate path is not a readable .p12/.pem
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $clientId,
+        #[\SensitiveParameter]
         private string $clientSecret,
         private bool $sandbox = true,
         private ?Client $client = null,
@@ -208,7 +215,7 @@ class EfiGateway implements EfiGatewayInterface
                 'Efí: autorização não retornou access_token.',
                 'Efí',
                 0,
-                $token
+                self::withoutCredentials($token)
             );
         }
 
@@ -236,11 +243,26 @@ class EfiGateway implements EfiGatewayInterface
                 'Efí: autorização da API Pix não retornou access_token.',
                 'Efí',
                 0,
-                $token
+                self::withoutCredentials($token)
             );
         }
 
         return $token;
+    }
+
+    /**
+     * the token response without the credentials it may carry.
+     *
+     * a response that is incomplete — say, an access_token without its
+     * token_type — still holds a live token, and the exception built from it
+     * ends up in logs.
+     *
+     * @param array<string, mixed> $token
+     * @return array<string, mixed>
+     */
+    private static function withoutCredentials(array $token): array
+    {
+        return array_diff_key($token, array_flip(['access_token', 'refresh_token']));
     }
 
     /**

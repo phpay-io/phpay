@@ -26,7 +26,7 @@ class PagarMeOrderRequest
 
     /**
      * @param array<mixed> $order
-     * @param object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string} $messages
+     * @param object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string, paymentAmount: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -60,7 +60,7 @@ class PagarMeOrderRequest
 
     /**
      * @param array<mixed> $order
-     * @param object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string} $messages
+     * @param object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string, paymentAmount: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -83,7 +83,7 @@ class PagarMeOrderRequest
 
     /**
      * @param array<mixed> $order
-     * @param object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string} $messages
+     * @param object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string, paymentAmount: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -101,13 +101,18 @@ class PagarMeOrderRequest
             ) {
                 throw ValidationException::make('Pagar.me', $messages->paymentMethod);
             }
+
+            /* optional — without it the payment takes the total of the items */
+            if (array_key_exists('amount', $payment) && (!is_int($payment['amount']) || $payment['amount'] < 1)) {
+                throw ValidationException::make('Pagar.me', $messages->paymentAmount);
+            }
         }
     }
 
     /**
      * messages for validation
      *
-     * @return object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string}
+     * @return object{items: string, itemDescription: string, itemQuantity: string, itemAmount: string, customer: string, payments: string, paymentMethod: string, paymentAmount: string}
      */
     public static function messages(): object
     {
@@ -119,6 +124,7 @@ class PagarMeOrderRequest
             'customer'        => 'O pedido precisa de customer_id ou de um customer completo. Use setCustomerId() ou setCustomer().',
             'payments'        => 'O pedido precisa de ao menos uma forma de pagamento em payments. Use setPix(), setBoleto() ou setPayments().',
             'paymentMethod'   => 'O campo payments[].payment_method é obrigatório e aceita apenas: credit_card, debit_card, boleto, pix.',
+            'paymentAmount'   => 'O campo payments[].amount, quando informado, deve ser um inteiro em CENTAVOS maior que zero. Sem ele, o pagamento leva o total dos itens.',
         ];
     }
 }

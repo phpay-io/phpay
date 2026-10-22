@@ -3,6 +3,7 @@
 namespace PHPay\PagarMe;
 
 use GuzzleHttp\Client;
+use PHPay\Http\MasksCredentials;
 use PHPay\PagarMe\Interface\PagarMeGatewayInterface;
 use PHPay\PagarMe\Requests\PagarMeCustomerRequest;
 use PHPay\PagarMe\Resources\Charge\Charge;
@@ -13,6 +14,11 @@ use PHPay\Support\Customer as CustomerData;
 
 class PagarMeGateway implements PagarMeGatewayInterface
 {
+    /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
     /**
      * prefix that marks a test secret key
      */
@@ -28,6 +34,7 @@ class PagarMeGateway implements PagarMeGatewayInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $secretKey,
         private ?Client $client = null,
     ) {

@@ -36,7 +36,9 @@ class PixAuthorization
      * @throws ValidationException
      */
     public function __construct(
+        #[\SensitiveParameter]
         string $clientId,
+        #[\SensitiveParameter]
         string $clientSecret,
         ?Certificate $certificate = null,
         protected bool $sandbox = true,

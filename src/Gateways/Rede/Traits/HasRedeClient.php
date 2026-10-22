@@ -3,7 +3,7 @@
 namespace PHPay\Rede\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 use PHPay\Rede\RedeEnvironment;
 
 /**
@@ -25,7 +25,7 @@ trait HasRedeClient
      */
     protected function clientRedeBoot(): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->baseUri(),
             'headers'  => [
                 'content-type' => 'application/json',
@@ -42,7 +42,7 @@ trait HasRedeClient
      */
     protected function clientRedeOauthBoot(): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->oauthUri(),
             'headers'  => [
                 'accept'     => 'application/json',

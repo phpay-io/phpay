@@ -3,6 +3,7 @@
 namespace PHPay\MercadoPago;
 
 use GuzzleHttp\Client;
+use PHPay\Http\MasksCredentials;
 use PHPay\MercadoPago\Interface\MercadoPagoGatewayInterface;
 use PHPay\MercadoPago\Requests\MercadoPagoCustomerRequest;
 use PHPay\MercadoPago\Resources\Charge\Charge;
@@ -12,6 +13,11 @@ use PHPay\Support\Customer as CustomerData;
 
 class MercadoPagoGateway implements MercadoPagoGatewayInterface
 {
+    /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
     /**
      * prefix that marks a test credential
      */
@@ -28,6 +34,7 @@ class MercadoPagoGateway implements MercadoPagoGatewayInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $accessToken,
         private ?Client $client = null,
     ) {

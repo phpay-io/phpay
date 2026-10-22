@@ -3,7 +3,7 @@
 namespace PHPay\AbacatePay\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 trait HasAbacatePayClient
 {
@@ -24,7 +24,7 @@ trait HasAbacatePayClient
      */
     protected function clientAbacatePayBoot(): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->baseUri(),
             'headers'  => [
                 'content-type'  => 'application/json',

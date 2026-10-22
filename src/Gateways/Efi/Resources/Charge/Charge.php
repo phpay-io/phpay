@@ -50,6 +50,7 @@ class Charge implements ChargeInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         array $token,
         private array $charge = [],
         private bool $sandbox = true,
@@ -241,9 +242,11 @@ class Charge implements ChargeInterface
         $items = $this->items;
 
         if (empty($this->items)) {
+            $value = $this->charge['value'];
+
             $items[] = [
                 'name'  => $this->charge['description'],
-                'value' => $this->charge['value'],
+                'value' => $value instanceof Money ? $value->toCentavos() : $value,
             ];
 
             unset($this->charge['description']);

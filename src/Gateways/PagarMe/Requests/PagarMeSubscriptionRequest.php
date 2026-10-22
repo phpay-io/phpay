@@ -52,6 +52,7 @@ class PagarMeSubscriptionRequest
         /* sem plano, a recorrência precisa vir descrita no próprio payload */
         if (!$hasPlan) {
             self::validateRecurrence($subscription, $messages);
+            self::validatePrices($subscription['items'], $messages->itemPrice);
         }
     }
 
@@ -76,7 +77,23 @@ class PagarMeSubscriptionRequest
             throw ValidationException::make('Pagar.me', $messages->planItems);
         }
 
-        foreach ($plan['items'] as $item) {
+        self::validatePrices($plan['items'], $messages->planPrice);
+    }
+
+    /**
+     * every item must carry pricing_scheme.price as an integer in cents.
+     *
+     * shared by plans and by plan-less subscriptions, which describe their
+     * own items: either way the price is what the customer pays each cycle.
+     *
+     * @param array<mixed> $items
+     * @param string $message
+     * @return void
+     * @throws ValidationException
+     */
+    private static function validatePrices(array $items, string $message): void
+    {
+        foreach ($items as $item) {
             $scheme = is_array($item) ? ($item['pricing_scheme'] ?? null) : null;
 
             if (!is_array($scheme)
@@ -84,7 +101,7 @@ class PagarMeSubscriptionRequest
                 || !is_int($scheme['price'])
                 || $scheme['price'] < 1
             ) {
-                throw ValidationException::make('Pagar.me', $messages->planPrice);
+                throw ValidationException::make('Pagar.me', $message);
             }
         }
     }
@@ -93,7 +110,7 @@ class PagarMeSubscriptionRequest
      * validate the interval fields shared by plans and plan-less subscriptions.
      *
      * @param array<mixed> $payload
-     * @param object{plan: string, customer: string, paymentMethod: string, interval: string, intervalCount: string, planName: string, planItems: string, planPrice: string} $messages
+     * @param object{plan: string, customer: string, paymentMethod: string, interval: string, intervalCount: string, planName: string, planItems: string, planPrice: string, itemPrice: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -117,12 +134,12 @@ class PagarMeSubscriptionRequest
     /**
      * messages for validation
      *
-     * @return object{plan: string, customer: string, paymentMethod: string, interval: string, intervalCount: string, planName: string, planItems: string, planPrice: string}
+     * @return object{plan: string, customer: string, paymentMethod: string, interval: string, intervalCount: string, planName: string, planItems: string, planPrice: string, itemPrice: string}
      */
     public static function messages(): object
     {
         return (object) [
-            'plan'          => 'A assinatura precisa de plan_id ou de items próprios. Use setPlan() ou setItems().',
+            'plan'          => 'A assinatura precisa de plan_id ou de items próprios. Use setPlan() ou passe items em create().',
             'customer'      => 'A assinatura precisa de customer_id ou de um customer completo. Use setCustomerId() ou setCustomer().',
             'paymentMethod' => 'O campo payment_method é obrigatório e aceita apenas: credit_card, debit_card, boleto, pix.',
             'interval'      => 'O campo interval é obrigatório e aceita apenas: day, week, month, year.',
@@ -130,6 +147,7 @@ class PagarMeSubscriptionRequest
             'planName'      => 'O campo name do plano é obrigatório e deve ser uma string não vazia.',
             'planItems'     => 'O plano precisa de ao menos um item em items.',
             'planPrice'     => 'O campo items[].pricing_scheme.price do plano é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. R$ 49,90 é 4990.',
+            'itemPrice'     => 'O campo items[].pricing_scheme.price da assinatura é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. R$ 49,90 é 4990.',
         ];
     }
 }

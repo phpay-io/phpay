@@ -3,6 +3,7 @@
 namespace PHPay\PagBank;
 
 use GuzzleHttp\Client;
+use PHPay\Http\MasksCredentials;
 use PHPay\PagBank\Interface\PagBankGatewayInterface;
 use PHPay\PagBank\Requests\PagBankCustomerRequest;
 use PHPay\PagBank\Resources\Charge\Charge;
@@ -13,6 +14,11 @@ use PHPay\Support\Customer as CustomerData;
 class PagBankGateway implements PagBankGatewayInterface
 {
     /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
+    /**
      * construct
      *
      * @param string $token
@@ -20,6 +26,7 @@ class PagBankGateway implements PagBankGatewayInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $token,
         private bool $sandbox = true,
         private ?Client $client = null,
