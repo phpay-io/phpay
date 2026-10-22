@@ -187,7 +187,7 @@ quebra a integração, cobra o valor errado.
 ## Retry e idempotência
 
 A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra na
-`ClientFactory` — então os dez gateways herdam a política de uma vez.
+`ClientFactory` — então os nove gateways herdam a política de uma vez.
 
 - **Repetir é sobre dinheiro, não sobre resiliência.** Um `POST` repetido que o
   gateway já processou cobra o cliente duas vezes. Só é repetido: leitura
