@@ -28,7 +28,9 @@ class Authorization implements AuthorizationInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         string $clientId,
+        #[\SensitiveParameter]
         string $clientSecret,
         protected bool $sandbox = true,
         ?Client $client = null

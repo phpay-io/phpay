@@ -51,6 +51,7 @@ class Webhook implements WebhookInterface
      * @throws ValidationException
      */
     public function __construct(
+        #[\SensitiveParameter]
         array $token,
         private array $webhook = [],
         ?Certificate $certificate = null,

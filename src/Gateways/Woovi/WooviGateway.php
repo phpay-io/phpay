@@ -3,6 +3,7 @@
 namespace PHPay\Woovi;
 
 use GuzzleHttp\Client;
+use PHPay\Http\MasksCredentials;
 use PHPay\Support\Customer as CustomerData;
 use PHPay\Woovi\Interface\WooviGatewayInterface;
 use PHPay\Woovi\Requests\WooviCustomerRequest;
@@ -15,6 +16,11 @@ use PHPay\Woovi\Resources\Webhook\Webhook;
 class WooviGateway implements WooviGatewayInterface
 {
     /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
+    /**
      * construct
      *
      * @param string $appId the AppID, sent raw in Authorization
@@ -22,6 +28,7 @@ class WooviGateway implements WooviGatewayInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $appId,
         private bool $sandbox = true,
         private ?Client $client = null,

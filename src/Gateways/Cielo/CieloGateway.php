@@ -6,9 +6,15 @@ use GuzzleHttp\Client;
 use PHPay\Cielo\Interface\CieloGatewayInterface;
 use PHPay\Cielo\Resources\Charge\Charge;
 use PHPay\Cielo\Resources\Subscription\Subscription;
+use PHPay\Http\MasksCredentials;
 
 class CieloGateway implements CieloGatewayInterface
 {
+    /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
     /**
      * construct
      *
@@ -20,6 +26,7 @@ class CieloGateway implements CieloGatewayInterface
      */
     public function __construct(
         private string $merchantId,
+        #[\SensitiveParameter]
         private string $merchantKey,
         private bool $sandbox = true,
         private ?Client $client = null,

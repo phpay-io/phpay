@@ -10,10 +10,16 @@ use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
+use PHPay\Http\MasksCredentials;
 use PHPay\Support\Customer as CustomerData;
 
 class AsaasGateway implements AsaasGatewayInterface
 {
+    /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
     /**
      * construct
      *
@@ -22,6 +28,7 @@ class AsaasGateway implements AsaasGatewayInterface
      * @param Client|null $client injected http client, mainly for tests
      */
     public function __construct(
+        #[\SensitiveParameter]
         private string $token,
         private bool $sandbox = true,
         private ?Client $client = null

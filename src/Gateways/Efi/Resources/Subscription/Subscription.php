@@ -85,6 +85,7 @@ class Subscription implements SubscriptionInterface
      * @throws ValidationException
      */
     public function __construct(
+        #[\SensitiveParameter]
         array $token,
         ?Certificate $certificate = null,
         private bool $sandbox = true,

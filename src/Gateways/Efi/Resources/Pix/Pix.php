@@ -36,6 +36,7 @@ class Pix implements PixInterface
      * @throws ValidationException
      */
     public function __construct(
+        #[\SensitiveParameter]
         array $token,
         ?Certificate $certificate = null,
         private bool $sandbox = true,
