@@ -92,7 +92,10 @@ gateway não aceita Pix ou não manda webhook:
 
 - **`SupportsPixKeys`** significa *gerenciar chaves Pix e QR Code estático*, o
   que só um PSP que emite chave própria oferece. Nos outros gateways, Pix é
-  forma de pagamento de uma cobrança — e todos aceitam.
+  forma de pagamento de uma cobrança — e todos aceitam. As duas metades não
+  andam juntas em todo PSP: o QR Code estático está no Asaas e na Woovi, que
+  expõem endpoint para ele, e **não** na [Efí](#efí), cuja API Pix não tem
+  essa rota.
 - **`SupportsWebhooks`** significa *cadastrar endpoints pela API*. Nos outros,
   o cadastro é no painel; a notificação vai por cobrança, no campo
   `notification_url`. O Pagar.me ainda deixa **consultar e reenviar entregas**,
@@ -1076,6 +1079,13 @@ $chave = PHPay::gateway($gateway)->pix()->createKey()['chave'];
 PHPay::gateway($gateway)->pix()->getAll();
 PHPay::gateway($gateway)->pix()->destroy($chave);
 ```
+
+> **Sem QR Code estático.** A API Pix da Efí não expõe endpoint para criar um,
+> então aqui não existe o `staticQrCode()` do Asaas e da Woovi. Pelo padrão do
+> BACEN, um QR Code estático é um BR Code composto a partir da chave, de um
+> valor opcional e de um identificador livre — quem oferece endpoint faz por
+> conveniência, não por necessidade. O `qrCode()` do `pixCharge()`, acima, é o
+> QR Code **de uma cobrança**, que é outra coisa.
 
 **Webhooks** — um por chave Pix, endereçado pela própria chave:
 
