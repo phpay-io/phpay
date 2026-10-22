@@ -108,3 +108,13 @@ it('formata em decimal com ponto, como o padrão Pix do BACEN', function (int $c
     [0, '0.00'],
     [123456789, '1234567.89'],
 ])->group('support');
+
+it('recusa valor que não é finito ou que estouraria os centavos', function (float|string $valor) {
+    /* sem a trava, NAN e INF viravam 0 e 1e17 virava centavos negativos */
+    expect(fn () => Money::reais($valor))->toThrow(ValidationException::class, 'número finito');
+})->with([
+    'NAN'                           => [NAN],
+    'INF'                           => [INF],
+    'string que vira INF'           => ['1e400'],
+    'mais centavos que PHP_INT_MAX' => [1e17],
+])->group('support');

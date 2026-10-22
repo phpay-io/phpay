@@ -70,6 +70,12 @@ final class Money
 
         $cents = $normalized * 100;
 
+        /* NAN and INF would cast to 0, and past PHP_INT_MAX the cast wraps
+           into a negative amount — both slip past every check above */
+        if (!is_finite($cents) || $cents >= PHP_INT_MAX) {
+            throw ValidationException::make('PHPay', self::messages()->outOfRange);
+        }
+
         if (abs($cents - round($cents)) > 0.000001) {
             throw ValidationException::make('PHPay', self::messages()->precision);
         }
@@ -202,7 +208,7 @@ final class Money
     /**
      * messages for validation
      *
-     * @return object{negative: string, precision: string, notNumeric: string, negativeMultiplier: string}
+     * @return object{negative: string, precision: string, notNumeric: string, outOfRange: string, negativeMultiplier: string}
      */
     public static function messages(): object
     {
@@ -210,6 +216,7 @@ final class Money
             'negative'           => 'Um valor monetário não pode ser negativo.',
             'precision'          => 'Um valor em reais não pode ter mais de duas casas decimais. Arredonde antes, ou use Money::centavos() para ser exato.',
             'notNumeric'         => 'O valor precisa ser numérico. Aceita float, int ou string em qualquer notação: "100.50" ou "100,50".',
+            'outOfRange'         => 'O valor precisa ser um número finito e caber em centavos num inteiro de 64 bits.',
             'negativeMultiplier' => 'A quantidade usada em multiply() não pode ser negativa.',
         ];
     }
