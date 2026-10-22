@@ -1,0 +1,96 @@
+name: Propor uma melhoria
+description: Um gateway novo, uma capacidade que falta, ou uma mudança na API da biblioteca.
+title: '[melhoria] '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de abrir: a ausência de ✅ na
+        [tabela de gateways](https://github.com/phpay-io/phpay#gateways-suportados)
+        quase sempre tem um motivo escrito logo abaixo dela — `SupportsPixKeys`
+        é *gerenciar chave Pix*, não *aceitar Pix*, e `SupportsWebhooks` é
+        *cadastrar endpoint pela API*, não *receber notificação*. Vale a leitura;
+        pode ser que o que você precisa já exista com outro nome.
+
+        E a regra que vale para toda capacidade nova: **a biblioteca não declara
+        recurso que o gateway não tem**. Não existe stub que devolve lista vazia
+        nem verificador de assinatura que responde `true` por não ter o que
+        checar — seria pior do que não ter.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Tipo de melhoria
+      options:
+        - Gateway novo
+        - Capacidade nova num gateway que já existe
+        - Mudança no núcleo (facade, Money, Customer, retry, webhook)
+        - Documentação ou exemplo
+        - Outra
+    validations:
+      required: true
+
+  - type: input
+    id: gateway
+    attributes:
+      label: Gateway
+      description: Qual gateway, se a proposta é sobre um. Deixe em branco se for do núcleo.
+      placeholder: Asaas, Efí, Banco Inter, ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Que problema isso resolve
+      description: >
+        O que você está tentando fazer hoje e não consegue, ou consegue de um
+        jeito que dói. Descreva o caso de uso, não só a solução.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Como você imagina a solução
+      description: >
+        Se tiver uma ideia de como ficaria o código de quem usa, escreva aqui —
+        ajuda mais que qualquer descrição.
+      render: php
+    validations:
+      required: false
+
+  - type: input
+    id: docs
+    attributes:
+      label: Link da documentação do gateway
+      description: >
+        Obrigatório para gateway ou capacidade nova: o endpoint só entra na
+        biblioteca com a referência oficial que descreve o esquema dele.
+      placeholder: https://docs.exemplo.com.br/reference/criar-cobranca
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas que você considerou
+      description: Outro gateway, contornar na sua aplicação, outra forma de API.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Você quer mandar o PR
+      description: >
+        Sem problema se não — ajuda só a saber se dá para contar com isso.
+        Quem contribui código aceita o [CLA](https://github.com/phpay-io/phpay/blob/develop/CLA.md).
+      options:
+        - 'Sim, quero implementar'
+        - 'Sim, com uma mão no começo'
+        - 'Não, só estou propondo'
+    validations:
+      required: true
