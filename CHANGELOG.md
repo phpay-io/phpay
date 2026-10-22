@@ -21,6 +21,32 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   ([#111], [#112]).
 - Cobertura de testes medida no CI, num job só, com o número no log e no resumo
   do job. Sem mínimo que reprove o build ([#111], [#112]).
+- Verificador de links da documentação no gate, em `composer test:links`. Ele
+  confere que todo link relativo aponta para arquivo que existe e que toda
+  âncora corresponde a um título de verdade — título dentro de bloco de código
+  não conta, que foi como o erro abaixo passou tanto tempo escondido
+  ([#124]).
+
+### Alterado
+
+- **A documentação saiu do README para `docs/`**, uma página por conceito e uma
+  por gateway, com índice. O README fica com o essencial: o que é, a matriz de
+  capacidades, requisitos, instalação e início rápido — de 46 KB para 11 KB.
+  **Link externo que apontava para âncora do README deixa de funcionar**; o
+  índice de [`docs/`](docs/) cobre todos os destinos ([#113], [#114]).
+- A matriz de capacidades ganhou a coluna de **assinatura de webhook**, que
+  entrou na v2.3.0 e tinha ficado fora da tabela — quem lia era informado de
+  que a biblioteca fazia menos do que faz ([#113], [#114]).
+
+### Corrigido
+
+- **O README renderizava errado da Rede até a Efí.** O bloco de código do
+  exemplo de recorrência da Cielo nunca era fechado, e cercas alternam: o
+  título `### Rede` e a prosa embaixo dele saíam como código, os exemplos
+  seguintes saíam como prosa. Por causa disso, **dez links do sumário**
+  apontavam para âncoras que não existiam ([#113], [#114]).
+- O link para o README no `.github/SUPPORT.md` apontava para `.github/README.md`
+  ([#113], [#114]).
 
 ## [2.3.0] - 2026-10-22
 
@@ -438,3 +464,6 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#102]: https://github.com/phpay-io/phpay/pull/102
 [#111]: https://github.com/phpay-io/phpay/issues/111
 [#112]: https://github.com/phpay-io/phpay/pull/112
+[#113]: https://github.com/phpay-io/phpay/issues/113
+[#114]: https://github.com/phpay-io/phpay/pull/114
+[#124]: https://github.com/phpay-io/phpay/issues/124
