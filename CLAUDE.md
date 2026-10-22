@@ -6,13 +6,14 @@ Orientações para o Claude Code trabalhar neste repositório.
 
 PHPay (`phpay-io/phpay`) é uma **biblioteca PHP** (não uma aplicação) que padroniza a
 integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** e
-**Woovi/OpenPix** (as cinco capacidades), **Efí** (todas menos clientes),
+**Woovi/OpenPix** (as seis capacidades), **Efí** (todas menos clientes),
 **Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças, assinaturas),
 **Cielo** (cobranças e recorrência), **AbacatePay** (clientes e cobranças) e
 **Rede** (cobranças).
 
 Requisitos: PHP `^8.1` para consumir a lib; `^8.2` para rodar o ambiente de dev
-(Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`, `ext-json`,
+(Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`,
+`ext-json`, `ext-openssl` (a assinatura de webhook da Woovi é RSA) e
 `guzzlehttp/guzzle ^7.3` (a 7.3 é a primeira que entrega `.p12` ao cURL pela
 extensão, e o mTLS depende disso). Publicado no Packagist.
 
@@ -35,7 +36,8 @@ Regras que valem para todo código novo:
 
 - **Capacidade, não contrato único.** `GatewayInterface` carrega só `name()`. Cada
   recurso é uma interface em `src/Contracts/` (`SupportsCustomers`, `SupportsCharges`,
-  `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`) que o gateway
+  `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`,
+  `SupportsWebhookSignature`) que o gateway
   implementa se — e só se — oferecer aquele recurso. **Nunca** declare um recurso para
   depois lançar de dentro dele.
 - **Recurso novo = interface nova + case na enum `Capability` + método guardado na
@@ -182,6 +184,30 @@ quebra a integração, cobra o valor errado.
 - `Money::reais()` **recusa mais de duas casas decimais** de propósito. Não "conserte"
   isso com arredondamento: é o que impede erro de um centavo na conciliação.
 
+## Assinatura de webhook
+
+Use **`webhookSignature()`**. Cadastrar o endpoint é `SupportsWebhooks`; provar que
+a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas diferentes
+— cinco gateways assinam, quatro não.
+
+- O corpo verificado é sempre o **cru**. `PHPay\Webhooks\SignatureRequest` recusa
+  corpo vazio com uma mensagem que explica isso, porque reserializar o JSON muda o
+  hash e o erro voltaria como assinatura inválida.
+- Header é procurado por **`PHPay\Webhooks\Headers::find()`**, que normaliza caixa,
+  prefixo `HTTP_` e `_`/`-`. Não compare chave de header na mão: o mesmo header
+  chega como `x-signature`, `X-Signature` e `HTTP_X_SIGNATURE`.
+- Comparação **sempre** com `hash_equals`.
+- `verify()` devolve `bool`, porque assinatura que não bate é resposta. O modelo de
+  erro continua valendo para uso errado — segredo ausente, corpo vazio ou header de
+  assinatura que não chegou levantam `ValidationException`.
+- Gateway novo só declara a capacidade se a documentação dele descrever o esquema.
+  **Não existe verificador que devolve `true` por não ter o que checar**: seria pior
+  que não ter verificação, porque passaria a impressão de ter.
+- A Woovi é a única que faz HTTP para verificar (busca as chaves públicas em
+  `api/v1/webhook/public-keys` e aceita qualquer uma da lista, por causa da
+  rotação), por isso o recurso dela recebe `?Client $client = null` como os outros.
+  Os demais são só criptografia e não recebem client.
+
 ## Particularidades por gateway
 
 - **Asaas** — `$sandbox` troca a base URL. Chaves Pix próprias, porque é PSP (como Woovi e Efí).
@@ -249,6 +275,10 @@ quebra a integração, cobra o valor errado.
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
   (`webhookrec`, `webhookcobr`), envio de Pix e split.
+- `SupportsWebhookSignature` fica em cinco gateways: Asaas, PagBank, Mercado Pago,
+  Woovi e AbacatePay. Efí (mTLS), Cielo, Rede e Pagar.me ficam fora, cada um pelo
+  seu motivo, e os motivos estão no README. O HMAC-SHA1 da Woovi é aceito, mas é
+  depreciado pela própria Woovi.
 - `SupportsWebhooks` e `SupportsPixKeys` só no Asaas, no Woovi e na Efí — os três são
   PSP. Mercado Pago, PagBank e Pagar.me registram endpoints por painel, e Pix neles é
   forma de pagamento. Não
