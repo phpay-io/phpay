@@ -105,6 +105,9 @@ PHPay::gateway($gateway)->pix()->destroy($chave);
 > valor opcional e de um identificador livre — quem oferece endpoint faz por
 > conveniência, não por necessidade. O `qrCode()` do `pixCharge()`, acima, é o
 > QR Code **de uma cobrança**, que é outra coisa.
+>
+> Para o estático, use [`StaticPixCode`](../qr-code-estatico.md): ele compõe o
+> payload a partir da chave, sem rede e sem gateway.
 
 **Webhooks** — um por chave Pix, endereçado pela própria chave:
 

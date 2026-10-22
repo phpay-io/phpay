@@ -17,6 +17,7 @@ específico dele.
 | [Cliente](cliente.md) | o VO `Customer`, porque o mesmo campo tem seis grafias entre os gateways |
 | [Valores monetários](valores-monetarios.md) | `Money`, porque reais e centavos não se misturam |
 | [Verificando o webhook que chega](webhooks.md) | provar que a notificação veio do gateway |
+| [QR Code estático](qr-code-estatico.md) | compor o BR Code de uma chave Pix localmente, que é como o padrão manda |
 
 ## Gateways
 

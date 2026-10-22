@@ -220,6 +220,28 @@ mandar chave em toda requisição esbarraria no `409 idempotency_key_in_use`. Ga
 novo só ganha setter se a documentação dele descrever o mecanismo — e a geração da
 chave vem de `PHPay\Http\Idempotency::key()`, não de `random_bytes` espalhado.
 
+## QR Code estático
+
+Use **`PHPay\Support\StaticPixCode`**. Pelo padrão do BACEN um QR Code estático é
+composto localmente a partir da chave, então não é Resource, não é capacidade e não
+entra na enum `Capability` — é suporte, como o `Money`. O Asaas e a Woovi expõem
+endpoint por conveniência; a Efí não expõe, e isso não é falta dela.
+
+- **O CRC cobre o literal `6304`**, não para antes dele. Polinômio `0x1021`, C.I.
+  `0xFFFF`. É o erro mais comum de quem implementa o padrão, e gera um código que
+  não lê — o vetor oficial do manual do BACEN está na suíte exigindo o payload byte
+  a byte, e **não é teste opcional**: para o mesmo vetor, o cálculo errado devolve
+  `4AAD` em vez de `1D3D`.
+- O tamanho no TLV é em **bytes**, não em caracteres: quem lê o payload anda em
+  bytes, e um nome com acento desalinharia todos os campos seguintes.
+- O objeto é imutável, como o `Money` e o `Customer`: `with...()` devolve outro.
+- **Só o payload**, nunca a imagem: renderizar exige codificador de QR Code, e isso
+  seria dependência nova numa biblioteca de pagamentos.
+- O `merchantName` é exigido pelo padrão e **ignorado pelo app do pagador**, que
+  mostra o nome vindo do DICT. Está no PHPDoc para ninguém construir em cima dele.
+- Não se valida o formato da chave — EVP, e-mail, telefone e CPF/CNPJ não se
+  parecem, e errar reprovaria chave boa.
+
 ## Assinatura de webhook
 
 Use **`webhookSignature()`**. Cadastrar o endpoint é `SupportsWebhooks`; provar que

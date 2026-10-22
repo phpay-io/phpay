@@ -81,7 +81,8 @@ gateway não aceita Pix, não manda webhook ou não assina nada:
   forma de pagamento de uma cobrança — e todos aceitam. As duas metades não
   andam juntas em todo PSP: o QR Code estático está no Asaas e na Woovi, que
   expõem endpoint para ele, e **não** na [Efí](docs/gateways/efi.md), cuja API Pix não tem
-  essa rota.
+  essa rota. Onde o gateway não expõe, a biblioteca compõe: ver
+  [QR Code estático](docs/qr-code-estatico.md).
 - **`SupportsWebhooks`** significa *cadastrar endpoints pela API*. Nos outros,
   o cadastro é no painel; a notificação vai por cobrança, no campo
   `notification_url`. O Pagar.me ainda deixa **consultar e reenviar entregas**,
@@ -173,6 +174,7 @@ específico dele.
 | [Cliente](docs/cliente.md) | o VO `Customer`, porque o mesmo campo tem seis grafias entre os gateways |
 | [Valores monetários](docs/valores-monetarios.md) | `Money`, porque reais e centavos não se misturam |
 | [Verificando o webhook que chega](docs/webhooks.md) | provar que a notificação veio do gateway |
+| [QR Code estático](docs/qr-code-estatico.md) | compor o BR Code de uma chave Pix localmente, que é como o padrão manda |
 
 **Gateways**
 
