@@ -889,6 +889,8 @@ $id = $recorrencia['Payment']['RecurrentPayment']['RecurrentPaymentId'];
 $phpay->updateAmount($id, 19900);
 $phpay->deactivate($id);
 $phpay->reactivate($id);
+```
+
 ### Rede
 
 Adquirente, e a forma mais estreita da biblioteca: **só
