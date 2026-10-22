@@ -60,7 +60,8 @@
         "ext-curl": "*",
         "ext-json": "*",
         "ext-openssl": "*",
-        "guzzlehttp/guzzle": "^7.3"
+        "guzzlehttp/guzzle": "^7.3 || ^8.0",
+        "psr/http-client": "^1.0"
     },
     "require-dev": {
         "laravel/pint": "1.30.4",

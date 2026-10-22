@@ -194,12 +194,23 @@ A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra 
   gateway já processou cobra o cliente duas vezes. Só é repetido: leitura
   (`GET`/`HEAD`/`OPTIONS`), erro que provou não ter saído da máquina, `429`, e
   escrita com chave de idempotência.
-- **`ConnectException` do Guzzle não significa "não chegou".** O `CurlFactory`
+- **No Guzzle 7, `ConnectException` não significa "não chegou".** O `CurlFactory`
   mapeia `CURLE_OPERATION_TIMEOUTED` e `CURLE_GOT_NOTHING` para a mesma exceção dos
-  erros de conexão. A política lê o `errno` do `getHandlerContext()`: `5`, `6`, `7` e
-  `35` nunca saíram; `28` só é seguro com `connect_time` zerado; `52` é tratado como
-  enviado. **Não simplifique isso para `instanceof ConnectException`** — é o caminho
-  direto para a cobrança duplicada.
+  erros de conexão. Lá a política lê o `errno` do `getHandlerContext()`: `5`, `6`, `7`
+  e `35` nunca saíram; `28` só é seguro com `connect_time` zerado; `52` é tratado como
+  enviado. **Não simplifique isso para `instanceof ConnectException` no 7** — é o
+  caminho direto para a cobrança duplicada.
+- **No Guzzle 8 é o contrário**: ele removeu o `getHandlerContext()` e separou os
+  casos em classes, e a própria migração manda classificar por classe e não por
+  código. Lá `ConnectException` (e a `ConnectTimeoutException`, que herda dela)
+  significa que a conexão não se estabeleceu — nada saiu; `NetworkException`,
+  `NetworkTimeoutException` e a família `Response*` aconteceram com a requisição já
+  na linha. A política detecta a major pelo `method_exists` do acessor, e o gatilho
+  comum às duas é o `NetworkExceptionInterface` do PSR-18. **Nenhum dos caminhos
+  nomeia classe que só existe numa major**, senão o PHPStan quebraria na outra.
+- Teste de cenário que só existe numa major leva `->skip()` com o motivo — um
+  timeout com conexão aberta é `ConnectException` no 7 e `NetworkTimeoutException`
+  no 8, então o mesmo teste não pode valer nas duas.
 - **`PUT`, `PATCH` e `DELETE` não são repetidos**, apesar do HTTP. A doc do Asaas
   pede para não tratar a exclusão de cobrança como idempotente sem conferir a
   resposta.
@@ -333,6 +344,11 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
   (`webhookrec`, `webhookcobr`), envio de Pix e split.
+- O **Guzzle 8 roda** — a suíte passa nas duas majors e o CI tem um job na de cima —,
+  mas o **PHPStan nível 9 ainda não passa nela**: a 8 traz formas de array e genéricos
+  (`Client::__construct`, `HandlerStack<THandler>`, `Middleware::retry`) que as
+  anotações da lib não acompanham, 38 erros. O gate roda na major do lock. Alinhar
+  isso é trabalho de tipos, não de comportamento.
 - Chave de idempotência existe em três gateways: Mercado Pago, Pagar.me e PagBank. Nos
   outros sete, `POST` só é repetido quando o erro provou que a requisição não saiu da
   máquina. O `correlationID` da Woovi deduplica de fato, mas vive no corpo e não em

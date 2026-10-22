@@ -195,3 +195,48 @@ jobs:
       # a assinatura de webhook e o mTLS. Nenhuma requisição sai.
       - name: Smoke test
         run: php .github/scripts/smoke.php
+
+  # a lib aceita Guzzle 7 e 8, e as duas respondem de formas diferentes à
+  # pergunta que decide se um POST pode repetir: o 8 removeu o
+  # getHandlerContext() e trocou o errno do cURL por classes de exceção. A
+  # matriz acima roda na major do lock, que é a 7; sem este job, metade do
+  # suporte não seria exercitada por ninguém.
+  #
+  # Só a suíte. O PHPStan nível 9 ainda não passa na 8: ela traz formas de
+  # array e genéricos (Client::__construct, HandlerStack<THandler>,
+  # Middleware::retry) que as anotações da lib não acompanham, e alinhar isso
+  # é trabalho de tipos, não de comportamento.
+  guzzle8:
+    name: Guzzle 8 (a outra major aceita)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: curl, json, mbstring, openssl
+          coverage: none
+          tools: composer:v2
+
+      # o lock está resolvido para a 7 e o platform travado em 8.2; aqui
+      # queremos a major de cima de propósito, então os dois saem da frente.
+      - name: Resolver na major de cima
+        run: |
+          composer config --unset platform.php
+          composer update guzzlehttp/guzzle --with-all-dependencies --no-interaction --no-progress
+
+      # sem isto, uma resolução que caísse de volta na 7 deixaria o job verde
+      # provando nada.
+      - name: Conferir que a major instalada é a 8
+        run: |
+          composer show guzzlehttp/guzzle | grep -E '^versions'
+          composer show guzzlehttp/guzzle | grep -qE '^versions *: \* 8\.' || {
+            echo 'esperava o Guzzle 8 instalado neste job'
+            exit 1
+          }
+
+      - name: Unit tests (Pest)
+        run: composer test:unit

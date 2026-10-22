@@ -5,7 +5,34 @@ use GuzzleHttp\Exception\{ConnectException, RequestException, ServerException};
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\{Request, Response};
 use PHPay\Http\{ClientFactory, RetryPolicy};
+use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
+
+/**
+ * falha de transporte sem resposta, como o Guzzle 8 entrega: implementa o
+ * contrato do PSR-18, não tem getHandlerContext() e não é ConnectException.
+ *
+ * É o que a NetworkException e a NetworkTimeoutException do Guzzle 8 são para
+ * a política — a requisição pode ter saído, então escrita não se repete.
+ */
+final class FalhaDeRedeSemContexto extends RuntimeException implements NetworkExceptionInterface
+{
+    /**
+     * @param RequestInterface $request
+     */
+    public function __construct(private RequestInterface $request)
+    {
+        parent::__construct('falha de transporte sem resposta');
+    }
+
+    /**
+     * @return RequestInterface
+     */
+    public function getRequest(): RequestInterface
+    {
+        return $this->request;
+    }
+}
 
 /**
  * a request, with the headers a gateway would see.
@@ -136,7 +163,10 @@ it('não repete escrita em timeout com conexão já estabelecida', function () {
 
     expect($policy->shouldRetry(0, retryRequest('POST'), null, $timeout))->toBeFalse()
         ->and($policy->shouldRetry(0, retryRequest('GET'), null, $timeout))->toBeTrue();
-})->group('phpay');
+})->skip(
+    !method_exists(ConnectException::class, 'getHandlerContext'),
+    'cenário só existe no Guzzle 7: no 8, timeout com conexão aberta é NetworkTimeoutException, não ConnectException'
+)->group('phpay');
 
 it('repete escrita em timeout que nem conectou', function () {
     expect((new RetryPolicy())->shouldRetry(0, retryRequest('POST'), null, connectError(28, 0.0)))
@@ -149,7 +179,46 @@ it('trata servidor que fechou sem responder como requisição enviada', function
 
     expect((new RetryPolicy())->shouldRetry(0, retryRequest('POST'), null, $nada))->toBeFalse()
         ->and((new RetryPolicy())->shouldRetry(0, retryRequest('GET'), null, $nada))->toBeTrue();
+})->skip(
+    !method_exists(ConnectException::class, 'getHandlerContext'),
+    'cenário só existe no Guzzle 7: no 8, timeout com conexão aberta é NetworkTimeoutException, não ConnectException'
+)->group('phpay');
+
+it('trata falha de rede sem contexto como requisição enviada', function () {
+    /*
+     * é o caso do Guzzle 8: a classe diz "falhou na rede" e nada mais. Sem
+     * prova de que não saiu, escrita não se repete — leitura sim.
+     */
+    $falha  = new FalhaDeRedeSemContexto(retryRequest('POST'));
+    $policy = new RetryPolicy();
+
+    expect($policy->shouldRetry(0, retryRequest('POST'), null, $falha))->toBeFalse()
+        ->and($policy->shouldRetry(0, retryRequest('GET'), null, $falha))->toBeTrue();
 })->group('phpay');
+
+it('no Guzzle 7, ConnectException sem errno não prova que nada saiu', function () {
+    /* lá a classe é o apanhado de tudo: sem o errno, não há o que afirmar */
+    $sem = new ConnectException('erro de transporte', retryRequest('POST'));
+
+    expect((new RetryPolicy())->shouldRetry(0, retryRequest('POST'), null, $sem))->toBeFalse();
+})->skip(
+    !method_exists(ConnectException::class, 'getHandlerContext'),
+    'só vale no Guzzle 7: no 8 a classe por si já significa que não saiu'
+)->group('phpay');
+
+it('no Guzzle 8, ConnectException por si já significa que nada saiu', function () {
+    /*
+     * o 8 removeu o getHandlerContext() e separou os casos em classes: lá a
+     * ConnectException é só falha de estabelecer conexão, e a
+     * ConnectTimeoutException herda dela. Repetir um POST aqui é seguro.
+     */
+    $naoSaiu = new ConnectException('conexão recusada', retryRequest('POST'));
+
+    expect((new RetryPolicy())->shouldRetry(0, retryRequest('POST'), null, $naoSaiu))->toBeTrue();
+})->skip(
+    method_exists(ConnectException::class, 'getHandlerContext'),
+    'só vale no Guzzle 8: no 7 a classe não distingue nada sozinha'
+)->group('phpay');
 
 it('não adivinha diante de outra falha de transporte', function () {
     $outra = new RequestException('erro qualquer', retryRequest('GET'));
