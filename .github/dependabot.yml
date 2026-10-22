@@ -1,0 +1,53 @@
+version: 2
+
+updates:
+  # as dependências de runtime são poucas e estáveis (guzzle), então o volume
+  # aqui vem do toolchain de dev. patch vai agrupado num PR só; minor e major
+  # vêm separados, para serem lidos um a um.
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    target-branch: develop
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+    labels:
+      - dependências
+    groups:
+      composer-patch:
+        patterns:
+          - '*'
+        # o Pint fica fora do grupo de propósito: a versão travada no
+        # composer.lock é o que define o estilo do projeto, e cada release
+        # pode acrescentar regra. O bump dele precisa de um PR próprio, com
+        # o `composer lint` rodado à mão e o diff de estilo olhado.
+        exclude-patterns:
+          - laravel/pint
+        update-types:
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    target-branch: develop
+    commit-message:
+      prefix: chore(ci)
+    labels:
+      - dependências
+      - ci
+    groups:
+      actions-patch:
+        patterns:
+          - '*'
+        update-types:
+          - patch

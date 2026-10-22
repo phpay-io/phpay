@@ -1,0 +1,136 @@
+name: Relatar um bug
+description: Algo não funciona como a documentação diz.
+title: '[bug] '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Antes de preencher: nada de credencial real
+
+        Esta é uma biblioteca de pagamentos, e a issue é **pública e indexada**.
+        Não cole aqui:
+
+        - token, `access_token`, `clientSecret`, AppID, `MerchantKey` ou chave de API;
+        - certificado `.p12`/`.pem` ou a senha dele;
+        - CPF, CNPJ, e-mail ou telefone de cliente real;
+        - resposta crua do gateway sem antes trocar esses campos por `***`.
+
+        Use valores falsos (`fake-token`, `123.456.789-01`) ao reduzir o caso.
+        Se o problema **é** uma falha de segurança, não abra issue: siga a
+        [política de segurança](https://github.com/phpay-io/phpay/blob/develop/.github/SECURITY.md)
+        e escreva para `sec@phpay.io`.
+
+  - type: input
+    id: phpay-version
+    attributes:
+      label: Versão do PHPay
+      description: 'Saída de `composer show phpay-io/phpay | grep versions`.'
+      placeholder: v2.3.0
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: Versão do PHP
+      description: 'Saída de `php -v` (primeira linha).'
+      placeholder: 8.2.20
+    validations:
+      required: true
+
+  - type: dropdown
+    id: gateway
+    attributes:
+      label: Gateway
+      description: Em qual gateway o problema aparece.
+      options:
+        - Asaas
+        - Woovi/OpenPix
+        - Efí
+        - Mercado Pago
+        - PagBank
+        - Pagar.me
+        - Cielo
+        - Rede
+        - AbacatePay
+        - Núcleo da biblioteca (facade, Money, Customer, retry, webhook)
+        - Mais de um gateway
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Sandbox ou produção do gateway.
+      options:
+        - Sandbox
+        - Produção
+        - Os dois
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: O que acontece
+      description: O comportamento que você viu, e o que esperava no lugar dele.
+      placeholder: |
+        Esperava que ... mas o que acontece é ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Trecho de código
+      description: >
+        O menor código que reproduz o problema, com credenciais falsas.
+        O bloco já sai formatado como PHP.
+      render: php
+      value: |
+        <?php
+
+        use PHPay\Asaas\AsaasGateway;
+        use PHPay\PHPay;
+
+        $phpay = PHPay::gateway(new AsaasGateway('fake-token', sandbox: true));
+
+        // ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Erro ou stack trace
+      description: >
+        A exceção e a mensagem, se houver. Lembre de mascarar token e documento
+        antes de colar — a resposta do gateway costuma trazer os dois.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Mais alguma coisa
+      description: Framework, versão do Guzzle, o que você já tentou, link da doc do gateway.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmações
+      options:
+        - label: Procurei nas issues abertas e fechadas antes de abrir esta.
+          required: true
+        - label: >
+            Não colei token, chave, certificado, senha nem CPF/CNPJ real em
+            nenhum campo acima.
+          required: true
+        - label: Testei na versão mais recente do PHPay que consegui usar.
+          required: false
