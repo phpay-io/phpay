@@ -4,7 +4,7 @@ namespace PHPay\Cielo\Traits;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\ApiException;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 /**
  * Cielo splits its API across two hosts by operation type, not by domain:
@@ -98,7 +98,7 @@ trait HasCieloClient
      */
     private function bootClient(string $baseUri): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $baseUri,
             'headers'  => [
                 'content-type' => 'application/json',

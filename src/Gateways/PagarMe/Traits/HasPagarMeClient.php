@@ -3,7 +3,7 @@
 namespace PHPay\PagarMe\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 trait HasPagarMeClient
 {
@@ -23,7 +23,7 @@ trait HasPagarMeClient
      */
     protected function clientPagarMeBoot(): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->baseUri(),
             'headers'  => [
                 'content-type'  => 'application/json',

@@ -3,7 +3,7 @@
 namespace PHPay\PagBank\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 /**
  * PagBank splits its surface across two APIs on different hosts: orders and
@@ -80,7 +80,7 @@ trait HasPagBankClient
      */
     private function bootClient(string $baseUri): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $baseUri,
             'headers'  => [
                 'content-type'  => 'application/json',

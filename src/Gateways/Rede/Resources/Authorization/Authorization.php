@@ -4,7 +4,7 @@ namespace PHPay\Rede\Resources\Authorization;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\ApiException;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 /**
  * OAuth2 client_credentials against the Rede authorization host.
@@ -51,11 +51,12 @@ class Authorization
      */
     public function __construct(
         private string $affiliation,
+        #[\SensitiveParameter]
         private string $secret,
         private string $tokenPath,
         ?Client $client = null,
     ) {
-        $this->client = $client ?? new Client();
+        $this->client = $client ?? ClientFactory::make();
     }
 
     /**

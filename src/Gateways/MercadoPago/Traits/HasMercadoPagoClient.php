@@ -3,7 +3,7 @@
 namespace PHPay\MercadoPago\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 trait HasMercadoPagoClient
 {
@@ -22,7 +22,7 @@ trait HasMercadoPagoClient
      */
     protected function clientMercadoPagoBoot(): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->baseUri(),
             'headers'  => [
                 'content-type'  => 'application/json',

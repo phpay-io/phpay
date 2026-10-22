@@ -3,7 +3,7 @@
 namespace PHPay\Efi\Traits;
 
 use GuzzleHttp\Client;
-use PHPay\Http\HasHttpClient;
+use PHPay\Http\{ClientFactory, HasHttpClient};
 
 trait HasEfiClient
 {
@@ -20,10 +20,12 @@ trait HasEfiClient
      * @return Client
      */
     protected function clientEfiAuthorize(
+        #[\SensitiveParameter]
         string $clientId,
+        #[\SensitiveParameter]
         string $clientSecret
     ): Client {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->baseUri(),
             'headers'  => [
                 'Authorization' => 'Basic ' . base64_encode("{$clientId}:{$clientSecret}"),
@@ -39,9 +41,9 @@ trait HasEfiClient
      * @param string $type
      * @return Client
      */
-    protected function clientEfiBoot(string $token, string $type): Client
+    protected function clientEfiBoot(#[\SensitiveParameter] string $token, string $type): Client
     {
-        return new Client([
+        return ClientFactory::make([
             'base_uri' => $this->baseUri(),
             'headers'  => [
                 'Authorization' => "{$type} {$token}",

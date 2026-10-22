@@ -3,12 +3,18 @@
 namespace PHPay\Rede;
 
 use GuzzleHttp\Client;
+use PHPay\Http\{ClientFactory, MasksCredentials};
 use PHPay\Rede\Interface\RedeGatewayInterface;
 use PHPay\Rede\Resources\Authorization\Authorization;
 use PHPay\Rede\Resources\Charge\Charge;
 
 class RedeGateway implements RedeGatewayInterface
 {
+    /**
+     * keeps the credentials out of dumps
+     */
+    use MasksCredentials;
+
     /**
      * authorization shared by every resource, so the token is negotiated once
      */
@@ -27,6 +33,7 @@ class RedeGateway implements RedeGatewayInterface
      */
     public function __construct(
         private string $affiliation,
+        #[\SensitiveParameter]
         private string $secret,
         private bool $sandbox = true,
         private ?Client $client = null,
@@ -56,7 +63,7 @@ class RedeGateway implements RedeGatewayInterface
                 $this->affiliation,
                 $this->secret,
                 RedeEnvironment::tokenPath($this->sandbox),
-                $this->oauthClient ?? new Client([
+                $this->oauthClient ?? ClientFactory::make([
                     'base_uri' => RedeEnvironment::oauth($this->sandbox),
                     'headers'  => ['accept' => 'application/json', 'user-agent' => 'PHPay'],
                 ])
