@@ -21,6 +21,12 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   ([#111], [#112]).
 - Cobertura de testes medida no CI, num job só, com o número no log e no resumo
   do job. Sem mínimo que reprove o build ([#111], [#112]).
+- `PHPay\Support\StaticPixCode`, que compõe o QR Code estático de Pix (o BR
+  Code) a partir da chave, localmente e sem rede — como o padrão do BACEN manda.
+  Fecha a assimetria dos gateways que não expõem endpoint para isso, a Efí entre
+  eles, sem stub e sem sugerir que a API deles oferece o que não oferece. A suíte
+  exige o vetor de teste do manual do BACEN byte a byte, porque CRC errado gera um
+  código que não lê ([#109]).
 - Verificador de links da documentação no gate, em `composer test:links`. Ele
   confere que todo link relativo aponta para arquivo que existe e que toda
   âncora corresponde a um título de verdade — título dentro de bloco de código
@@ -462,6 +468,7 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#100]: https://github.com/phpay-io/phpay/pull/100
 [#101]: https://github.com/phpay-io/phpay/issues/101
 [#102]: https://github.com/phpay-io/phpay/pull/102
+[#109]: https://github.com/phpay-io/phpay/issues/109
 [#111]: https://github.com/phpay-io/phpay/issues/111
 [#112]: https://github.com/phpay-io/phpay/pull/112
 [#113]: https://github.com/phpay-io/phpay/issues/113
