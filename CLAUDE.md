@@ -333,7 +333,9 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   (o `update --no-dev` ainda resolveria o require-dev e esbarraria no pint),
   confere a sintaxe de `src/` com `php -l` e roda `.github/scripts/smoke.php`.
   O smoke test instancia todos os gateways e percorre as capacidades sem sair
-  para a rede; gateway novo que não entre na lista dele reprova o job.
+  para a rede; gateway novo que não entre na lista dele reprova o job. A
+  cobertura sai de um job só (8.3/locked, pcov), no log e no summary, sem
+  mínimo que reprove o build.
 
 ## mTLS
 

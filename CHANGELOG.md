@@ -18,6 +18,8 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   confere a sintaxe de `src/` e roda um smoke test que carrega o autoload e
   instancia os nove gateways. Nada muda para quem usa a biblioteca: o requisito
   segue `^8.1`, agora verificado por execução e não só pelo PHPStan ([#111]).
+- Cobertura de testes medida no CI, num job só, com o número no log e no resumo
+  do job. Sem mínimo que reprove o build ([#111]).
 
 ## [2.3.0] - 2026-10-22
 

@@ -56,6 +56,13 @@ jobs:
         php: ['8.2', '8.3', '8.4']
         dependencies: [locked]
         include:
+          # a cobertura sai de um job só. o pcov instrumenta todo arquivo que
+          # carrega, e medir nas cinco combinações multiplicaria o tempo para
+          # imprimir o mesmo número. a chave entra numa combinação que já
+          # existe, então isto não cria um job a mais.
+          - php: '8.3'
+            dependencies: locked
+            coverage: pcov
           # dependências mínimas contra o PHP mais antigo suportado: casar as
           # mais antigas com o PHP mais novo só produz deprecations de terceiros.
           - php: '8.2'
@@ -71,7 +78,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: curl, json, mbstring, openssl
-          coverage: none
+          coverage: ${{ matrix.coverage || 'none' }}
           tools: composer:v2
 
       # o lock é resolvido para PHP 8.2 (config.platform) para poder ser
@@ -87,7 +94,40 @@ jobs:
           dependency-versions: ${{ matrix.dependencies }}
 
       - name: Unit tests (Pest)
+        if: matrix.coverage == ''
         run: composer test:unit
+
+      - name: Unit tests com cobertura (Pest)
+        if: matrix.coverage != ''
+        shell: bash
+        run: ./vendor/bin/pest --colors=never --coverage --coverage-clover=coverage.xml | tee coverage.txt
+
+      # o número fica no log e no summary do job, e não em serviço de fora.
+      # sem mínimo que reprove o build: primeiro medir por algumas semanas,
+      # depois decidir o piso — um piso chutado reprova PR honesto.
+      - name: Publicar o resumo da cobertura
+        if: matrix.coverage != ''
+        shell: bash
+        run: |
+          total=$(grep -oE 'Total: *[0-9.]+ *%' coverage.txt | tail -1)
+
+          {
+            echo "## Cobertura de testes"
+            echo
+            echo "**${total:-número indisponível}** &nbsp;·&nbsp; PHP ${{ matrix.php }}, dependências do lock, driver pcov."
+            echo
+            echo "Medida só aqui, e sem mínimo que reprove o build."
+            echo
+            echo "<details><summary>Relatório por arquivo</summary>"
+            echo
+            echo '```'
+            cat coverage.txt
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "cobertura: ${total:-indisponível}"
 
   # A versão mínima que o composer.json promete (^8.1) não consegue rodar a
   # suíte: Pest 3 e Termwind 2 exigem 8.2+. Até aqui a promessa era garantida
