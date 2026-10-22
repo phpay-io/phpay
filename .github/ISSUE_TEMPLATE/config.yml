@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Falha de segurança
+    url: https://github.com/phpay-io/phpay/blob/develop/.github/SECURITY.md
+    about: Não abra issue pública. O relato vai por e-mail para sec@phpay.io.
+  - name: Dúvida de uso
+    url: https://github.com/phpay-io/phpay/blob/develop/.github/SUPPORT.md
+    about: Como usar um recurso, qual gateway escolher, onde procurar antes de abrir issue.
