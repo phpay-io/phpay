@@ -50,8 +50,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # o toolchain de dev (pest 3 / termwind 2) exige PHP >= 8.2.
-        # a compatibilidade com 8.1 é garantida pelo phpVersion do phpstan.neon.
+        # o toolchain de dev (pest 3 / termwind 2) exige PHP >= 8.2, então a
+        # suíte não roda no 8.1. O que dá para cobrir nessa versão está no
+        # job `minimum`, logo abaixo.
         php: ['8.2', '8.3', '8.4']
         dependencies: [locked]
         include:
@@ -87,3 +88,64 @@ jobs:
 
       - name: Unit tests (Pest)
         run: composer test:unit
+
+  # A versão mínima que o composer.json promete (^8.1) não consegue rodar a
+  # suíte: Pest 3 e Termwind 2 exigem 8.2+. Até aqui a promessa era garantida
+  # só estaticamente, pelo phpVersion do phpstan.neon — e requisito declarado
+  # que nunca é executado volta como bug de quem instalou.
+  #
+  # Então este job valida o que dá para validar sem o toolchain de dev, que é
+  # mais do que parece: o que quebra numa versão antiga é sintaxe nova e
+  # dependência que subiu o piso, não asserção de teste.
+  minimum:
+    name: PHP 8.1 (mínimo suportado)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: curl, json, mbstring, openssl
+          coverage: none
+          tools: composer:v2
+
+      - name: Validar o composer.json
+        run: composer validate --strict
+
+      # o config.platform trava a resolução em 8.2 para o lock servir a matriz
+      # toda. aqui ele sai, porque o ponto do job é resolver contra o PHP real:
+      # com a trava de pé, uma dependência de runtime que subisse o piso para
+      # 8.2 instalaria em silêncio.
+      - name: Liberar config.platform
+        run: composer config --unset platform.php
+
+      # `install`, e não `update`: `composer update --no-dev` ainda resolve o
+      # require-dev e esbarraria no pint/termwind, que pedem 8.2+. O install
+      # monta do lock só o que o consumidor da biblioteca recebe.
+      #
+      # o aviso de "lock file is not up to date" aqui é esperado e não é
+      # problema: o passo anterior mexeu no composer.json, e o que importa é
+      # que os pacotes do lock passem na checagem de plataforma do 8.1 real.
+      - name: Instalar só as dependências de runtime
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress
+
+      # é o que pega sintaxe que só existe a partir do 8.2 — const em trait,
+      # readonly class, tipo DNF — antes de qualquer autoload.
+      - name: Conferir a sintaxe de src/
+        shell: bash
+        run: |
+          if ! find src -name '*.php' -print0 | xargs -0 -n1 php -l > lint.log 2>&1; then
+            grep -v '^No syntax errors detected' lint.log
+            exit 1
+          fi
+
+          echo "$(grep -c '^No syntax errors detected' lint.log) arquivos sem erro de sintaxe"
+
+      # carrega o autoload, instancia todos os gateways, percorre as
+      # capacidades de cada um e exercita os value objects, o modelo de erros,
+      # a assinatura de webhook e o mTLS. Nenhuma requisição sai.
+      - name: Smoke test
+        run: php .github/scripts/smoke.php

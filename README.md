@@ -111,8 +111,12 @@ gateway não aceita Pix ou não manda webhook:
 | **Para usar a biblioteca** | PHP `^8.1`, `ext-curl`, `ext-json`, `ext-openssl` |
 | **Para desenvolver o PHPay** | PHP `^8.2` (Pest 3 e Termwind 2 exigem) |
 
-A compatibilidade com PHP 8.1 é verificada estaticamente pelo PHPStan a cada
-build, com `phpVersion` mínimo configurado.
+A compatibilidade com PHP 8.1 é verificada de duas formas a cada build: o
+PHPStan analisa `src/` com `phpVersion` mínimo em 8.1, e um job do CI roda no
+PHP 8.1 de verdade — valida o `composer.json`, instala só as dependências de
+runtime (`--no-dev`), confere a sintaxe de `src/` e roda um smoke test que
+carrega o autoload e instancia os nove gateways. A suíte do Pest não roda
+nessa versão porque o toolchain de dev exige 8.2+.
 
 ---
 

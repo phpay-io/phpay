@@ -327,8 +327,13 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 - `Efi\Resources\Charge\Charge` tem `$items` e `$configuration` privados sem setter —
   hoje sempre caem no fallback (`getItems()` monta um item a partir de
   `description`/`value`; `getConfigurations()` usa fine 200 / interest 33).
-- O CI roda a matriz em 8.2/8.3/8.4; a compatibilidade com 8.1 é garantida
-  estaticamente pelo `phpVersion: min: 80100` do `phpstan.neon`, não por execução real.
+- O CI roda a matriz do Pest em 8.2/8.3/8.4, porque o toolchain de dev exige
+  8.2+. O 8.1 tem um job próprio (`minimum`), que não roda a suíte: valida o
+  `composer.json`, instala com `--no-dev` depois de liberar o `config.platform`
+  (o `update --no-dev` ainda resolveria o require-dev e esbarraria no pint),
+  confere a sintaxe de `src/` com `php -l` e roda `.github/scripts/smoke.php`.
+  O smoke test instancia todos os gateways e percorre as capacidades sem sair
+  para a rede; gateway novo que não entre na lista dele reprova o job.
 
 ## mTLS
 

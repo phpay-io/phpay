@@ -10,7 +10,14 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
-Nada ainda.
+### Adicionado
+
+- O CI passa a rodar no PHP 8.1, a versão mínima que o `composer.json` promete.
+  A suíte do Pest continua fora dessa versão — o toolchain de dev exige 8.2+ —
+  mas o job valida o `composer.json`, instala só as dependências de runtime,
+  confere a sintaxe de `src/` e roda um smoke test que carrega o autoload e
+  instancia os nove gateways. Nada muda para quem usa a biblioteca: o requisito
+  segue `^8.1`, agora verificado por execução e não só pelo PHPStan ([#111]).
 
 ## [2.3.0] - 2026-10-22
 
@@ -426,3 +433,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#100]: https://github.com/phpay-io/phpay/pull/100
 [#101]: https://github.com/phpay-io/phpay/issues/101
 [#102]: https://github.com/phpay-io/phpay/pull/102
+[#111]: https://github.com/phpay-io/phpay/issues/111
