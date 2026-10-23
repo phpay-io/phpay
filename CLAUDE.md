@@ -161,6 +161,35 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   `PHPay\Efi\`, `PHPay\MercadoPago\` → `src/Gateways/<Gateway>/`. Gateway novo
   precisa de um root novo no `composer.json` — não introduza `PHPay\Gateways\...`.
 
+## Resolvendo o gateway
+
+Dois caminhos, e **`PHPay::gateway()` continua sendo o preferido**: segurando o gateway
+concreto, capacidade ausente é erro de análise e não de runtime. O registry é para quem
+não sabe o gateway em tempo de escrita.
+
+- **`PHPay\Support\Gateway`** é o enum com os nove, e é **o único lugar do núcleo que
+  conhece gateway concreto** — é o que uma fábrica é. A propriedade que importa segue
+  valendo: a facade despacha por capacidade e nunca nomeia gateway concreto no caminho
+  de despacho.
+- `PHPay::make('asaas', $config)` devolve a facade; `Gateway::ASAAS->make($config)`
+  devolve o gateway concreto. O enum sabe `credentials()`, `options()`,
+  `supportsSandbox()` e `gatewayClass()`.
+- **Os construtores não concordam, e o registry respeita isso**: seis gateways pedem
+  uma credencial e três pedem duas; **Mercado Pago, Pagar.me e AbacatePay não aceitam
+  `sandbox`**, porque o ambiente deles vem do prefixo da credencial (ou, na AbacatePay,
+  de nada). Mandar `sandbox` para esses três **levanta** em vez de ser ignorado: a
+  chave revela um mal-entendido sobre como o ambiente é escolhido.
+- **Chave desconhecida também levanta.** Mesma razão da forma fechada de array do
+  `ClientFactory`: `skandbox` engolido é typo que só aparece em produção. A validação
+  mora em `GatewayConfigRequest`, no par `validate()` + `messages()` como os outros.
+- **Nome errado levanta `ValidationException` listando os nove**, não `ValueError` do
+  enum — o nome costuma vir de `.env`, e quem errou merece a lista. `tryFrom()` segue
+  disponível para quem quer `null`.
+- **O registry não recebe `Client`.** Client injetado é de teste, e teste constrói
+  direto. Gateway novo precisa de case no enum, braço no `make()` e entrada em
+  `credentials()` — há teste que varre `Gateway::cases()` e outro que compara a
+  contagem com `src/Gateways/*`, então esquecer qualquer um reprova.
+
 ## Cliente
 
 Use **`PHPay\Support\Customer`**. O mesmo campo tem seis grafias entre os gateways
