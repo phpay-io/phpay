@@ -168,6 +168,7 @@ específico dele.
 | | |
 | --- | --- |
 | [Capacidades](docs/capacidades.md) | o que cada gateway declara suportar, e o que acontece quando você pede o que ele não tem |
+| [Resolvendo o gateway](docs/resolvendo-o-gateway.md) | `PHPay::gateway()` quando você sabe qual, `PHPay::make()` quando ele vem de configuração |
 | [Tratamento de erros](docs/erros.md) | array é sucesso, falha é exceção — e qual exceção |
 | [Retry e idempotência](docs/retry-e-idempotencia.md) | o que a biblioteca repete, o que ela recusa a repetir, e por quê |
 | [Ambientes e credenciais](docs/ambientes-e-credenciais.md) | sandbox e produção em cada gateway, e como a credencial fica fora de dump |

@@ -39,6 +39,19 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   estado específico daquele gateway não perde nada. Suporte, não capacidade:
   não entra na enum `Capability`, porque não existe gateway que deixe de
   reportar status ([#133]).
+- **Resolução de gateway por nome**, em `PHPay\Support\Gateway` e
+  `PHPay::make()`. Antes só era possível começar sabendo a classe do gateway e a
+  assinatura do construtor dele, o que impedia ler o gateway de configuração
+  (`PHPAY_GATEWAY=asaas`) e é pré-requisito de qualquer bridge de framework. Os
+  construtores não concordam — seis gateways pedem uma credencial e três pedem
+  duas, e **Mercado Pago, Pagar.me e AbacatePay não aceitam `sandbox`** porque o
+  ambiente deles vem do prefixo da credencial —, e o registry respeita isso em
+  vez de inventar uma forma única. **`PHPay::gateway()` não muda**: continua
+  sendo o caminho que dá checagem estática ([#143]).
+- Config inválida falha na construção, com mensagem nomeando a chave: credencial
+  que falta, nome de gateway que não existe (listando os nove), `sandbox` em
+  gateway que não o aceita e **chave desconhecida**. Nenhuma é ignorada em
+  silêncio — um `skandbox` engolido é typo que só aparece em produção ([#143]).
 - **Leitura de webhook virou capacidade**, em `PHPay\Contracts\SupportsWebhookEvents`,
   com `webhookEvents()` guardado na facade. O #101 provou que a notificação **veio**
   do gateway; esta lê o que ela **diz**. Sete gateways declaram: Asaas, Woovi,
@@ -578,3 +591,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#132]: https://github.com/phpay-io/phpay/issues/132
 [#133]: https://github.com/phpay-io/phpay/issues/133
 [#140]: https://github.com/phpay-io/phpay/issues/140
+[#143]: https://github.com/phpay-io/phpay/issues/143

@@ -54,7 +54,7 @@ use PHPay\PHPay;
 use PHPay\Rede\Enums\TransactionStatusEnum;
 use PHPay\Rede\RedeGateway;
 use PHPay\Support\{Customer, Money, StaticPixCode};
-use PHPay\Support\PaymentStatus;
+use PHPay\Support\{Gateway, PaymentStatus};
 use PHPay\Webhooks\{Event, EventType};
 use PHPay\Woovi\Enums\ChargeStatusEnum as WooviChargeStatusEnum;
 use PHPay\Woovi\WooviGateway;
@@ -168,6 +168,34 @@ $check('a lista cobre todos os gateways de src/Gateways', function () use ($gate
         count($found) === count($gateways),
         sprintf('src/Gateways tem %d gateways, o smoke test instancia %d', count($found), count($gateways))
     );
+
+    $ensure(
+        count($found) === count(Gateway::cases()),
+        sprintf('src/Gateways tem %d gateways, o enum Gateway lista %d', count($found), count(Gateway::cases()))
+    );
+});
+
+// o registry é o caminho de quem não sabe o gateway em tempo de escrita, e
+// montar os nove por nome prova que todo case tem braço no match do make().
+$check('o registry constrói os nove por nome', function () use ($ensure, $expect): void {
+    foreach (Gateway::cases() as $gateway) {
+        $config = array_fill_keys($gateway->credentials(), 'credencial-falsa');
+
+        $construido = PHPay::make($gateway, $config);
+
+        $ensure($construido->name() !== '', sprintf('%s: name() não deveria ser vazio', $gateway->value));
+        $ensure($construido->capabilities() !== [], sprintf('%s: sem capacidades', $gateway->value));
+    }
+
+    $expect(ValidationException::class, static fn () => PHPay::make('xpto', []));
+    $expect(ValidationException::class, static fn () => Gateway::ASAAS->make([]));
+    $expect(ValidationException::class, static fn () => Gateway::ASAAS->make(['token' => 'x', 'typo' => 1]));
+
+    // os três sem sandbox recusam a chave em vez de ignorá-la
+    $expect(ValidationException::class, static fn () => Gateway::MERCADO_PAGO->make([
+        'accessToken' => 'TEST-x',
+        'sandbox'     => true,
+    ]));
 });
 
 echo "\ngateways\n";

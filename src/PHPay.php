@@ -4,7 +4,7 @@ namespace PHPay;
 
 use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Exceptions\{ApiException, NotImplementedException, ValidationException};
-use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Support\{Customer as CustomerData, Gateway, Money};
 use PHPay\Webhooks\Event;
 
 /**
@@ -40,6 +40,34 @@ class PHPay implements GatewayInterface
     public static function gateway(GatewayInterface $gateway): PHPay
     {
         return new PHPay($gateway);
+    }
+
+    /**
+     * build a gateway by name and wrap it.
+     *
+     * for whoever does not know the gateway while writing the code — a name
+     * from configuration, a choice made at runtime, a framework bridge turning
+     * an array into an object:
+     *
+     * ```php
+     * $phpay = PHPay::make('asaas', ['token' => $token, 'sandbox' => true]);
+     * ```
+     *
+     * `gateway()` above is still the way in when the gateway *is* known then,
+     * and it is the one that gives static checking — holding the concrete
+     * gateway makes a missing capability an analysis error instead of a
+     * runtime one.
+     *
+     * @param string|Gateway $gateway the name, or the case
+     * @param array<string, mixed> $config credentials and options of that gateway
+     * @return PHPay
+     * @throws ValidationException when the name or the config is wrong
+     */
+    public static function make(string|Gateway $gateway, array $config = []): PHPay
+    {
+        $gateway = $gateway instanceof Gateway ? $gateway : Gateway::named($gateway);
+
+        return new PHPay($gateway->make($config));
     }
 
     /**
