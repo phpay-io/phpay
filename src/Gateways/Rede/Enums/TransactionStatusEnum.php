@@ -2,6 +2,8 @@
 
 namespace PHPay\Rede\Enums;
 
+use PHPay\Support\PaymentStatus;
+
 /**
  * return codes of a Rede transaction, as sent in returnCode.
  *
@@ -23,5 +25,41 @@ enum TransactionStatusEnum: string
     public static function approved(string $returnCode): bool
     {
         return $returnCode === self::APPROVED->value;
+    }
+
+    /**
+     * the same state in the library's vocabulary.
+     *
+     * @return PaymentStatus
+     */
+    public function status(): PaymentStatus
+    {
+        return match ($this) {
+            self::APPROVED => PaymentStatus::PAID,
+            self::PENDING  => PaymentStatus::PENDING,
+        };
+    }
+
+    /**
+     * read a raw return code.
+     *
+     * **This is the one gateway where an unlisted value is not UNKNOWN but
+     * FAILED**, and that follows from what the enum is: Rede's dozens of other
+     * codes are all decline reasons, so a code that is neither `00` nor `220`
+     * means the transaction did not go through. Answering UNKNOWN there would
+     * hide a decline behind "I don't know", which is the worse reading of the
+     * two. A missing code is still UNKNOWN — that is an absent field, not a
+     * decline.
+     *
+     * @param string|null $returnCode
+     * @return PaymentStatus
+     */
+    public static function of(?string $returnCode): PaymentStatus
+    {
+        if ($returnCode === null || $returnCode === '') {
+            return PaymentStatus::UNKNOWN;
+        }
+
+        return self::tryFrom($returnCode)?->status() ?? PaymentStatus::FAILED;
     }
 }
