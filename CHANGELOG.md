@@ -10,6 +10,15 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+## [2.5.0] - 2026-10-23
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.5.0) ·
+Estorno, status e leitura de webhook ganharam forma única entre os gateways, o
+Guzzle 8 passou a ser suportado de verdade — comportamento e tipos — e o gateway
+passou a poder vir de configuração. Nenhuma assinatura existente mudou de
+comportamento; duas quebram em caso de borda, e estão em **Alterado** e
+**Removido**.
+
 ### Adicionado
 
 - **Estorno virou capacidade**, em `PHPay\Contracts\SupportsRefunds`, com o case
@@ -590,5 +599,6 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#131]: https://github.com/phpay-io/phpay/issues/131
 [#132]: https://github.com/phpay-io/phpay/issues/132
 [#133]: https://github.com/phpay-io/phpay/issues/133
+[#134]: https://github.com/phpay-io/phpay/issues/134
 [#140]: https://github.com/phpay-io/phpay/issues/140
 [#143]: https://github.com/phpay-io/phpay/issues/143
