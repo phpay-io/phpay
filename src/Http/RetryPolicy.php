@@ -178,7 +178,14 @@ final class RetryPolicy
     /**
      * the decider, in the shape Guzzle's retry middleware calls.
      *
-     * @return callable(int, RequestInterface, ?ResponseInterface, ?Throwable): bool
+     * the fourth argument is `mixed` because that is how Guzzle 8 declares it,
+     * and a callable handed to the middleware has to accept at least as much as
+     * the middleware may pass it — a narrower `?Throwable` is rejected on that
+     * major. Guzzle only ever passes a Throwable or null, so the value is
+     * narrowed back before it reaches shouldRetry(), which keeps the decision
+     * itself typed.
+     *
+     * @return callable(int, RequestInterface, ?ResponseInterface, mixed): bool
      */
     public function decider(): callable
     {
@@ -186,8 +193,13 @@ final class RetryPolicy
             int $retries,
             RequestInterface $request,
             ?ResponseInterface $response = null,
-            ?Throwable $exception        = null
-        ): bool => $this->shouldRetry($retries, $request, $response, $exception);
+            mixed $exception             = null
+        ): bool => $this->shouldRetry(
+            $retries,
+            $request,
+            $response,
+            $exception instanceof Throwable ? $exception : null
+        );
     }
 
     /**

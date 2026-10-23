@@ -18,8 +18,21 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   `getHandlerContext()` que o 7 usa e trocou o `errno` do cURL por classes de
   exceção, então a política pergunta na língua de cada uma, com o
   `NetworkExceptionInterface` do PSR-18 como gatilho comum. A suíte passa nas duas e
-  o CI ganhou um job na major de cima. O PHPStan nível 9 ainda roda na major do
-  lock ([#121]).
+  o CI ganhou um job na major de cima ([#121]).
+
+### Alterado
+
+- As anotações dos pontos de contato com o Guzzle passam a descrever **as duas
+  majors**, e o **PHPStan nível 9 roda também na 8** — o job do Guzzle 8 no CI
+  deixa de rodar só a suíte. A 8 declara o que a 7 deixava solto: forma de array
+  fechada em `Client::__construct` e `Client::request()`, `HandlerStack` genérica
+  e a assinatura exata do decider em `Middleware::retry`. Em vez de afrouxar o
+  nível ou acumular `ignoreErrors`, o que se passa ao Guzzle virou forma de array
+  com as opções que a biblioteca de fato usa, a pilha de handlers é montada como
+  variável local dentro do `ClientFactory::make()` (declarar `HandlerStack` como
+  tipo falha numa das duas majors, com ou sem argumento genérico), e o decider
+  aceita `mixed` no quarto argumento, estreitando para `Throwable|null` na
+  entrada. **Nenhuma assinatura pública mudou de comportamento** ([#131]).
 
 
 ## [2.4.0] - 2026-10-22
@@ -495,3 +508,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#114]: https://github.com/phpay-io/phpay/pull/114
 [#121]: https://github.com/phpay-io/phpay/issues/121
 [#124]: https://github.com/phpay-io/phpay/issues/124
+[#131]: https://github.com/phpay-io/phpay/issues/131

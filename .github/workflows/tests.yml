@@ -202,10 +202,10 @@ jobs:
   # matriz acima roda na major do lock, que é a 7; sem este job, metade do
   # suporte não seria exercitada por ninguém.
   #
-  # Só a suíte. O PHPStan nível 9 ainda não passa na 8: ela traz formas de
-  # array e genéricos (Client::__construct, HandlerStack<THandler>,
-  # Middleware::retry) que as anotações da lib não acompanham, e alinhar isso
-  # é trabalho de tipos, não de comportamento.
+  # A suíte e o PHPStan. O 8 declara formas de array fechadas e genéricos que
+  # a 7 não tem (Client::__construct, HandlerStack<THandler>,
+  # Middleware::retry), então a análise estática aqui é o que impede uma
+  # anotação de voltar a descrever só uma das majors.
   guzzle8:
     name: Guzzle 8 (a outra major aceita)
     runs-on: ubuntu-latest
@@ -240,3 +240,9 @@ jobs:
 
       - name: Unit tests (Pest)
         run: composer test:unit
+
+      # o par que fecha o suporte às duas majors: a suíte prova o
+      # comportamento, e a análise estática prova que as anotações descrevem
+      # as duas. Sem este passo, uma anotação que só vale na 7 passaria o CI.
+      - name: Static analysis (PHPStan)
+        run: composer test:types

@@ -13,6 +13,20 @@ use Throwable;
  * the using class must expose a `GuzzleHttp\Client $client` property.
  * every failure is surfaced as an ApiException — a returned array is always
  * a successful response body.
+ *
+ * the options alias lists the four Guzzle options the gateways actually send.
+ * Guzzle 8 declares a closed shape for `Client::request()`, which `array<mixed>`
+ * does not satisfy; naming only what is used satisfies both majors, and a
+ * gateway that needs a fifth option adds it here instead of passing a key that
+ * nothing checks. Resources that assemble options in a variable import the
+ * alias with `@phpstan-import-type`.
+ *
+ * @phpstan-type RequestOptions array{
+ *     query?: array<array-key, mixed>,
+ *     json?: mixed,
+ *     headers?: array<string, string>,
+ *     form_params?: array<string, scalar>
+ * }
  */
 trait HasHttpClient
 {
@@ -127,7 +141,7 @@ trait HasHttpClient
      *
      * @param string $method
      * @param string $endpoint
-     * @param array<mixed> $options
+     * @param RequestOptions $options
      * @param Client|null $client overrides $this->client — for gateways that
      *                            split operations across more than one host
      * @return array<mixed>
@@ -155,7 +169,7 @@ trait HasHttpClient
      *
      * @param string $method
      * @param string $endpoint
-     * @param array<mixed> $options
+     * @param RequestOptions $options
      * @param Client|null $client
      * @return ResponseInterface
      * @throws ApiException

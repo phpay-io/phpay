@@ -4,6 +4,7 @@ namespace PHPay\Rede\Resources\Charge;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Http\HasHttpClient;
 use PHPay\Rede\Enums\TransactionKindEnum;
 use PHPay\Rede\Requests\RedeTransactionRequest;
 use PHPay\Rede\Resources\Authorization\Authorization;
@@ -19,6 +20,8 @@ use PHPay\Support\Money;
  * so this class just asks for one before each call.
  *
  * Amounts are integers in cents: R$ 20,99 is 2099.
+ *
+ * @phpstan-import-type RequestOptions from HasHttpClient
  */
 class Charge implements ChargeInterface
 {
@@ -237,16 +240,14 @@ class Charge implements ChargeInterface
      * asked for on every call: the Authorization resource hands back the
      * token it holds, and renegotiates only when that one has expired.
      *
-     * @param array<mixed> $options
-     * @return array<mixed>
+     * @param RequestOptions $options
+     * @return RequestOptions
      * @throws ApiException
      */
     private function authorized(array $options = []): array
     {
-        $headers = $options['headers'] ?? [];
-
         $options['headers'] = array_merge(
-            is_array($headers) ? $headers : [],
+            $options['headers'] ?? [],
             ['Authorization' => 'Bearer ' . $this->authorization->token()]
         );
 
