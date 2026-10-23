@@ -9,7 +9,7 @@ use PHPay\PagarMe\Resources\Subscription\Subscription;
 use PHPay\PagarMe\Resources\WebhookDelivery\WebhookDelivery;
 use PHPay\PHPay;
 
-it('declara apenas clientes, cobranças, estornos e assinaturas', function () {
+it('declara clientes, cobranças, estornos, assinaturas e leitura de webhook', function () {
     $gateway = new PagarMeGateway('sk_test_abc', pagarmeClient([]));
 
     expect(Capability::of($gateway))->toBe([
@@ -17,6 +17,7 @@ it('declara apenas clientes, cobranças, estornos e assinaturas', function () {
         Capability::CHARGES,
         Capability::REFUNDS,
         Capability::SUBSCRIPTIONS,
+        Capability::WEBHOOK_EVENTS,
     ]);
 })->group('pagarme');
 

@@ -10,7 +10,7 @@ use PHPay\Woovi\Resources\Subscription\Subscription;
 use PHPay\Woovi\Resources\Webhook\Webhook;
 use PHPay\Woovi\WooviGateway;
 
-it('declara as sete capacidades', function () {
+it('declara as oito capacidades', function () {
     $gateway = new WooviGateway('app-id', true, wooviClient([]));
 
     expect(Capability::of($gateway))->toBe(Capability::cases());
@@ -22,7 +22,7 @@ it('é o segundo gateway completo, junto com o asaas', function () {
 
     /* duas empresas independentes preenchendo o mesmo contrato */
     expect(Capability::of($woovi))->toBe(Capability::of($asaas))
-        ->and(Capability::of($woovi))->toHaveCount(7);
+        ->and(Capability::of($woovi))->toHaveCount(8);
 })->group('woovi');
 
 it('devolve a instância de cada um dos seis recursos', function () {

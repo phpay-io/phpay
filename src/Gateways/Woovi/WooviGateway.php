@@ -3,11 +3,12 @@
 namespace PHPay\Woovi;
 
 use GuzzleHttp\Client;
-use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Webhooks\Event;
 use PHPay\Woovi\Interface\WooviGatewayInterface;
-use PHPay\Woovi\Requests\WooviCustomerRequest;
+use PHPay\Woovi\Requests\{WooviCustomerRequest, WooviWebhookEventRequest};
 use PHPay\Woovi\Resources\Charge\Charge;
 use PHPay\Woovi\Resources\Customer\Customer;
 use PHPay\Woovi\Resources\Pix\Pix;
@@ -127,5 +128,20 @@ class WooviGateway implements WooviGatewayInterface
     public function webhookSignature(): WebhookSignature
     {
         return new WebhookSignature($this->appId, $this->sandbox, $this->client);
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents.
+     * Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        return WooviWebhookEventRequest::parse($payload);
     }
 }

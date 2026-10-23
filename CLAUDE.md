@@ -37,14 +37,14 @@ Regras que valem para todo código novo:
 - **Capacidade, não contrato único.** `GatewayInterface` carrega só `name()`. Cada
   recurso é uma interface em `src/Contracts/` (`SupportsCustomers`, `SupportsCharges`,
   `SupportsRefunds`, `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`,
-  `SupportsWebhookSignature`) que o gateway
+  `SupportsWebhookSignature`, `SupportsWebhookEvents`) que o gateway
   implementa se — e só se — oferecer aquele recurso. **Nunca** declare um recurso para
   depois lançar de dentro dele.
 - **Recurso novo = interface nova + case na enum `Capability` + método guardado na
   facade.** O guard é `instanceof` seguido de
   `NotImplementedException::forCapability()`; o PHPStan usa esse `instanceof` para
   estreitar o tipo, então não troque por um helper genérico.
-- **`SupportsRefunds` é a única capacidade que declara operação, não getter de
+- **`SupportsRefunds` e `SupportsWebhookEvents` declaram operação, não getter de
   recurso**, e a assimetria é de propósito: o que divergia entre os gateways não era
   como chegar à cobrança, era a chamada — três nomes (`refund`, `cancel`, `void`),
   três unidades e três sentidos para valor ausente. Devolver recurso deixaria quem
@@ -326,6 +326,44 @@ endpoint por conveniência; a Efí não expõe, e isso não é falta dela.
 - Não se valida o formato da chave — EVP, e-mail, telefone e CPF/CNPJ não se
   parecem, e errar reprovaria chave boa.
 
+## Leitura de webhook
+
+Use **`webhookEvents()`**. Receber notificação tem duas perguntas que falham
+separadamente: **quem mandou** (`SupportsWebhookSignature`) e **o que foi dito**
+(`SupportsWebhookEvents`). Um gateway pode assinar sem a lib conhecer o payload, e
+o contrário.
+
+- **Devolve `array<Event>`, nunca um evento.** A API Pix da Efí manda `pix` como
+  array — vários pagamentos numa requisição — e a notificação de devolução traz o
+  array `devolucoes` inteiro; o PagBank manda o pedido com todas as `charges`.
+  Tratar como objeto único perde pagamento em silêncio, e por isso o retorno é lista
+  nos sete, mesmo onde hoje sempre vem um.
+- **`status` é anulável, e `requiresLookup()` é a pergunta.** Mercado Pago, Cielo e a
+  API de Cobranças da Efí notificam que algo mudou e nada mais. Devolver
+  `PaymentStatus::UNKNOWN` ali leria como estado que veio no corpo, então `status`
+  fica `null` e `requiresLookup()` diz que é preciso consultar. **Não se infere
+  status de nome de evento** — `type` diz o que aconteceu, `status` só o que o
+  gateway mandou num campo de estado. A exceção é a Efí: o `pix[]` traz valor,
+  `endToEndId` e horário de recebimento, e isso **é** o pagamento, não inferência.
+- **O PagBank é o inverso**: manda estado e nenhum evento, então ali o `type` sai do
+  status. É a única inferência do conjunto, e está marcada como tal no PHPDoc.
+- **O mapeamento mora no enum de cada gateway** (`WebhookEventsEnum::of()`), como o
+  `PaymentStatus` do #133, e o parsing numa classe `*WebhookEventRequest` estática,
+  como os outros `*Request`. `EventType::UNKNOWN` com `rawType` preenchido é
+  degradação; levantar perderia notificação que o gateway não repete.
+- **Corpo vazio ou não-JSON levanta `ValidationException`**, e isso não contradiz o
+  acima: é integração que não repassou o payload, não evento que a lib não conhece.
+  Mesma distinção do `SignatureRequest`.
+- **Rede e AbacatePay não declaram.** Da Rede sei os nomes dos eventos
+  (`PV.UPDATE_TRANSACTION_PIX`, `PV.REFUND_PIX`) mas **não os campos do envelope**, e
+  chutar a chave da lista devolveria zero eventos em silêncio. Da AbacatePay o payload
+  da v1 não está documentado. Parser sobre forma chutada é pior que
+  `NotImplementedException`.
+- Na Cielo, só os `ChangeType` inequívocos ganham tipo (2 criada, 7 chargeback, 8
+  alerta de fraude). O 25 é "cancelada **ou** estornada parcialmente" e o 6 é boleto
+  pago a menor, que o vocabulário de evento não cobre — os dois ficam `UPDATED`, em
+  vez de escolher e errar metade das vezes.
+
 ## Assinatura de webhook
 
 Use **`webhookSignature()`**. Cadastrar o endpoint é `SupportsWebhooks`; provar que
@@ -432,6 +470,10 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   fora, de propósito: `capture()` (Cielo, Pagar.me, Rede), que é captura de
   pré-autorização e não devolução; o estorno de boleto do Asaas, que é endpoint
   assíncrono próprio e devolve `requestUrl`; e a listagem de estornos.
+- `SupportsWebhookEvents` fica em sete gateways. **Rede** e **AbacatePay** ficam de
+  fora por formato não confirmado, e entram quando alguém verificar em sandbox — da
+  Rede falta o nome dos campos do envelope, da AbacatePay o payload da v1 (e a doc
+  deles recomenda não validar o schema, que muda).
 - Chave de idempotência existe em três gateways: Mercado Pago, Pagar.me e PagBank. Nos
   outros sete, `POST` só é repetido quando o erro provou que a requisição não saiu da
   máquina. O `correlationID` da Woovi deduplica de fato, mas vive no corpo e não em

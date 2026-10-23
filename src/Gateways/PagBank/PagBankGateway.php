@@ -3,15 +3,16 @@
 namespace PHPay\PagBank;
 
 use GuzzleHttp\Client;
-use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\PagBank\Interface\PagBankGatewayInterface;
-use PHPay\PagBank\Requests\PagBankCustomerRequest;
+use PHPay\PagBank\Requests\{PagBankCustomerRequest, PagBankWebhookEventRequest};
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
 use PHPay\PagBank\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Webhooks\Event;
 
 class PagBankGateway implements PagBankGatewayInterface
 {
@@ -104,5 +105,20 @@ class PagBankGateway implements PagBankGatewayInterface
     public function webhookSignature(): WebhookSignature
     {
         return new WebhookSignature();
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents.
+     * Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        return PagBankWebhookEventRequest::parse($payload);
     }
 }

@@ -31,7 +31,7 @@ it('responde supports() e capabilities() pela facade', function () {
     $efi   = PHPay::gateway(new EfiGateway('id', 'secret', true, mockClient([])));
 
     expect($asaas->supports(Capability::PIX_KEYS))->toBeTrue()
-        ->and($asaas->capabilities())->toHaveCount(7)
+        ->and($asaas->capabilities())->toHaveCount(8)
         ->and($efi->supports(Capability::PIX_KEYS))->toBeTrue()
         ->and($efi->supports(Capability::CUSTOMERS))->toBeFalse()
         ->and($efi->capabilities())->toBe([
@@ -39,6 +39,7 @@ it('responde supports() e capabilities() pela facade', function () {
             Capability::WEBHOOKS,
             Capability::PIX_KEYS,
             Capability::SUBSCRIPTIONS,
+            Capability::WEBHOOK_EVENTS,
         ]);
 })->group('phpay');
 

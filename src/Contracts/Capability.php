@@ -17,6 +17,7 @@ enum Capability: string
     case PIX_KEYS          = 'pix-keys';
     case SUBSCRIPTIONS     = 'subscriptions';
     case WEBHOOK_SIGNATURE = 'webhook-signature';
+    case WEBHOOK_EVENTS    = 'webhook-events';
 
     /**
      * interface that declares this capability.
@@ -33,6 +34,7 @@ enum Capability: string
             self::PIX_KEYS          => SupportsPixKeys::class,
             self::SUBSCRIPTIONS     => SupportsSubscriptions::class,
             self::WEBHOOK_SIGNATURE => SupportsWebhookSignature::class,
+            self::WEBHOOK_EVENTS    => SupportsWebhookEvents::class,
         };
     }
 
@@ -51,6 +53,7 @@ enum Capability: string
             self::PIX_KEYS          => 'chaves Pix',
             self::SUBSCRIPTIONS     => 'assinaturas',
             self::WEBHOOK_SIGNATURE => 'assinatura de webhook',
+            self::WEBHOOK_EVENTS    => 'leitura de webhook',
         };
     }
 

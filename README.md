@@ -256,6 +256,11 @@ Dois pontos merecem auditoria de quem vem da v1:
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
 
+A **leitura de webhook** (`webhookEvents()`) fica em sete gateways: Asaas,
+Woovi, Pagar.me, PagBank, Efí, Mercado Pago e Cielo. Rede e AbacatePay ficam
+fora porque o formato de notificação das duas não está confirmado — detalhes em
+[docs/webhooks.md](docs/webhooks.md).
+
 O estorno da **Efí** é a devolução Pix, alcançável em `pixCharge()->refund()`: a
 API dela exige o valor e endereça pelo `endToEndId`, então fica fora da
 capacidade portável. Na **AbacatePay**, os endpoints de reembolso documentados

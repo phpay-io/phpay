@@ -39,6 +39,20 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   estado específico daquele gateway não perde nada. Suporte, não capacidade:
   não entra na enum `Capability`, porque não existe gateway que deixe de
   reportar status ([#133]).
+- **Leitura de webhook virou capacidade**, em `PHPay\Contracts\SupportsWebhookEvents`,
+  com `webhookEvents()` guardado na facade. O #101 provou que a notificação **veio**
+  do gateway; esta lê o que ela **diz**. Sete gateways declaram: Asaas, Woovi,
+  Pagar.me, PagBank, Efí, Mercado Pago e Cielo. `PHPay\Webhooks\Event` carrega tipo
+  normalizado (`EventType`), id do recurso, status (do #133), quando aconteceu e o
+  payload cru intacto ([#140]).
+- **A leitura devolve `array<Event>`, nunca um evento só.** A API Pix da Efí manda
+  `pix` como array — vários pagamentos numa requisição — e a de devolução manda o
+  array `devolucoes` inteiro; o PagBank manda o pedido com todas as `charges`.
+  Tratar como objeto único perderia pagamento em silêncio ([#140]).
+- **`Event::requiresLookup()`**, porque quatro notificações não carregam estado:
+  Mercado Pago manda só `data.id`, a Cielo manda três campos, e a API de Cobranças
+  da Efí manda um token para trocar. Nesses, `status` é `null` em vez de
+  `PaymentStatus::UNKNOWN` — que leria como estado que veio no corpo ([#140]).
 - Enums de status onde não havia: **Mercado Pago** (`PaymentStatusEnum`),
   **PagBank** e **Pagar.me** (`ChargeStatusEnum`) e **Efí**, que ganhou dois —
   `ChargeStatusEnum` para a API de Cobranças e `PixChargeStatusEnum` para a API
@@ -563,3 +577,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#131]: https://github.com/phpay-io/phpay/issues/131
 [#132]: https://github.com/phpay-io/phpay/issues/132
 [#133]: https://github.com/phpay-io/phpay/issues/133
+[#140]: https://github.com/phpay-io/phpay/issues/140

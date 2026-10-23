@@ -7,13 +7,14 @@ use PHPay\Contracts\Capability;
 use PHPay\Exceptions\NotImplementedException;
 use PHPay\PHPay;
 
-it('declara cobranças, estornos e assinaturas', function () {
+it('declara cobranças, estornos, assinaturas e leitura de webhook', function () {
     $gateway = new CieloGateway('merchant-id', 'merchant-key', true, cieloClient([]));
 
     expect(Capability::of($gateway))->toBe([
         Capability::CHARGES,
         Capability::REFUNDS,
         Capability::SUBSCRIPTIONS,
+        Capability::WEBHOOK_EVENTS,
     ]);
 })->group('cielo');
 

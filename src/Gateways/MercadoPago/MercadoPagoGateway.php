@@ -3,15 +3,16 @@
 namespace PHPay\MercadoPago;
 
 use GuzzleHttp\Client;
-use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\MercadoPago\Interface\MercadoPagoGatewayInterface;
-use PHPay\MercadoPago\Requests\MercadoPagoCustomerRequest;
+use PHPay\MercadoPago\Requests\{MercadoPagoCustomerRequest, MercadoPagoWebhookEventRequest};
 use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
 use PHPay\MercadoPago\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Webhooks\Event;
 
 class MercadoPagoGateway implements MercadoPagoGatewayInterface
 {
@@ -121,5 +122,20 @@ class MercadoPagoGateway implements MercadoPagoGatewayInterface
     public function webhookSignature(): WebhookSignature
     {
         return new WebhookSignature();
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents.
+     * Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        return MercadoPagoWebhookEventRequest::parse($payload);
     }
 }

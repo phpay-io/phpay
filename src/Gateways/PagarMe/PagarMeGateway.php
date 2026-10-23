@@ -3,15 +3,16 @@
 namespace PHPay\PagarMe;
 
 use GuzzleHttp\Client;
-use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\PagarMe\Interface\PagarMeGatewayInterface;
-use PHPay\PagarMe\Requests\PagarMeCustomerRequest;
+use PHPay\PagarMe\Requests\{PagarMeCustomerRequest, PagarMeWebhookEventRequest};
 use PHPay\PagarMe\Resources\Charge\Charge;
 use PHPay\PagarMe\Resources\Customer\Customer;
 use PHPay\PagarMe\Resources\Subscription\Subscription;
 use PHPay\PagarMe\Resources\WebhookDelivery\WebhookDelivery;
 use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Webhooks\Event;
 
 class PagarMeGateway implements PagarMeGatewayInterface
 {
@@ -120,5 +121,20 @@ class PagarMeGateway implements PagarMeGatewayInterface
     public function webhookDeliveries(): WebhookDelivery
     {
         return new WebhookDelivery($this->secretKey, $this->client);
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents.
+     * Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        return PagarMeWebhookEventRequest::parse($payload);
     }
 }
