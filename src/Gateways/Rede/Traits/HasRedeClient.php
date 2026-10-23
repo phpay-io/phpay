@@ -7,9 +7,12 @@ use PHPay\Http\{ClientFactory, HasHttpClient};
 use PHPay\Rede\RedeEnvironment;
 
 /**
- * Rede splits authorization from the API: the token is negotiated on one host
- * and spent on another, and the token path itself differs between sandbox and
- * production.
+ * client of the Rede transactions API.
+ *
+ * only the transactions host lives here. Rede negotiates the token on a
+ * separate host, with a path that differs between sandbox and production, but
+ * that belongs to `RedeGateway::authorization()` — the resource that uses this
+ * trait spends the token and never asks for one.
  */
 trait HasRedeClient
 {
@@ -36,22 +39,6 @@ trait HasRedeClient
     }
 
     /**
-     * boot client for the authorization host
-     *
-     * @return Client
-     */
-    protected function clientRedeOauthBoot(): Client
-    {
-        return ClientFactory::make([
-            'base_uri' => $this->oauthUri(),
-            'headers'  => [
-                'accept'     => 'application/json',
-                'user-agent' => 'PHPay',
-            ],
-        ]);
-    }
-
-    /**
      * base uri of the transactions API
      *
      * @return string
@@ -59,26 +46,6 @@ trait HasRedeClient
     protected function baseUri(): string
     {
         return RedeEnvironment::api($this->sandbox);
-    }
-
-    /**
-     * base uri of the authorization host
-     *
-     * @return string
-     */
-    protected function oauthUri(): string
-    {
-        return RedeEnvironment::oauth($this->sandbox);
-    }
-
-    /**
-     * path of the token endpoint, which differs between environments
-     *
-     * @return string
-     */
-    protected function oauthTokenPath(): string
-    {
-        return RedeEnvironment::tokenPath($this->sandbox);
     }
 
     /**

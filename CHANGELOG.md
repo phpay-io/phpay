@@ -76,6 +76,17 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   entrada. **Nenhuma assinatura pública mudou de comportamento** ([#131]).
 
 
+### Removido
+
+- Três métodos de `PHPay\Rede\Traits\HasRedeClient` que **nenhum caminho da
+  biblioteca alcançava**: `clientRedeOauthBoot()`, `oauthUri()` e
+  `oauthTokenPath()`. O client de autorização da Rede sempre foi montado em
+  `RedeGateway::authorization()`, inline, e o caminho do token sempre foi lido
+  de `RedeEnvironment::tokenPath()` — os três eram duplicação morta, e o trait
+  é usado pelo recurso de transações, que gasta o token e nunca pede um. São
+  métodos `protected` de um trait interno, não superfície pública: nada muda
+  para quem consome a biblioteca ([#134]).
+
 ## [2.4.0] - 2026-10-22
 
 [Release](https://github.com/phpay-io/phpay/releases/tag/v2.4.0) ·
