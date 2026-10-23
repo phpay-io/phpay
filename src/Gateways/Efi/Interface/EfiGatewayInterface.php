@@ -2,7 +2,7 @@
 
 namespace PHPay\Efi\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsPixKeys, SupportsSubscriptions, SupportsWebhooks};
+use PHPay\Contracts\{SupportsCharges, SupportsPixKeys, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhooks};
 use PHPay\Efi\Resources\Charge\Charge;
 use PHPay\Efi\Resources\Pix\Pix;
 use PHPay\Efi\Resources\PixCharge\PixCharge;
@@ -23,7 +23,8 @@ interface EfiGatewayInterface extends
     SupportsCharges,
     SupportsWebhooks,
     SupportsPixKeys,
-    SupportsSubscriptions
+    SupportsSubscriptions,
+    SupportsWebhookEvents
 {
     /**
      * get token of the Cobranças API

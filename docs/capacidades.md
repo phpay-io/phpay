@@ -40,11 +40,18 @@ use PHPay\Contracts\SupportsCharges;
 public function __construct(private SupportsCharges $gateway) {}
 ```
 
-## O estorno é a exceção da forma
+## Duas capacidades executam, em vez de devolver recurso
 
-Cinco capacidades devolvem um **recurso** — `customer()`, `charge()`, `pix()`,
-`subscription()`, `webhook()`, `webhookSignature()`. O estorno **executa a
-operação**:
+Seis capacidades devolvem um **recurso** — `customer()`, `charge()`, `pix()`,
+`subscription()`, `webhook()`, `webhookSignature()`. O estorno e a leitura de
+webhook **executam a operação**:
+
+```php
+$phpay->refund($id);              // devolve o dinheiro
+$phpay->webhookEvents($corpo);    // lê a notificação
+```
+
+No estorno:
 
 ```php
 $phpay->refund($id);          // devolve tudo
@@ -66,3 +73,7 @@ use PHPay\Support\Money;
 
 $phpay->refund($id, Money::reais(25.50));   // o mesmo valor nos nove
 ```
+
+A [leitura de webhook](webhooks.md) é igual: o que divergia era a leitura, não
+um handle para alcançar. Ela devolve **lista** de eventos, nunca um — a API Pix
+da Efí manda vários pagamentos numa notificação só.

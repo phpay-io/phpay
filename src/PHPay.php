@@ -2,9 +2,10 @@
 
 namespace PHPay;
 
-use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
-use PHPay\Exceptions\{ApiException, NotImplementedException};
+use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature, SupportsWebhooks};
+use PHPay\Exceptions\{ApiException, NotImplementedException, ValidationException};
 use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Webhooks\Event;
 
 /**
  * entry point of the library.
@@ -180,6 +181,28 @@ class PHPay implements GatewayInterface
         }
 
         return $gateway->subscription();
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents for
+     * why. Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws NotImplementedException
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        $gateway = $this->gateway;
+
+        if (!$gateway instanceof SupportsWebhookEvents) {
+            throw NotImplementedException::forCapability($gateway, Capability::WEBHOOK_EVENTS);
+        }
+
+        return $gateway->webhookEvents($payload);
     }
 
     /**

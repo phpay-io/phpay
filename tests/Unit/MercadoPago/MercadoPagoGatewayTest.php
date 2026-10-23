@@ -17,6 +17,7 @@ it('declara clientes, cobranças, estornos, assinaturas e verificação de assin
         Capability::REFUNDS,
         Capability::SUBSCRIPTIONS,
         Capability::WEBHOOK_SIGNATURE,
+        Capability::WEBHOOK_EVENTS,
     ]);
 })->group('mercadopago');
 

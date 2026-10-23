@@ -2,7 +2,7 @@
 
 namespace PHPay\MercadoPago\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsRefunds, SupportsSubscriptions, SupportsWebhookSignature};
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature};
 use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
@@ -24,7 +24,8 @@ interface MercadoPagoGatewayInterface extends
     SupportsCharges,
     SupportsRefunds,
     SupportsSubscriptions,
-    SupportsWebhookSignature
+    SupportsWebhookSignature,
+    SupportsWebhookEvents
 {
     /**
      * get resource customer from gateway.

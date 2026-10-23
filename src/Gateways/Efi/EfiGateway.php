@@ -4,6 +4,7 @@ namespace PHPay\Efi;
 
 use GuzzleHttp\Client;
 use PHPay\Efi\Interface\EfiGatewayInterface;
+use PHPay\Efi\Requests\EfiWebhookEventRequest;
 use PHPay\Efi\Resources\Authorization\Authorization;
 use PHPay\Efi\Resources\Charge\Charge;
 use PHPay\Efi\Resources\Pix\Pix;
@@ -13,6 +14,7 @@ use PHPay\Efi\Resources\Subscription\Subscription;
 use PHPay\Efi\Resources\Webhook\Webhook;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\{Certificate, MasksCredentials};
+use PHPay\Webhooks\Event;
 
 class EfiGateway implements EfiGatewayInterface
 {
@@ -281,5 +283,20 @@ class EfiGateway implements EfiGatewayInterface
         return is_numeric($lifetime)
             ? time() + (int) $lifetime - self::EXPIRY_MARGIN
             : PHP_INT_MAX;
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents.
+     * Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        return EfiWebhookEventRequest::parse($payload);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace PHPay\PagarMe\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsRefunds, SupportsSubscriptions};
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents};
 use PHPay\PagarMe\Resources\Charge\Charge;
 use PHPay\PagarMe\Resources\Customer\Customer;
 use PHPay\PagarMe\Resources\Subscription\Subscription;
@@ -23,7 +23,8 @@ interface PagarMeGatewayInterface extends
     SupportsCustomers,
     SupportsCharges,
     SupportsRefunds,
-    SupportsSubscriptions
+    SupportsSubscriptions,
+    SupportsWebhookEvents
 {
     /**
      * get resource customer from gateway.

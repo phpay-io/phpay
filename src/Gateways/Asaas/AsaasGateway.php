@@ -4,16 +4,17 @@ namespace PHPay\Asaas;
 
 use GuzzleHttp\Client;
 use PHPay\Asaas\Interface\AsaasGatewayInterface;
-use PHPay\Asaas\Requests\AsaasCustomerRequest;
+use PHPay\Asaas\Requests\{AsaasCustomerRequest, AsaasWebhookEventRequest};
 use PHPay\Asaas\Resources\Charge\Charge;
 use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
 use PHPay\Asaas\Resources\WebhookSignature\WebhookSignature;
-use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Webhooks\Event;
 
 class AsaasGateway implements AsaasGatewayInterface
 {
@@ -128,5 +129,20 @@ class AsaasGateway implements AsaasGatewayInterface
     public function webhookSignature(): WebhookSignature
     {
         return new WebhookSignature();
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents.
+     * Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        return AsaasWebhookEventRequest::parse($payload);
     }
 }

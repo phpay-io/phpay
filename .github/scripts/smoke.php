@@ -55,6 +55,7 @@ use PHPay\Rede\Enums\TransactionStatusEnum;
 use PHPay\Rede\RedeGateway;
 use PHPay\Support\{Customer, Money, StaticPixCode};
 use PHPay\Support\PaymentStatus;
+use PHPay\Webhooks\{Event, EventType};
 use PHPay\Woovi\Enums\ChargeStatusEnum as WooviChargeStatusEnum;
 use PHPay\Woovi\WooviGateway;
 
@@ -146,9 +147,9 @@ $gateways = [
     'AbacatePay'   => new AbacatePayGateway('fake-token'),
 ];
 
-// o estorno fica fora: ele é a única capacidade que executa a operação em vez
-// de devolver um recurso, então não tem acessor para construir e chamá-lo num
-// gateway que o declara sairia para a rede. É verificado em seguida, à parte.
+// o estorno e a leitura de webhook ficam fora: são as duas capacidades que
+// executam uma operação em vez de devolver um recurso, então não têm acessor
+// para construir. As duas são verificadas em seguida, à parte.
 $accessors = [
     Capability::CUSTOMERS->value         => 'customer',
     Capability::CHARGES->value           => 'charge',
@@ -190,6 +191,33 @@ foreach ($gateways as $label => $gateway) {
 
     foreach (Capability::cases() as $capability) {
         $declared = $phpay->supports($capability);
+
+        // leitura de webhook é parsing puro, então dá para exercitar nos dois
+        // sentidos sem rede: nos que declaram, um corpo mínimo tem que virar
+        // lista de Event; nos que não, a facade recusa.
+        if ($capability === Capability::WEBHOOK_EVENTS) {
+            $check(
+                sprintf('%s: webhookEvents() %s', $label, $declared ? 'lê a notificação' : 'recusa a capacidade'),
+                function () use ($phpay, $declared, $ensure, $expect): void {
+                    if (!$declared) {
+                        $expect(NotImplementedException::class, static fn () => $phpay->webhookEvents(['x' => 1]));
+
+                        return;
+                    }
+
+                    $eventos = $phpay->webhookEvents(['x' => 1]);
+
+                    $ensure($eventos !== [], 'deveria devolver ao menos um evento');
+                    $ensure($eventos[0] instanceof Event, 'deveria devolver Event');
+                    $ensure(
+                        $eventos[0]->type === EventType::UNKNOWN || $eventos[0]->type === EventType::UPDATED,
+                        'corpo irreconhecível deveria degradar, não levantar'
+                    );
+                }
+            );
+
+            continue;
+        }
 
         // declarado, só o contrato: a chamada iria à rede. Não declarado, a
         // facade recusa antes de qualquer HTTP, e isso dá para exercitar.

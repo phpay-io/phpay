@@ -4,11 +4,13 @@ namespace PHPay\Cielo;
 
 use GuzzleHttp\Client;
 use PHPay\Cielo\Interface\CieloGatewayInterface;
+use PHPay\Cielo\Requests\CieloWebhookEventRequest;
 use PHPay\Cielo\Resources\Charge\Charge;
 use PHPay\Cielo\Resources\Subscription\Subscription;
-use PHPay\Exceptions\ApiException;
+use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\Support\Money;
+use PHPay\Webhooks\Event;
 
 class CieloGateway implements CieloGatewayInterface
 {
@@ -92,5 +94,20 @@ class CieloGateway implements CieloGatewayInterface
             $this->client,
             $this->queryClient
         );
+    }
+
+    /**
+     * read a webhook notification into events.
+     *
+     * returns a list, never a single event — see SupportsWebhookEvents.
+     * Verify the signature first, with the raw body.
+     *
+     * @param string|array<mixed> $payload the raw body, or it already decoded
+     * @return array<int, Event>
+     * @throws ValidationException
+     */
+    public function webhookEvents(string|array $payload): array
+    {
+        return CieloWebhookEventRequest::parse($payload);
     }
 }
