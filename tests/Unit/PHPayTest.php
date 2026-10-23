@@ -9,7 +9,8 @@ test('boot phpay class', function () {
         ->toImplement(GatewayInterface::class)
         ->toHaveMethods([
             '__construct', 'name', 'supports', 'capabilities',
-            'customer', 'charge', 'webhook', 'pix', 'subscription',
+            'customer', 'charge', 'refund', 'webhook', 'pix',
+            'subscription', 'webhookSignature',
         ]);
 })->group('phpay');
 

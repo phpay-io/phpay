@@ -45,3 +45,26 @@ it('devolve null quando nenhum cliente casa com o e-mail', function () {
 it('não expõe exclusão de cliente, que a api não oferece', function () {
     expect(method_exists(Customer::class, 'destroy'))->toBeFalse();
 })->group('mercadopago');
+
+it('consulta, atualiza e busca clientes nos endpoints de customers', function () {
+    $history = [];
+    $client  = mpClient([
+        jsonResponse(['id' => 'cus_1']),
+        jsonResponse(['id' => 'cus_1', 'first_name' => 'Mário']),
+        jsonResponse(['results' => []]),
+        jsonResponse(['results' => []]),
+    ], $history);
+
+    $customer = new Customer('TEST-token', ['first_name' => 'Mário'], $client);
+
+    $customer->find('cus_1');
+    $customer->update('cus_1');
+    $customer->getAll();
+    $customer->setFilter(['email' => 'fale@phpay.io'])->getAll();
+
+    expect((string) $history[0]['request']->getUri())->toEndWith('/v1/customers/cus_1')
+        ->and($history[1]['request']->getMethod())->toBe('PUT')
+        ->and(recordedBody($history, 1))->toBe(['first_name' => 'Mário'])
+        ->and((string) $history[2]['request']->getUri())->toEndWith('/v1/customers/search')
+        ->and((string) $history[3]['request']->getUri())->toContain('email=fale%40phpay.io');
+})->group('mercadopago');
