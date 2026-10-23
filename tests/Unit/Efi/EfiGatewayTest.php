@@ -1,7 +1,8 @@
 <?php
 
-use PHPay\Contracts\Capability;
+use PHPay\Contracts\{Capability, GatewayInterface};
 use PHPay\Efi\EfiGateway;
+use PHPay\Efi\Interface\EfiGatewayInterface;
 use PHPay\Efi\Resources\Charge\Charge;
 use PHPay\Exceptions\{ApiException, NotImplementedException, ValidationException};
 use PHPay\PHPay;
@@ -218,4 +219,10 @@ it('não leva o access_token para a exceção quando a autorização vem incompl
         expect($exception->getResponse())->toBe(['expires_in' => 3600])
             ->and(json_encode($exception->getResponse()))->not->toContain('token-vivo');
     }
+})->group('efi');
+
+it('implementa o contrato do gateway e a interface própria', function () {
+    expect(EfiGateway::class)
+        ->toImplement(GatewayInterface::class)
+        ->and(EfiGateway::class)->toImplement(EfiGatewayInterface::class);
 })->group('efi');

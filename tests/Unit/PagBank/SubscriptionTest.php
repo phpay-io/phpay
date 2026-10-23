@@ -135,3 +135,25 @@ it('exige e-mail e documento válidos do assinante', function () {
 
     expect($history)->toBeEmpty();
 })->group('pagbank');
+
+it('consulta a assinatura e os planos nos endpoints próprios', function () {
+    $history = [];
+    $client  = pagbankClient([
+        jsonResponse(['id' => 'SUBS_1']),
+        jsonResponse(['id' => 'PLAN_1']),
+        jsonResponse(['plans' => []]),
+        jsonResponse(['plans' => []]),
+    ], $history);
+
+    $subscription = new Subscription('token', true, $client);
+
+    $subscription->find('SUBS_1');
+    $subscription->findPlan('PLAN_1');
+    $subscription->getAllPlans();
+    $subscription->setFilter(['page' => 2])->getAllPlans();
+
+    expect((string) $history[0]['request']->getUri())->toEndWith('/subscriptions/SUBS_1')
+        ->and((string) $history[1]['request']->getUri())->toEndWith('/plans/PLAN_1')
+        ->and((string) $history[2]['request']->getUri())->toEndWith('/plans')
+        ->and((string) $history[3]['request']->getUri())->toContain('page=2');
+})->group('pagbank');

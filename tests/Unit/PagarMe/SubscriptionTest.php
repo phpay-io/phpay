@@ -155,3 +155,25 @@ it('recusa preço decimal na assinatura sem plano', function () {
 
     expect($history)->toBeEmpty();
 })->group('pagarme');
+
+it('consulta a assinatura e os planos nos endpoints próprios', function () {
+    $history = [];
+    $client  = pagarmeClient([
+        jsonResponse(['id' => 'sub_1']),
+        jsonResponse(['id' => 'plan_1']),
+        jsonResponse(['data' => []]),
+        jsonResponse(['data' => []]),
+    ], $history);
+
+    $subscription = new Subscription('sk_test_abc', $client);
+
+    $subscription->find('sub_1');
+    $subscription->findPlan('plan_1');
+    $subscription->getAllPlans();
+    $subscription->setFilter(['page' => 2])->getAllPlans();
+
+    expect((string) $history[0]['request']->getUri())->toEndWith('/subscriptions/sub_1')
+        ->and((string) $history[1]['request']->getUri())->toEndWith('/plans/plan_1')
+        ->and((string) $history[2]['request']->getUri())->toEndWith('/plans')
+        ->and((string) $history[3]['request']->getUri())->toContain('page=2');
+})->group('pagarme');
