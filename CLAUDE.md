@@ -197,6 +197,46 @@ quebra a integração, cobra o valor errado.
 - `Money::reais()` **recusa mais de duas casas decimais** de propósito. Não "conserte"
   isso com arredondamento: é o que impede erro de um centavo na conciliação.
 
+## Status de pagamento
+
+Use **`PHPay\Support\PaymentStatus`**. É o `Money` do outro lado da chamada: dez
+vocabulários para os mesmos estados — `RECEIVED`, `COMPLETED`, `approved`, `PAID`,
+`paid`, `CONCLUIDA`, `'00'` — e quem troca de gateway reescreve todo `if`.
+
+- Suporte, não capacidade. Não entra na enum `Capability`: não existe gateway que
+  deixe de reportar status, então não há o que declarar. Fica ao lado do `Money` e do
+  `StaticPixCode`.
+- **O enum concreto de cada gateway fica**, e ganha dois métodos: `status()` traduz um
+  case, e `of(?string $raw)` lê o valor cru da resposta tolerando o que não conhece.
+  Quem precisa do estado específico daquele gateway continua com ele na mão. Gateway
+  novo precisa do mesmo par.
+- **`UNKNOWN` não é preguiça.** Gateway acrescenta status sem avisar, e a alternativa
+  é levantar exceção ao ler uma resposta de **sucesso**, o que contraria a regra
+  central do modelo de erros. Ler estado novo como desconhecido degrada; quebrar perde
+  a cobrança. Um teste varre todos os cases de todos os enums e reprova se algum
+  mapear para `UNKNOWN` — ali seria buraco no `match`, não degradação.
+- **`PAID` não é final**, de propósito: estorno e chargeback ainda vêm depois, e
+  tratar recebido como encerrado é como um estorno passa despercebido. Finais são
+  `REFUNDED`, `CHARGEBACK`, `CANCELED`, `EXPIRED` e `FAILED`. Lógica derivada mora no
+  VO (`isPaid()`, `isRefunded()`, `isFinal()`), não nos gateways.
+- **`AUTHORIZED` existe porque Cielo, PagBank e Mercado Pago separam autorização de
+  captura.** Sem ele, cobrança autorizada e não capturada leria como paga, e isso é
+  dinheiro que ainda não entrou. `PARTIALLY_PAID` existe pelo `underpaid` do Pagar.me,
+  pelo mesmo motivo: ler pagamento a menos como pagamento entrega produto por menos do
+  que foi vendido.
+- **Duas exceções que não se generalizam.** Na **Rede**, código não listado é `FAILED`
+  e não `UNKNOWN`: o enum lista só `'00'` e `'220'` porque os outros são dezenas de
+  motivos de recusa, então responder "não sei" esconderia uma recusa (código ausente
+  continua `UNKNOWN`, que é campo faltando). No **Pagar.me**, `canceled` cobre
+  cancelamento e estorno — a API usa um `DELETE` só —, então estorno lá lê como
+  `CANCELED`; é limite do gateway, e está no PHPDoc para ninguém "consertar".
+- A **Efí tem dois enums** (`ChargeStatusEnum` para Cobranças, `PixChargeStatusEnum`
+  para a API Pix), porque são duas APIs com vocabulários diferentes e as mesmas
+  credenciais. Ler uma com o enum da outra devolve `UNKNOWN`, e há teste exigindo isso.
+- **Status de assinatura é outro ciclo de vida** e fica fora: os dois
+  `SubscriptionStatusEnum` (Mercado Pago, PagBank) descrevem ativa/pausada/cancelada,
+  que não se mapeia nestes treze casos. Merece VO próprio se alguém precisar.
+
 ## Retry e idempotência
 
 A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra na

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 /*
  * Smoke test da versão mínima de PHP que o composer.json promete.
@@ -29,10 +29,14 @@ declare(strict_types=1);
 require __DIR__ . '/../../vendor/autoload.php';
 
 use PHPay\AbacatePay\AbacatePayGateway;
+use PHPay\AbacatePay\Enums\BillingStatusEnum;
 use PHPay\Asaas\AsaasGateway;
+use PHPay\Asaas\Enums\InvoiceStatusEnum;
 use PHPay\Cielo\CieloGateway;
+use PHPay\Cielo\Enums\SaleStatusEnum;
 use PHPay\Contracts\{Capability, GatewayInterface, SupportsRefunds};
 use PHPay\Efi\EfiGateway;
+use PHPay\Efi\Enums\{ChargeStatusEnum as EfiChargeStatusEnum, PixChargeStatusEnum};
 use PHPay\Efi\Resources\Charge\Charge as EfiCharge;
 use PHPay\Efi\Resources\Pix\Pix as EfiPix;
 use PHPay\Efi\Resources\PixCharge\PixCharge as EfiPixCharge;
@@ -40,12 +44,18 @@ use PHPay\Efi\Resources\Subscription\Subscription as EfiSubscription;
 use PHPay\Efi\Resources\Webhook\Webhook as EfiWebhook;
 use PHPay\Exceptions\{NotImplementedException, ValidationException};
 use PHPay\Http\Certificate;
+use PHPay\MercadoPago\Enums\PaymentStatusEnum;
 use PHPay\MercadoPago\MercadoPagoGateway;
+use PHPay\PagarMe\Enums\ChargeStatusEnum as PagarMeChargeStatusEnum;
 use PHPay\PagarMe\PagarMeGateway;
+use PHPay\PagBank\Enums\ChargeStatusEnum as PagBankChargeStatusEnum;
 use PHPay\PagBank\PagBankGateway;
 use PHPay\PHPay;
+use PHPay\Rede\Enums\TransactionStatusEnum;
 use PHPay\Rede\RedeGateway;
 use PHPay\Support\{Customer, Money, StaticPixCode};
+use PHPay\Support\PaymentStatus;
+use PHPay\Woovi\Enums\ChargeStatusEnum as WooviChargeStatusEnum;
 use PHPay\Woovi\WooviGateway;
 
 /** @var list<string> $failures */
@@ -240,6 +250,38 @@ $check('Efí: API Pix sem certificado explica o mTLS', function () use ($token, 
 });
 
 echo "\nvalue objects\n";
+
+// o ponto do VO: dez vocabulários lidos de uma forma só. Vale no smoke porque é
+// mapeamento puro, sem rede — e porque um case novo sem entrada no match aqui
+// estoura na versão mínima antes de chegar em quem usa.
+$check('PaymentStatus: os vocabulários dos gateways convergem', function () use ($ensure): void {
+    $pagas = [
+        'Asaas'        => InvoiceStatusEnum::of('RECEIVED'),
+        'Woovi'        => WooviChargeStatusEnum::of('COMPLETED'),
+        'Cielo'        => SaleStatusEnum::of(2),
+        'Rede'         => TransactionStatusEnum::of('00'),
+        'AbacatePay'   => BillingStatusEnum::of('PAID'),
+        'Mercado Pago' => PaymentStatusEnum::of('approved'),
+        'PagBank'      => PagBankChargeStatusEnum::of('PAID'),
+        'Pagar.me'     => PagarMeChargeStatusEnum::of('paid'),
+        'Efí'          => EfiChargeStatusEnum::of('paid'),
+        'Efí (pix)'    => PixChargeStatusEnum::of('CONCLUIDA'),
+    ];
+
+    foreach ($pagas as $gateway => $status) {
+        $ensure($status === PaymentStatus::PAID, sprintf('%s deveria ler como paga', $gateway));
+    }
+
+    $ensure(
+        InvoiceStatusEnum::of('STATUS_INVENTADO') === PaymentStatus::UNKNOWN,
+        'status desconhecido deveria degradar, não levantar'
+    );
+    $ensure(
+        TransactionStatusEnum::of('51') === PaymentStatus::FAILED,
+        'na Rede, código não listado é recusa'
+    );
+    $ensure(!PaymentStatus::PAID->isFinal(), 'paga não é final: estorno ainda vem depois');
+});
 
 $check('Money: reais e centavos convertem nos dois sentidos', function () use ($ensure): void {
     $ensure(Money::reais(10.5)->toCentavos() === 1050, 'reais(10.5) deveria dar 1050 centavos');

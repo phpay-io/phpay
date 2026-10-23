@@ -1,7 +1,7 @@
 # Documentação do PHPay
 
 O que vale para todos os gateways está nos conceitos: capacidade, erro,
-unidade monetária, retry. Cada página de gateway cobre só o que é
+unidade monetária, status, retry. Cada página de gateway cobre só o que é
 específico dele.
 
 [← voltar ao README](../README.md)
@@ -16,6 +16,7 @@ específico dele.
 | [Ambientes e credenciais](ambientes-e-credenciais.md) | sandbox e produção em cada gateway, e como a credencial fica fora de dump |
 | [Cliente](cliente.md) | o VO `Customer`, porque o mesmo campo tem seis grafias entre os gateways |
 | [Valores monetários](valores-monetarios.md) | `Money`, porque reais e centavos não se misturam |
+| [Status de pagamento](status-de-pagamento.md) | `PaymentStatus`, porque "paga" tem dez grafias entre os gateways |
 | [Verificando o webhook que chega](webhooks.md) | provar que a notificação veio do gateway |
 | [QR Code estático](qr-code-estatico.md) | compor o BR Code de uma chave Pix localmente, que é como o padrão manda |
 

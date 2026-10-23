@@ -173,6 +173,7 @@ específico dele.
 | [Ambientes e credenciais](docs/ambientes-e-credenciais.md) | sandbox e produção em cada gateway, e como a credencial fica fora de dump |
 | [Cliente](docs/cliente.md) | o VO `Customer`, porque o mesmo campo tem seis grafias entre os gateways |
 | [Valores monetários](docs/valores-monetarios.md) | `Money`, porque reais e centavos não se misturam |
+| [Status de pagamento](docs/status-de-pagamento.md) | `PaymentStatus`, porque "paga" tem dez grafias entre os gateways |
 | [Verificando o webhook que chega](docs/webhooks.md) | provar que a notificação veio do gateway |
 | [QR Code estático](docs/qr-code-estatico.md) | compor o BR Code de uma chave Pix localmente, que é como o padrão manda |
 

@@ -30,6 +30,21 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   endpoint que cada uma já tinha. `cancel()` continua existindo nas duas: ali um
   endpoint só anula autorização e estorna venda paga, e `cancel` é o nome honesto
   da primeira metade ([#132]).
+- **`PHPay\Support\PaymentStatus`**, que lê o status da cobrança numa forma só.
+  A mesma cobrança paga voltava como `RECEIVED`, `COMPLETED`, `approved`, `PAID`,
+  `paid`, `CONCLUIDA` ou `'00'` dependendo do gateway, e quem trocava de gateway
+  reescrevia todo `if`. Agora cada enum de status tem `status()`, que traduz um
+  case, e `of()`, que lê o valor cru tolerando o que a biblioteca não conhece.
+  **Os enums concretos continuam existindo e acessíveis** — quem precisa do
+  estado específico daquele gateway não perde nada. Suporte, não capacidade:
+  não entra na enum `Capability`, porque não existe gateway que deixe de
+  reportar status ([#133]).
+- Enums de status onde não havia: **Mercado Pago** (`PaymentStatusEnum`),
+  **PagBank** e **Pagar.me** (`ChargeStatusEnum`) e **Efí**, que ganhou dois —
+  `ChargeStatusEnum` para a API de Cobranças e `PixChargeStatusEnum` para a API
+  Pix, porque são vocabulários diferentes com as mesmas credenciais. Os cinco
+  que já existiam (Asaas, Woovi, Cielo, Rede, AbacatePay) ganharam o mapeamento
+  ([#133]).
 - **Suporte ao Guzzle 8**, ao lado do 7: o `composer.json` passa a aceitar
   `^7.3 || ^8.0`. A `RetryPolicy` continua distinguindo "não saiu da máquina" de
   "deu timeout depois de enviar" nas duas majors — o 8 removeu o
@@ -536,3 +551,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#124]: https://github.com/phpay-io/phpay/issues/124
 [#131]: https://github.com/phpay-io/phpay/issues/131
 [#132]: https://github.com/phpay-io/phpay/issues/132
+[#133]: https://github.com/phpay-io/phpay/issues/133
