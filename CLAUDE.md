@@ -208,6 +208,27 @@ A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra 
   na linha. A política detecta a major pelo `method_exists` do acessor, e o gatilho
   comum às duas é o `NetworkExceptionInterface` do PSR-18. **Nenhum dos caminhos
   nomeia classe que só existe numa major**, senão o PHPStan quebraria na outra.
+- A mesma regra vale para **tipo**, não só para classe, e o nível 9 roda nas duas
+  majors (o job do Guzzle 8 analisa também). A 8 declara o que a 7 deixava solto:
+  `Client::__construct` e `Client::request()` recebem **forma de array fechada**,
+  `HandlerStack` ficou **genérica** (`HandlerStack<THandler>`) e `Middleware::retry`
+  declara a assinatura exata do decider. Daí três hábitos:
+  **(1)** o que se passa ao Guzzle é descrito por forma de array com as opções que a
+  lib de fato usa — `array<string, mixed>` não satisfaz forma fechada, e a forma
+  estreita ainda transforma nome de opção errado em erro aqui em vez de chave que o
+  Guzzle ignora calado. A de `request()` é o alias `RequestOptions` do
+  `HasHttpClient`, importado com `@phpstan-import-type` por quem monta opções em
+  variável (hoje só o `authorized()` da Rede);
+  **(2)** **não se declara `HandlerStack` como tipo de retorno nem dentro de forma de
+  array** — com argumento genérico quebra na 7, sem ele quebra na 8. Por isso a pilha
+  é montada dentro do `ClientFactory::make()`, como variável local, onde o tipo é
+  inferido; e `handler` entra na forma como `callable`, que é o que uma `HandlerStack`
+  também é;
+  **(3)** callable entregue ao Guzzle **aceita o que a major mais larga passa** e
+  estreita de volta na entrada: o quarto argumento do decider é `mixed`, não
+  `?Throwable`, e vira `Throwable|null` antes de chegar ao `shouldRetry()`.
+  Nada disso se resolve com `ignoreErrors` nem baixando o nível — os dois apagariam
+  erro de verdade mais adiante.
 - Teste de cenário que só existe numa major leva `->skip()` com o motivo — um
   timeout com conexão aberta é `ConnectException` no 7 e `NetworkTimeoutException`
   no 8, então o mesmo teste não pode valer nas duas.
@@ -344,11 +365,6 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
   (`webhookrec`, `webhookcobr`), envio de Pix e split.
-- O **Guzzle 8 roda** — a suíte passa nas duas majors e o CI tem um job na de cima —,
-  mas o **PHPStan nível 9 ainda não passa nela**: a 8 traz formas de array e genéricos
-  (`Client::__construct`, `HandlerStack<THandler>`, `Middleware::retry`) que as
-  anotações da lib não acompanham, 38 erros. O gate roda na major do lock. Alinhar
-  isso é trabalho de tipos, não de comportamento.
 - Chave de idempotência existe em três gateways: Mercado Pago, Pagar.me e PagBank. Nos
   outros sete, `POST` só é repetido quando o erro provou que a requisição não saiu da
   máquina. O `correlationID` da Woovi deduplica de fato, mas vive no corpo e não em

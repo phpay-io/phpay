@@ -36,14 +36,51 @@ final class ClientFactory
     /**
      * build a client with the library defaults. keys in $config win.
      *
-     * @param array<string, mixed> $config Guzzle request options
+     * the shape lists the options the library actually uses, not every option
+     * Guzzle accepts. Guzzle 8 declares a closed shape for the constructor, and
+     * `array<string, mixed>` does not satisfy it — describing only what the
+     * gateways pass satisfies both majors and turns a mistyped option name into
+     * an error here instead of a key Guzzle silently ignores.
+     *
+     * `handler` is typed as a plain callable on purpose: a HandlerStack is
+     * callable and so qualifies, while naming the class would pin the
+     * annotation to one major — Guzzle 8 made HandlerStack generic and 7 did
+     * not, so either spelling fails on the other side.
+     *
+     * @param array{
+     *     base_uri?: string,
+     *     headers?: array<string, string>,
+     *     auth?: array{0: string, 1: string},
+     *     cert?: string|array{0: string, 1: string},
+     *     timeout?: int,
+     *     connect_timeout?: int,
+     *     handler?: callable
+     * } $config Guzzle request options
      * @param RetryPolicy|null $policy defaults to the conservative policy
      * @return Client
      */
     public static function make(array $config = [], ?RetryPolicy $policy = null): Client
     {
         $config += self::defaults();
-        $config['handler'] = self::stack($config['handler'] ?? null, $policy ?? new RetryPolicy());
+        $policy ??= new RetryPolicy();
+
+        $handler = $config['handler'] ?? null;
+
+        // built here instead of in a helper: a method returning HandlerStack
+        // would have to name the type, and Guzzle 8 made the class generic
+        // while 7 did not. As a local, the type is whatever the installed
+        // major infers, and neither side has an annotation to disagree with.
+        $stack = $handler instanceof HandlerStack
+            ? $handler
+            : HandlerStack::create(is_callable($handler) ? $handler : null);
+
+        // the middleware goes on last, which makes it the innermost: it sees
+        // the raw response before `http_errors` turns a 5xx into an exception,
+        // and the transport failure before anything wraps it.
+        $stack->remove(self::RETRY);
+        $stack->push(Middleware::retry($policy->decider(), $policy->delay()), self::RETRY);
+
+        $config['handler'] = $stack;
 
         return new Client($config);
     }
@@ -61,26 +98,4 @@ final class ClientFactory
         ];
     }
 
-    /**
-     * the handler stack with the retry middleware on it.
-     *
-     * the middleware is pushed last, which makes it the innermost: it sees the
-     * raw response before `http_errors` turns a 5xx into an exception, and the
-     * transport failure before anything wraps it.
-     *
-     * @param mixed $handler whatever the caller put in `handler`
-     * @param RetryPolicy $policy
-     * @return HandlerStack
-     */
-    private static function stack(mixed $handler, RetryPolicy $policy): HandlerStack
-    {
-        $stack = $handler instanceof HandlerStack
-            ? $handler
-            : HandlerStack::create(is_callable($handler) ? $handler : null);
-
-        $stack->remove(self::RETRY);
-        $stack->push(Middleware::retry($policy->decider(), $policy->delay()), self::RETRY);
-
-        return $stack;
-    }
 }
