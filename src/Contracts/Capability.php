@@ -12,6 +12,7 @@ enum Capability: string
 {
     case CUSTOMERS         = 'customers';
     case CHARGES           = 'charges';
+    case REFUNDS           = 'refunds';
     case WEBHOOKS          = 'webhooks';
     case PIX_KEYS          = 'pix-keys';
     case SUBSCRIPTIONS     = 'subscriptions';
@@ -27,6 +28,7 @@ enum Capability: string
         return match ($this) {
             self::CUSTOMERS         => SupportsCustomers::class,
             self::CHARGES           => SupportsCharges::class,
+            self::REFUNDS           => SupportsRefunds::class,
             self::WEBHOOKS          => SupportsWebhooks::class,
             self::PIX_KEYS          => SupportsPixKeys::class,
             self::SUBSCRIPTIONS     => SupportsSubscriptions::class,
@@ -44,6 +46,7 @@ enum Capability: string
         return match ($this) {
             self::CUSTOMERS         => 'clientes',
             self::CHARGES           => 'cobranças',
+            self::REFUNDS           => 'estornos',
             self::WEBHOOKS          => 'webhooks',
             self::PIX_KEYS          => 'chaves Pix',
             self::SUBSCRIPTIONS     => 'assinaturas',

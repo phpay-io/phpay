@@ -219,3 +219,17 @@ it('não manda header de idempotência sem chave', function () {
 
     expect($history[0]['request']->hasHeader('Idempotency-Key'))->toBeFalse();
 })->group('pagarme');
+
+it('estorna pelo mesmo DELETE do cancelamento, com o nome da capacidade', function () {
+    $history = [];
+    $client  = pagarmeClient([jsonResponse([]), jsonResponse([])], $history);
+
+    $charge = new Charge('sk_test_abc', $client);
+    $charge->refund('ch_1');
+    $charge->refund('ch_1', 2500);
+
+    expect($history[0]['request']->getMethod())->toBe('DELETE')
+        ->and((string) $history[0]['request']->getUri())->toEndWith('/charges/ch_1')
+        ->and(recordedBody($history, 0))->toBe([])
+        ->and(recordedBody($history, 1))->toBe(['amount' => 2500]);
+})->group('pagarme');

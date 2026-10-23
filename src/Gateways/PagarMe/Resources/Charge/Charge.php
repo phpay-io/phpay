@@ -396,4 +396,22 @@ class Charge implements ChargeInterface
             ['json' => $amount === null ? [] : ['amount' => Money::asCentavos($amount)]]
         );
     }
+
+    /**
+     * refund a paid charge.
+     *
+     * the name SupportsRefunds declares, over the endpoint Pagar.me already
+     * has: the v5 cancels and refunds through the same `DELETE`, and what
+     * happens depends on whether the charge was paid. `cancel()` stays because
+     * it is the honest name for cancelling one that was not.
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        return $this->cancel($id, $amount);
+    }
 }

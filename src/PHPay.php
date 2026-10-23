@@ -2,9 +2,9 @@
 
 namespace PHPay;
 
-use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
-use PHPay\Exceptions\NotImplementedException;
-use PHPay\Support\Customer as CustomerData;
+use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
+use PHPay\Exceptions\{ApiException, NotImplementedException};
+use PHPay\Support\{Customer as CustomerData, Money};
 
 /**
  * entry point of the library.
@@ -105,6 +105,29 @@ class PHPay implements GatewayInterface
         }
 
         return $gateway->charge();
+    }
+
+    /**
+     * give a received payment back, fully or in part.
+     *
+     * the only capability that performs the operation here instead of handing
+     * back a resource — see SupportsRefunds for why.
+     *
+     * @param string $id the identifier that gateway uses for the paid transaction
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws NotImplementedException
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        $gateway = $this->gateway;
+
+        if (!$gateway instanceof SupportsRefunds) {
+            throw NotImplementedException::forCapability($gateway, Capability::REFUNDS);
+        }
+
+        return $gateway->refund($id, $amount);
     }
 
     /**

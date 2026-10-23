@@ -54,3 +54,20 @@ $phpay->webhook()->getAll();
 > Repare que o webhook fica em `api/openpix/v1/`, enquanto os demais recursos
 > ficam em `api/v1/` — herança da fusão das duas marcas. O PHPay trata isso
 > internamente.
+
+## Estorno
+
+```php
+$phpay->refund('pedido-1');                      // devolve tudo
+$phpay->refund('pedido-1', 2500);                // devolve R$ 25,00
+$phpay->charge()->refund('pedido-1', 2500, 'meu-estorno-1');
+```
+
+> **Dois `correlationID` se encontram nesta chamada, e eles não são a mesma
+> coisa.** O da URL endereça a **cobrança**; o do corpo é um id de
+> idempotência do **estorno**, que o PHPay gera com
+> `PHPay\Http\Idempotency::key()` quando você não informa. Mandar o id da
+> cobrança no corpo faria a Woovi deduplicar contra o objeto errado.
+
+Omitir o valor devolve o total da cobrança, ou o que ainda não foi devolvido
+dela. Valores em centavos, como em todo este gateway.

@@ -49,3 +49,19 @@ $phpay->setPayerEmail('comprador@exemplo.test')
 > O recurso `Customer` do Mercado Pago existe para cartões salvos — **não** é
 > pré-requisito para cobrar, já que o pagamento carrega `payer.email` direto. A
 > API também não oferece exclusão de cliente.
+
+## Estorno
+
+```php
+$phpay->refund($paymentId);                       // devolve tudo
+$phpay->refund($paymentId, 25.50);                // devolve parte, em reais
+$phpay->refund($paymentId, Money::reais(25.50));  // o mesmo, sem dúvida
+```
+
+Valores em **reais com decimais**, como no resto da API do Mercado Pago — e
+diferente dos sete gateways que trabalham em centavos. A chamada já vai com
+`X-Idempotency-Key`, que esta API exige.
+
+> Até a v2.4 o segundo parâmetro era `?float $value`. Ele passou a aceitar
+> `Money|int|float|null` e a ser chamado `$amount`, para ficar igual aos outros
+> gateways. Número cru continua lido em reais, como sempre foi.

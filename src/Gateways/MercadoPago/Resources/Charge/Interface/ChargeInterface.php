@@ -96,8 +96,8 @@ interface ChargeInterface
      * refund charge, fully or partially
      *
      * @param string $id
-     * @param float|null $value
+     * @param Money|int|float|null $amount
      * @return array<mixed>
      */
-    public function refund(string $id, ?float $value = null): array;
+    public function refund(string $id, Money|int|float|null $amount = null): array;
 }

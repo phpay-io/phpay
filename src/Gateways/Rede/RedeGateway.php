@@ -3,10 +3,12 @@
 namespace PHPay\Rede;
 
 use GuzzleHttp\Client;
+use PHPay\Exceptions\ApiException;
 use PHPay\Http\{ClientFactory, MasksCredentials};
 use PHPay\Rede\Interface\RedeGatewayInterface;
 use PHPay\Rede\Resources\Authorization\Authorization;
 use PHPay\Rede\Resources\Charge\Charge;
+use PHPay\Support\Money;
 
 class RedeGateway implements RedeGatewayInterface
 {
@@ -81,5 +83,21 @@ class RedeGateway implements RedeGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->authorization(), $this->sandbox, $this->client);
+    }
+
+    /**
+     * refund a received payment, fully or in part.
+     *
+     * the capability's operation, delegated to the charge resource that owns
+     * the endpoint.
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        return $this->charge()->refund($id, $amount);
     }
 }

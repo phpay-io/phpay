@@ -157,3 +157,16 @@ it('valida a venda antes de chamar a API', function (callable $montar, string $e
         'CreditCard, DebitCard, Pix, Boleto',
     ],
 ])->group('cielo');
+
+it('estorna pelo mesmo endpoint do cancelamento, com o nome da capacidade', function () {
+    $escrita = [];
+    $charge  = cieloCharge([jsonResponse([]), jsonResponse([])], [], $escrita);
+
+    $charge->refund('pay_1');
+    $charge->refund('pay_1', 2500);
+
+    /* `void` anula autorização e estorna venda capturada: é uma rota só */
+    expect($escrita[0]['request']->getMethod())->toBe('PUT')
+        ->and((string) $escrita[0]['request']->getUri())->toEndWith('/1/sales/pay_1/void')
+        ->and((string) $escrita[1]['request']->getUri())->toEndWith('/1/sales/pay_1/void?amount=2500');
+})->group('cielo');

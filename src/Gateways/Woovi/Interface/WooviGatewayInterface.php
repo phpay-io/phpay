@@ -2,7 +2,7 @@
 
 namespace PHPay\Woovi\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
+use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Support\Customer as CustomerData;
 use PHPay\Woovi\Resources\Charge\Charge;
 use PHPay\Woovi\Resources\Customer\Customer;
@@ -21,6 +21,7 @@ use PHPay\Woovi\Resources\WebhookSignature\WebhookSignature;
 interface WooviGatewayInterface extends
     SupportsCustomers,
     SupportsCharges,
+    SupportsRefunds,
     SupportsWebhooks,
     SupportsPixKeys,
     SupportsSubscriptions,

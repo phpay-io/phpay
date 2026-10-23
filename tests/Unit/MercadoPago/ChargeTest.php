@@ -3,6 +3,7 @@
 use PHPay\Exceptions\ValidationException;
 use PHPay\MercadoPago\Enums\PaymentMethodEnum;
 use PHPay\MercadoPago\Resources\Charge\Charge;
+use PHPay\Support\Money;
 
 it('cria uma cobrança pix com o payload e o header de idempotência', function () {
     $history = [];
@@ -144,3 +145,14 @@ it('valida a cobrança antes de chamar a API', function (array $charge, string $
         'payer.email',
     ],
 ])->group('mercadopago');
+
+it('estorna em reais, mesmo recebendo Money em centavos', function () {
+    $history = [];
+    $client  = mpClient([jsonResponse([])], $history);
+
+    (new Charge('TEST-token', $client))->refund('123', Money::centavos(2550));
+
+    /* o Mercado Pago é de reais, como o Asaas: 2550 centavos viram 25.50 */
+    expect(recordedBody($history, 0))->toBe(['amount' => 25.5])
+        ->and($history[0]['request']->getHeaderLine('X-Idempotency-Key'))->not->toBeEmpty();
+})->group('mercadopago');

@@ -31,7 +31,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 use PHPay\AbacatePay\AbacatePayGateway;
 use PHPay\Asaas\AsaasGateway;
 use PHPay\Cielo\CieloGateway;
-use PHPay\Contracts\{Capability, GatewayInterface};
+use PHPay\Contracts\{Capability, GatewayInterface, SupportsRefunds};
 use PHPay\Efi\EfiGateway;
 use PHPay\Efi\Resources\Charge\Charge as EfiCharge;
 use PHPay\Efi\Resources\Pix\Pix as EfiPix;
@@ -136,6 +136,9 @@ $gateways = [
     'AbacatePay'   => new AbacatePayGateway('fake-token'),
 ];
 
+// o estorno fica fora: ele é a única capacidade que executa a operação em vez
+// de devolver um recurso, então não tem acessor para construir e chamá-lo num
+// gateway que o declara sairia para a rede. É verificado em seguida, à parte.
 $accessors = [
     Capability::CUSTOMERS->value         => 'customer',
     Capability::CHARGES->value           => 'charge',
@@ -176,8 +179,28 @@ foreach ($gateways as $label => $gateway) {
     $phpay = PHPay::gateway($gateway);
 
     foreach (Capability::cases() as $capability) {
-        $accessor = $accessors[$capability->value];
         $declared = $phpay->supports($capability);
+
+        // declarado, só o contrato: a chamada iria à rede. Não declarado, a
+        // facade recusa antes de qualquer HTTP, e isso dá para exercitar.
+        if ($capability === Capability::REFUNDS) {
+            $check(
+                sprintf('%s: refund() %s', $label, $declared ? 'declara a capacidade' : 'recusa a capacidade'),
+                function () use ($phpay, $gateway, $declared, $ensure, $expect): void {
+                    if (!$declared) {
+                        $expect(NotImplementedException::class, static fn () => $phpay->refund('fake-id'));
+
+                        return;
+                    }
+
+                    $ensure($gateway instanceof SupportsRefunds, 'deveria implementar SupportsRefunds');
+                }
+            );
+
+            continue;
+        }
+
+        $accessor = $accessors[$capability->value];
 
         $check(
             sprintf('%s: %s() %s', $label, $accessor, $declared ? 'constrói o recurso' : 'recusa a capacidade'),

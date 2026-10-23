@@ -11,8 +11,9 @@ use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
 use PHPay\Asaas\Resources\WebhookSignature\WebhookSignature;
+use PHPay\Exceptions\ApiException;
 use PHPay\Http\MasksCredentials;
-use PHPay\Support\Customer as CustomerData;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 class AsaasGateway implements AsaasGatewayInterface
 {
@@ -69,6 +70,23 @@ class AsaasGateway implements AsaasGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->token, $this->sandbox, $this->client);
+    }
+
+    /**
+     * refund a received payment, fully or in part.
+     *
+     * the capability's operation, delegated to the charge resource that owns
+     * the endpoint.
+     *
+     * @param string $id
+     * @param Money|int|float|null $amount null refunds the full value; reais
+     *                                     here, as everywhere in this gateway
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|float|null $amount = null): array
+    {
+        return $this->charge()->refund($id, $amount);
     }
 
     /**

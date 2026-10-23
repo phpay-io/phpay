@@ -7,11 +7,12 @@ use PHPay\Contracts\Capability;
 use PHPay\Exceptions\NotImplementedException;
 use PHPay\PHPay;
 
-it('declara apenas cobranças e assinaturas', function () {
+it('declara cobranças, estornos e assinaturas', function () {
     $gateway = new CieloGateway('merchant-id', 'merchant-key', true, cieloClient([]));
 
     expect(Capability::of($gateway))->toBe([
         Capability::CHARGES,
+        Capability::REFUNDS,
         Capability::SUBSCRIPTIONS,
     ]);
 })->group('cielo');

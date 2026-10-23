@@ -146,6 +146,15 @@ interface ChargeInterface
     public function cancel(string $id, Money|int|null $amount = null): array;
 
     /**
+     * refund a paid charge — the name SupportsRefunds declares
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     */
+    public function refund(string $id, Money|int|null $amount = null): array;
+
+    /**
      * set the idempotency key sent when creating the order
      *
      * @param string $key

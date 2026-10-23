@@ -4,6 +4,7 @@ namespace PHPay\Woovi\Resources\Charge;
 
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Http\Idempotency;
 use PHPay\Support\{Customer as CustomerData, Money};
 use PHPay\Woovi\Requests\{WooviChargeRequest, WooviCustomerRequest};
 use PHPay\Woovi\Resources\Charge\Interface\ChargeInterface;
@@ -163,6 +164,36 @@ class Charge implements ChargeInterface
     public function destroy(string $id): array
     {
         return $this->request('DELETE', "api/v1/charge/{$id}");
+    }
+
+    /**
+     * refund a paid charge, fully or in part.
+     *
+     * two different correlationIDs meet in this call, which is the trap worth
+     * knowing about: the one in the URL addresses the **charge**, while the one
+     * in the body is an idempotency id for the **refund** itself, generated
+     * here. Passing the charge's id in the body would make Woovi deduplicate
+     * against the wrong thing.
+     *
+     * Values are cents, like everywhere in this gateway. Omitting the amount
+     * refunds the charge's full value, or whatever part of it has not been
+     * refunded yet.
+     *
+     * @param string $id the charge's correlationID, or the gateway id
+     * @param Money|int|null $amount null refunds the full value
+     * @param string|null $refundId your idempotency id; generated when null
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null, ?string $refundId = null): array
+    {
+        $refund = ['correlationID' => $refundId ?? Idempotency::key()];
+
+        if ($amount !== null) {
+            $refund['value'] = Money::asCentavos($amount);
+        }
+
+        return $this->post("api/v1/charge/{$id}/refund", $refund);
     }
 
     /**

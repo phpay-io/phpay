@@ -46,6 +46,15 @@ interface ChargeInterface
     public function destroy(string $id): bool;
 
     /**
+     * refund a received charge, fully or in part — not the same as destroy()
+     *
+     * @param string $id
+     * @param Money|int|float|null $amount null refunds the full value
+     * @return array<mixed>
+     */
+    public function refund(string $id, Money|int|float|null $amount = null): array;
+
+    /**
      * restore charge by id
      *
      * @param string $id

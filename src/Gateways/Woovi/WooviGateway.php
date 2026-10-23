@@ -3,8 +3,9 @@
 namespace PHPay\Woovi;
 
 use GuzzleHttp\Client;
+use PHPay\Exceptions\ApiException;
 use PHPay\Http\MasksCredentials;
-use PHPay\Support\Customer as CustomerData;
+use PHPay\Support\{Customer as CustomerData, Money};
 use PHPay\Woovi\Interface\WooviGatewayInterface;
 use PHPay\Woovi\Requests\WooviCustomerRequest;
 use PHPay\Woovi\Resources\Charge\Charge;
@@ -69,6 +70,22 @@ class WooviGateway implements WooviGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->appId, $this->sandbox, $this->client);
+    }
+
+    /**
+     * refund a received payment, fully or in part.
+     *
+     * the capability's operation, delegated to the charge resource that owns
+     * the endpoint.
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        return $this->charge()->refund($id, $amount);
     }
 
     /**

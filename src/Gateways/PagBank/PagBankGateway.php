@@ -3,6 +3,7 @@
 namespace PHPay\PagBank;
 
 use GuzzleHttp\Client;
+use PHPay\Exceptions\ApiException;
 use PHPay\Http\MasksCredentials;
 use PHPay\PagBank\Interface\PagBankGatewayInterface;
 use PHPay\PagBank\Requests\PagBankCustomerRequest;
@@ -10,7 +11,7 @@ use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
 use PHPay\PagBank\Resources\WebhookSignature\WebhookSignature;
-use PHPay\Support\Customer as CustomerData;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 class PagBankGateway implements PagBankGatewayInterface
 {
@@ -67,6 +68,22 @@ class PagBankGateway implements PagBankGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->token, $this->sandbox, $this->client);
+    }
+
+    /**
+     * refund a received payment, fully or in part.
+     *
+     * the capability's operation, delegated to the charge resource that owns
+     * the endpoint.
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        return $this->charge()->refund($id, $amount);
     }
 
     /**

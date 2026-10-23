@@ -3,6 +3,7 @@
 namespace PHPay\MercadoPago;
 
 use GuzzleHttp\Client;
+use PHPay\Exceptions\ApiException;
 use PHPay\Http\MasksCredentials;
 use PHPay\MercadoPago\Interface\MercadoPagoGatewayInterface;
 use PHPay\MercadoPago\Requests\MercadoPagoCustomerRequest;
@@ -10,7 +11,7 @@ use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
 use PHPay\MercadoPago\Resources\WebhookSignature\WebhookSignature;
-use PHPay\Support\Customer as CustomerData;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 class MercadoPagoGateway implements MercadoPagoGatewayInterface
 {
@@ -84,6 +85,22 @@ class MercadoPagoGateway implements MercadoPagoGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->accessToken, $this->client);
+    }
+
+    /**
+     * refund a received payment, fully or in part.
+     *
+     * the capability's operation, delegated to the charge resource that owns
+     * the endpoint.
+     *
+     * @param string $id
+     * @param Money|int|float|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|float|null $amount = null): array
+    {
+        return $this->charge()->refund($id, $amount);
     }
 
     /**

@@ -33,7 +33,13 @@ $phpay
 
 $phpay->capture($paymentId);
 $phpay->cancel($paymentId, 2500);   // estorna R$ 25,00
+$phpay->refund($paymentId, 2500);   // o mesmo, pelo nome da capacidade
 ```
+
+`void` é uma rota só: ela anula uma autorização e estorna uma venda capturada, e
+o que acontece depende do estado em que a venda estava. `cancel()` continua
+existindo porque é o nome honesto da primeira metade; `refund()` é o nome que
+[a capacidade](../capacidades.md) declara, e é por ele que a facade chega aqui.
 
 ## Recorrência
 

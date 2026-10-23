@@ -3,6 +3,7 @@
 namespace PHPay\PagarMe;
 
 use GuzzleHttp\Client;
+use PHPay\Exceptions\ApiException;
 use PHPay\Http\MasksCredentials;
 use PHPay\PagarMe\Interface\PagarMeGatewayInterface;
 use PHPay\PagarMe\Requests\PagarMeCustomerRequest;
@@ -10,7 +11,7 @@ use PHPay\PagarMe\Resources\Charge\Charge;
 use PHPay\PagarMe\Resources\Customer\Customer;
 use PHPay\PagarMe\Resources\Subscription\Subscription;
 use PHPay\PagarMe\Resources\WebhookDelivery\WebhookDelivery;
-use PHPay\Support\Customer as CustomerData;
+use PHPay\Support\{Customer as CustomerData, Money};
 
 class PagarMeGateway implements PagarMeGatewayInterface
 {
@@ -83,6 +84,22 @@ class PagarMeGateway implements PagarMeGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->secretKey, $this->client);
+    }
+
+    /**
+     * refund a received payment, fully or in part.
+     *
+     * the capability's operation, delegated to the charge resource that owns
+     * the endpoint.
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        return $this->charge()->refund($id, $amount);
     }
 
     /**

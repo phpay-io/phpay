@@ -39,6 +39,26 @@ $phpay->confirmReceipt($id, [
 $phpay->undoConfirmReceipt($id);
 ```
 
+### Estorno
+
+`destroy()` acima **não é estorno** — ele remove uma cobrança que ninguém pagou,
+e a própria documentação do Asaas pede para não tratar a exclusão como devolução
+de valor. Quem devolve é `refund()`:
+
+```php
+$phpay->refund($id);                       // devolve tudo
+$phpay->refund($id, 25.50);                // devolve parte, em reais
+$phpay->refund($id, Money::reais(25.50));  // o mesmo, sem dúvida de unidade
+```
+
+Serve cartão e Pix. Vários estornos parciais são aceitos enquanto a soma não
+passa do que foi recebido. Estorno integral de Pix logo após o recebimento pode
+voltar `400` por falta de saldo na conta — é resposta do gateway, e chega como
+`ApiException`.
+
+O **boleto** tem endpoint próprio, assíncrono, que devolve um link para o
+pagador informar os dados bancários. Ele não é alcançado por aqui.
+
 ## Clientes
 
 ```php

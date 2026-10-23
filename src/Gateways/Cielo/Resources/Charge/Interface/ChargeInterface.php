@@ -127,4 +127,13 @@ interface ChargeInterface
      * @return array<mixed>
      */
     public function cancel(string $paymentId, Money|int|null $amount = null): array;
+
+    /**
+     * refund a paid sale — the name SupportsRefunds declares
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     */
+    public function refund(string $id, Money|int|null $amount = null): array;
 }

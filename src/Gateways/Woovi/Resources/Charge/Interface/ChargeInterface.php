@@ -70,6 +70,17 @@ interface ChargeInterface
     public function destroy(string $id): array;
 
     /**
+     * refund a paid charge, fully or in part
+     *
+     * @param string $id the charge's correlationID, or the gateway id
+     * @param Money|int|null $amount null refunds the full value
+     * @param string|null $refundId idempotency id of the refund itself,
+     *                              not the charge's correlationID
+     * @return array<mixed>
+     */
+    public function refund(string $id, Money|int|null $amount = null, ?string $refundId = null): array;
+
+    /**
      * get the Pix copy-and-paste code of a created charge
      *
      * @param array<mixed> $charge
