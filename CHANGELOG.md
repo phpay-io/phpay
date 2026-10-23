@@ -12,6 +12,24 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ### Adicionado
 
+- **Estorno virou capacidade**, em `PHPay\Contracts\SupportsRefunds`, com o case
+  `REFUNDS` na enum `Capability` e `refund()` guardado na facade. Seis gateways
+  já estornavam, cada um com um nome e uma assinatura diferente, e **nenhum era
+  alcançável pela facade** — quem usava `PHPay` tinha que descer para o gateway
+  concreto e saber de antemão se o método se chamava `refund` ou `cancel`. Agora
+  é uma chamada só, `$phpay->refund($id)` ou `$phpay->refund($id, $valor)`, com
+  `null` estornando integral nos sete que a declaram ([#132]).
+- **Asaas e Woovi passam a estornar** — os dois gateways completos não tinham o
+  método, embora a API dos dois exponha o endpoint. No Asaas é
+  `POST payments/{id}/refund`, em reais, para cartão e Pix, e explicitamente
+  **não** é o `destroy()`, que remove cobrança não paga. Na Woovi é
+  `POST api/v1/charge/{correlationID}/refund`, em centavos, com um segundo
+  `correlationID` no corpo que é id de idempotência do estorno — não o da
+  cobrança ([#132]).
+- `refund()` na **Cielo** e no **Pagar.me**, como o nome portável sobre o
+  endpoint que cada uma já tinha. `cancel()` continua existindo nas duas: ali um
+  endpoint só anula autorização e estorna venda paga, e `cancel` é o nome honesto
+  da primeira metade ([#132]).
 - **Suporte ao Guzzle 8**, ao lado do 7: o `composer.json` passa a aceitar
   `^7.3 || ^8.0`. A `RetryPolicy` continua distinguindo "não saiu da máquina" de
   "deu timeout depois de enviar" nas duas majors — o 8 removeu o
@@ -21,6 +39,14 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
   o CI ganhou um job na major de cima ([#121]).
 
 ### Alterado
+
+- **Mercado Pago: `Charge::refund()` saiu de `?float $value` para
+  `Money|int|float|null $amount`**, normalizado com `Money::asReais()` como o
+  resto da biblioteca. Número cru continua lido em reais, então a mudança é
+  compatível — **com uma exceção: o parâmetro foi renomeado** de `$value` para
+  `$amount`, o que quebra quem o chamava por argumento nomeado
+  (`refund($id, value: 10.5)`) ([#132]).
+
 
 - As anotações dos pontos de contato com o Guzzle passam a descrever **as duas
   majors**, e o **PHPStan nível 9 roda também na 8** — o job do Guzzle 8 no CI
@@ -509,3 +535,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#121]: https://github.com/phpay-io/phpay/issues/121
 [#124]: https://github.com/phpay-io/phpay/issues/124
 [#131]: https://github.com/phpay-io/phpay/issues/131
+[#132]: https://github.com/phpay-io/phpay/issues/132

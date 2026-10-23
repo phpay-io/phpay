@@ -1,6 +1,7 @@
 <?php
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Money;
 use PHPay\Woovi\Enums\PixKeyTypeEnum;
 use PHPay\Woovi\Resources\Charge\Charge;
 use PHPay\Woovi\Resources\Customer\Customer;
@@ -165,3 +166,35 @@ it('valida os payloads antes de chamar a API', function (callable $acao, string 
         'entre 1 e 31',
     ],
 ])->group('woovi');
+
+it('estorna endereçando a cobrança na URL e a idempotência no corpo', function () {
+    $history = [];
+    $client  = wooviClient([jsonResponse(['refund' => ['status' => 'CONFIRMED']])], $history);
+
+    (new Charge('app-id', true, $client))->refund('cobranca-123');
+
+    $body = recordedBody($history, 0);
+
+    /*
+     * os dois correlationID desta chamada são coisas diferentes: o da URL é o
+     * da cobrança, o do corpo é o id de idempotência do estorno. Trocar os
+     * dois faria a Woovi deduplicar contra a cobrança.
+     */
+    expect((string) $history[0]['request']->getUri())->toEndWith('/api/v1/charge/cobranca-123/refund')
+        ->and($body['correlationID'])->not->toBe('cobranca-123')
+        ->and($body['correlationID'])->toMatch('/^[0-9a-f]{32}$/')
+        ->and($body)->not->toHaveKey('value');
+})->group('woovi');
+
+it('estorna valor parcial em centavos e aceita id de idempotência informado', function () {
+    $history = [];
+    $client  = wooviClient([jsonResponse([]), jsonResponse([])], $history);
+
+    $charge = new Charge('app-id', true, $client);
+    $charge->refund('cobranca-123', 2500);
+    $charge->refund('cobranca-123', Money::reais(10), 'meu-estorno-1');
+
+    expect(recordedBody($history, 0)['value'])->toBe(2500)
+        ->and(recordedBody($history, 1)['value'])->toBe(1000)
+        ->and(recordedBody($history, 1)['correlationID'])->toBe('meu-estorno-1');
+})->group('woovi');

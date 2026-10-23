@@ -6,10 +6,10 @@ Orientações para o Claude Code trabalhar neste repositório.
 
 PHPay (`phpay-io/phpay`) é uma **biblioteca PHP** (não uma aplicação) que padroniza a
 integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** e
-**Woovi/OpenPix** (as seis capacidades), **Efí** (todas menos clientes),
-**Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças, assinaturas),
-**Cielo** (cobranças e recorrência), **AbacatePay** (clientes e cobranças) e
-**Rede** (cobranças).
+**Woovi/OpenPix** (as sete capacidades), **Efí** (todas menos clientes e
+estornos), **Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças,
+estornos, assinaturas), **Cielo** (cobranças, estornos e recorrência),
+**AbacatePay** (clientes e cobranças) e **Rede** (cobranças e estornos).
 
 Requisitos: PHP `^8.1` para consumir a lib; `^8.2` para rodar o ambiente de dev
 (Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`,
@@ -36,7 +36,7 @@ Regras que valem para todo código novo:
 
 - **Capacidade, não contrato único.** `GatewayInterface` carrega só `name()`. Cada
   recurso é uma interface em `src/Contracts/` (`SupportsCustomers`, `SupportsCharges`,
-  `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`,
+  `SupportsRefunds`, `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`,
   `SupportsWebhookSignature`) que o gateway
   implementa se — e só se — oferecer aquele recurso. **Nunca** declare um recurso para
   depois lançar de dentro dele.
@@ -44,6 +44,18 @@ Regras que valem para todo código novo:
   facade.** O guard é `instanceof` seguido de
   `NotImplementedException::forCapability()`; o PHPStan usa esse `instanceof` para
   estreitar o tipo, então não troque por um helper genérico.
+- **`SupportsRefunds` é a única capacidade que declara operação, não getter de
+  recurso**, e a assimetria é de propósito: o que divergia entre os gateways não era
+  como chegar à cobrança, era a chamada — três nomes (`refund`, `cancel`, `void`),
+  três unidades e três sentidos para valor ausente. Devolver recurso deixaria quem
+  chama adivinhando o nome do método por gateway, que é a divergência que a
+  capacidade fecha. Ela estende `SupportsCharges`, o `refund()` do gateway delega ao
+  `Charge`, e a assinatura é `refund(string $id, Money|int|null $amount = null)` —
+  `Money|int|float|null` no Asaas e no Mercado Pago, que são de reais. `null` estorna
+  integral em todos. **Estorno não é repetido pelo retry**: é escrita que move
+  dinheiro, e repetir devolve duas vezes. Onde o gateway já tinha `cancel()` (Cielo,
+  Pagar.me) o nome antigo fica, porque ali um endpoint só anula e estorna; o
+  `refund()` é o nome portável sobre o mesmo endpoint.
 - **A facade `PHPay` não conhece gateway concreto**, por isso ela checa em runtime.
   Quem segura o gateway concreto ganha a checagem em tempo de análise.
 - **Cada Resource tem uma Interface própria** em `Resources/<Nome>/Interface/`.
@@ -303,7 +315,10 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 - **Asaas** — `$sandbox` troca a base URL. Chaves Pix próprias, porque é PSP (como Woovi e Efí).
   Assinatura cobre os 14 endpoints da API. **O carnê responde PDF**, por isso usa
   `HasHttpClient::download()`, que devolve o corpo cru — `request()` decodifica
-  JSON e devolveria `[]`. `destroy()` leva as cobranças pendentes e vencidas;
+  JSON e devolveria `[]`. **`destroy()` não é estorno** — a doc do Asaas pede para não tratar a exclusão
+  como devolução; quem devolve é `refund()` (`payments/{id}/refund`, reais, cartão e
+  Pix), e o boleto tem endpoint assíncrono próprio, fora da capacidade.
+  `destroy()` leva as cobranças pendentes e vencidas;
   a pausa é `deactivate()`, e **reativar exige um novo `nextDueDate`**. `cycle` é
   obrigatório na criação. Atualização de assinatura é `PUT`, como o resto do Asaas.
 - **Efí** — **duas APIs com as mesmas credenciais**: Cobranças (`cobrancas.api...`,
@@ -329,7 +344,10 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   (`api.woovi-sandbox.com`). O webhook fica em `api/openpix/v1/` enquanto os demais
   recursos ficam em `api/v1/` — herança da fusão das marcas, não erro. Todo objeto é
   endereçável pelo `correlationID` (id do sistema de quem integra), então `find()` e
-  `destroy()` aceitam os dois ids. Valores em centavos.
+  `destroy()` aceitam os dois ids. Valores em centavos. **No estorno encontram-se dois
+  `correlationID` diferentes**: o da URL endereça a cobrança, o do corpo é id de
+  idempotência do próprio estorno, gerado com `Idempotency::key()` — mandar o da
+  cobrança no corpo deduplica contra o objeto errado.
 - **AbacatePay** — host único e **sem prefixo de chave**: não dá para derivar o
   ambiente da credencial, então **não existe `isSandbox()`** — inventar convenção aqui
   seria mentira. A resposta da cobrança traz `devMode`, e é isso que `isDevMode()` lê.
@@ -365,6 +383,15 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
   (`webhookrec`, `webhookcobr`), envio de Pix e split.
+- `SupportsRefunds` fica em sete gateways. Os dois de fora têm motivo, e não são
+  stub: a devolução Pix da **Efí** exige o valor (o BACEN pede `valor`, enquanto a
+  capacidade promete que ausente estorna integral), é endereçada pelo `endToEndId` e
+  vive na API Pix, não no `charge()` — continua em `pixCharge()->refund()`; e na
+  **AbacatePay** os endpoints de reembolso documentados são da v2, para checkout e
+  link de pagamento, enquanto a lib fala com a v1 (`billing/create`). Também ficaram
+  fora, de propósito: `capture()` (Cielo, Pagar.me, Rede), que é captura de
+  pré-autorização e não devolução; o estorno de boleto do Asaas, que é endpoint
+  assíncrono próprio e devolve `requestUrl`; e a listagem de estornos.
 - Chave de idempotência existe em três gateways: Mercado Pago, Pagar.me e PagBank. Nos
   outros sete, `POST` só é repetido quando o erro provou que a requisição não saiu da
   máquina. O `correlationID` da Woovi deduplica de fato, mas vive no corpo e não em
@@ -388,7 +415,10 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   (o `update --no-dev` ainda resolveria o require-dev e esbarraria no pint),
   confere a sintaxe de `src/` com `php -l` e roda `.github/scripts/smoke.php`.
   O smoke test instancia todos os gateways e percorre as capacidades sem sair
-  para a rede; gateway novo que não entre na lista dele reprova o job. A
+  para a rede; gateway novo que não entre na lista dele reprova o job. O estorno é
+  tratado à parte nesse percurso: por ser operação e não getter, chamá-lo num gateway
+  que o declara sairia para a rede — ali só o contrato é conferido, e nos que não
+  declaram se exercita a recusa, que acontece antes de qualquer HTTP. A
   cobertura sai de um job só (8.3/locked, pcov), no log e no summary, sem
   mínimo que reprove o build.
 

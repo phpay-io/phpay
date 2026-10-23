@@ -90,6 +90,14 @@ $gateway->pixCharge()->refund($endToEndId, Money::reais(10));
 do Pagar.me: o `charge()` da facade já é o boleto, e mudar o retorno dele
 quebraria quem está na v2.
 
+Esse `refund()` **não é a capacidade `SupportsRefunds`**, e a Efí não a declara.
+São três incompatibilidades, todas da API dela e não da biblioteca: o valor é
+**obrigatório** (o BACEN exige `valor` na devolução, enquanto a capacidade
+promete que valor ausente estorna integral), o endereçamento é pelo
+`endToEndId` do Pix recebido e não pela cobrança, e a devolução vive na API Pix
+— o `charge()` da Efí é boleto, que não estorna por aqui. Declarar a capacidade
+e depois recusar de dentro dela seria pior que não declarar.
+
 **Chaves Pix** — só chaves aleatórias (EVP) são gerenciáveis pela API:
 
 ```php

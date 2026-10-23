@@ -53,3 +53,14 @@ $phpay->setPlan($plano['id'])
     ->setCustomer(['name' => 'Mário', 'email' => 'fale@phpay.io', 'tax_id' => '12345678901'])
     ->create();
 ```
+
+## Estorno
+
+```php
+$phpay->refund('CHAR_1');         // devolve tudo
+$phpay->refund('CHAR_1', 2500);   // devolve R$ 25,00
+```
+
+Valores em centavos inteiros, como tudo no PagBank. O endpoint é
+`charges/{id}/cancel`, que serve para os dois casos: anular uma cobrança que
+não foi paga e estornar uma que foi.

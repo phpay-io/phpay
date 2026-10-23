@@ -26,6 +26,7 @@ O cancelamento é `DELETE`, com valor opcional para estorno parcial:
 ```php
 $phpay->cancel($cobrancaId, 2500);   // estorna R$ 25,00
 $phpay->cancel($cobrancaId);         // estorna tudo
+$phpay->refund($cobrancaId, 2500);   // o mesmo, pelo nome da capacidade
 ```
 
 Assinaturas aceitam um plano ou a recorrência no próprio payload:

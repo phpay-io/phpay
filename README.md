@@ -241,19 +241,24 @@ Dois pontos merecem auditoria de quem vem da v1:
 
 ### Cobertura por gateway
 
-| Gateway | Cobranças | Clientes | Assinaturas | Webhooks | Pix |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Mercado Pago** | ✅ | ✅ | ✅ | — | ✅ |
-| **PagBank** | ✅ | ✅ | ✅ | — | ✅ |
-| **Pagar.me** | ✅ | ✅ | ✅ | leitura ✅ | ✅ |
-| **AbacatePay** | ✅ | ✅ | — | — | ✅ |
-| **Cielo** | ✅ | — | ✅ | — | ✅ |
-| **Rede** | ✅ | — | — | — | 🕥 |
-| **Efí** | ✅ | — | ✅ | ✅ | ✅ |
+| Gateway | Cobranças | Estornos | Clientes | Assinaturas | Webhooks | Pix |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Mercado Pago** | ✅ | ✅ | ✅ | ✅ | — | ✅ |
+| **PagBank** | ✅ | ✅ | ✅ | ✅ | — | ✅ |
+| **Pagar.me** | ✅ | ✅ | ✅ | ✅ | leitura ✅ | ✅ |
+| **AbacatePay** | ✅ | 🕥 | ✅ | — | — | ✅ |
+| **Cielo** | ✅ | ✅ | — | ✅ | — | ✅ |
+| **Rede** | ✅ | ✅ | — | — | — | 🕥 |
+| **Efí** | ✅ | só Pix ✅ | — | ✅ | ✅ | ✅ |
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
+
+O estorno da **Efí** é a devolução Pix, alcançável em `pixCharge()->refund()`: a
+API dela exige o valor e endereça pelo `endToEndId`, então fica fora da
+capacidade portável. Na **AbacatePay**, os endpoints de reembolso documentados
+são da v2 e de outra família de recursos — a biblioteca fala com a v1.
 
 ---
 

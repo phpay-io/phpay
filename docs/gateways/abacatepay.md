@@ -49,3 +49,13 @@ $gateway->coupons()->create([
     'discount'     => 10,
 ]);
 ```
+
+## Estorno
+
+A AbacatePay **não declara a capacidade de estorno**. Os endpoints de reembolso
+que a documentação dela descreve são da **v2**, para checkout, link de pagamento
+e checkout transparente — outra família de recursos. A biblioteca fala com a
+**v1** (`billing/create`), e não há reembolso documentado para o `billing`.
+
+Enquanto isso não for confirmado, `$phpay->refund($id)` levanta
+`NotImplementedException`, em vez de chamar um endpoint adivinhado.

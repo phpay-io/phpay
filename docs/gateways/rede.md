@@ -33,6 +33,9 @@ $phpay->capture($tid);
 $phpay->refund($tid, 1000);   // estorna R$ 10,00
 ```
 
+`refund()` é o nome que [a capacidade](../capacidades.md) declara, então o
+estorno da Rede também é alcançável pela facade, com `$phpay->refund($tid)`.
+
 O código de retorno `"00"` significa aprovada:
 
 ```php

@@ -6,7 +6,9 @@ use GuzzleHttp\Client;
 use PHPay\Cielo\Interface\CieloGatewayInterface;
 use PHPay\Cielo\Resources\Charge\Charge;
 use PHPay\Cielo\Resources\Subscription\Subscription;
+use PHPay\Exceptions\ApiException;
 use PHPay\Http\MasksCredentials;
+use PHPay\Support\Money;
 
 class CieloGateway implements CieloGatewayInterface
 {
@@ -58,6 +60,22 @@ class CieloGateway implements CieloGatewayInterface
             $this->client,
             $this->queryClient
         );
+    }
+
+    /**
+     * refund a received payment, fully or in part.
+     *
+     * the capability's operation, delegated to the charge resource that owns
+     * the endpoint.
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        return $this->charge()->refund($id, $amount);
     }
 
     /**

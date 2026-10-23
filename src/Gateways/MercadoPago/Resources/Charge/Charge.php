@@ -226,16 +226,20 @@ class Charge implements ChargeInterface
     /**
      * refund charge, fully or partially
      *
+     * amounts here are reais with decimals, like the rest of the Mercado Pago
+     * API — `Money::asReais()` normalizes, so a bare number keeps meaning what
+     * it always meant on this gateway.
+     *
      * @param string $id
-     * @param float|null $value null refunds the full amount
+     * @param Money|int|float|null $amount null refunds the full amount
      * @return array<mixed>
      * @throws ApiException
      */
-    public function refund(string $id, ?float $value = null): array
+    public function refund(string $id, Money|int|float|null $amount = null): array
     {
         return $this->post(
             "v1/payments/{$id}/refunds",
-            $value === null ? [] : ['amount' => $value],
+            $amount === null ? [] : ['amount' => Money::asReais($amount)],
             ['X-Idempotency-Key' => $this->idempotencyKey ?? $this->idempotencyKey()]
         );
     }

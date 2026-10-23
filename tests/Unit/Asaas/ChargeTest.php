@@ -2,6 +2,7 @@
 
 use PHPay\Asaas\Resources\Charge\Charge;
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\Money;
 
 it('reaproveita o cliente quando o array traz um id, sem criar outro', function () {
     $history = [];
@@ -71,4 +72,28 @@ it('rejeita billingType inválido antes de chamar a API', function () {
         ->toThrow(ValidationException::class);
 
     expect($history)->toBeEmpty();
+})->group('asaas');
+
+it('estorna por rota própria, que não é a da exclusão', function () {
+    $history = [];
+    $client  = mockClient([jsonResponse(['status' => 'REFUNDED']), jsonResponse(['status' => 'REFUNDED'])], $history);
+
+    $charge = new Charge('token', true, $client);
+    $charge->refund('pay_001');
+    $charge->refund('pay_001', 25.50);
+
+    expect($history[0]['request']->getMethod())->toBe('POST')
+        ->and((string) $history[0]['request']->getUri())->toEndWith('/payments/pay_001/refund')
+        ->and(recordedBody($history, 0))->toBe([])
+        ->and(recordedBody($history, 1))->toBe(['value' => 25.5]);
+})->group('asaas');
+
+it('estorna em reais, mesmo recebendo Money em centavos', function () {
+    $history = [];
+    $client  = mockClient([jsonResponse([])], $history);
+
+    (new Charge('token', true, $client))->refund('pay_001', Money::centavos(2550));
+
+    /* 2550 centavos viram 25.50, não 2550: o Asaas cobra e devolve em reais */
+    expect(recordedBody($history, 0))->toBe(['value' => 25.5]);
 })->group('asaas');

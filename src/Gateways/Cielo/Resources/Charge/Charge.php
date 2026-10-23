@@ -300,6 +300,24 @@ class Charge implements ChargeInterface
     }
 
     /**
+     * refund a captured sale.
+     *
+     * the name SupportsRefunds declares, over the endpoint Cielo already has:
+     * `void` both undoes an authorization and refunds a captured sale, so this
+     * is cancel() reached by the portable name. `cancel()` stays because it is
+     * the honest name for the other half of what that route does.
+     *
+     * @param string $id
+     * @param Money|int|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|null $amount = null): array
+    {
+        return $this->cancel($id, $amount);
+    }
+
+    /**
      * generate a RequestId for a write that must not be duplicated.
      *
      * @return string

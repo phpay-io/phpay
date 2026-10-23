@@ -210,6 +210,31 @@ class Charge implements ChargeInterface
     }
 
     /**
+     * refund a received charge, fully or in part.
+     *
+     * not the same thing as destroy() above, which removes a charge nobody
+     * paid — Asaas documents that deleting must not be treated as giving money
+     * back. This is the route that returns it, and it serves card and Pix;
+     * boleto has its own asynchronous endpoint and is not reached from here.
+     *
+     * amounts are reais with decimals, as everywhere else in the Asaas API.
+     * Omitting the amount refunds the whole charge, and several partial
+     * refunds are accepted while their sum stays within what was received.
+     *
+     * @param string $id
+     * @param Money|int|float|null $amount null refunds the full value
+     * @return array<mixed>
+     * @throws ApiException
+     */
+    public function refund(string $id, Money|int|float|null $amount = null): array
+    {
+        return $this->post(
+            "payments/{$id}/refund",
+            $amount === null ? [] : ['value' => Money::asReais($amount)]
+        );
+    }
+
+    /**
      * restore charge
      *
      * @param string $id

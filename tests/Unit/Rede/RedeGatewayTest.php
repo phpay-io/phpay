@@ -25,8 +25,8 @@ function redeGateway(array $api = [], array &$historicoApi = []): RedeGateway
     );
 }
 
-it('declara apenas cobranças', function () {
-    expect(Capability::of(redeGateway()))->toBe([Capability::CHARGES]);
+it('declara cobranças e estornos', function () {
+    expect(Capability::of(redeGateway()))->toBe([Capability::CHARGES, Capability::REFUNDS]);
 })->group('rede');
 
 it('recusa as outras cinco capacidades pela facade', function (Capability $capability) {
