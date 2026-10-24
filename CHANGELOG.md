@@ -10,6 +10,18 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+### Adicionado
+
+- **`PHPay\Webhooks\VerifiesSignature`**, o contrato comum dos cinco verificadores
+  de assinatura, e `SupportsWebhookSignature::webhookSignature()` passa a
+  devolvê-lo em vez de `object`. Quem segura o gateway concreto já tinha o tipo;
+  quem **não** pode segurá-lo — bridge de framework, middleware genérico, qualquer
+  código que resolve o gateway por nome — recebia `object` e não tinha o que tipar.
+  **Estreitar o retorno é covariante, então é compatível**: quem recebia um objeto
+  continua recebendo, agora com superfície. Os setters de esquema específico
+  (`setDataId`, `setQuery`, `setSignatureKey`, `setPublicKeys`) ficam fora do
+  contrato de propósito ([#146]).
+
 ## [2.5.0] - 2026-10-23
 
 [Release](https://github.com/phpay-io/phpay/releases/tag/v2.5.0) ·
@@ -602,3 +614,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#134]: https://github.com/phpay-io/phpay/issues/134
 [#140]: https://github.com/phpay-io/phpay/issues/140
 [#143]: https://github.com/phpay-io/phpay/issues/143
+[#146]: https://github.com/phpay-io/phpay/issues/146

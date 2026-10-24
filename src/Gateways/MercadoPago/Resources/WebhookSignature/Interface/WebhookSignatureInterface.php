@@ -2,7 +2,9 @@
 
 namespace PHPay\MercadoPago\Resources\WebhookSignature\Interface;
 
-interface WebhookSignatureInterface
+use PHPay\Webhooks\VerifiesSignature;
+
+interface WebhookSignatureInterface extends VerifiesSignature
 {
     /**
      * secret signature generated in Your Integrations

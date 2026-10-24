@@ -2,7 +2,9 @@
 
 namespace PHPay\AbacatePay\Resources\WebhookSignature\Interface;
 
-interface WebhookSignatureInterface
+use PHPay\Webhooks\VerifiesSignature;
+
+interface WebhookSignatureInterface extends VerifiesSignature
 {
     /**
      * secret you put in the webhook URL

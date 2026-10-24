@@ -2,6 +2,8 @@
 
 namespace PHPay\Contracts;
 
+use PHPay\Webhooks\VerifiesSignature;
+
 /**
  * the gateway signs its webhooks in a way the receiver can verify.
  *
@@ -15,7 +17,13 @@ interface SupportsWebhookSignature extends GatewayInterface
     /**
      * get resource webhook signature from gateway.
      *
-     * @return object
+     * narrowed from `object` to the contract, which is covariant and so
+     * compatible: code that received an object still receives one, now with a
+     * surface it can call. Before this, generic code — a framework bridge, any
+     * middleware that resolves the gateway by name — had nothing to type
+     * against.
+     *
+     * @return VerifiesSignature
      */
-    public function webhookSignature(): object;
+    public function webhookSignature(): VerifiesSignature;
 }
