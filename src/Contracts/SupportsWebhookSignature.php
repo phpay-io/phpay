@@ -2,8 +2,6 @@
 
 namespace PHPay\Contracts;
 
-use PHPay\Webhooks\VerifiesSignature;
-
 /**
  * the gateway signs its webhooks in a way the receiver can verify.
  *
@@ -17,13 +15,19 @@ interface SupportsWebhookSignature extends GatewayInterface
     /**
      * get resource webhook signature from gateway.
      *
-     * narrowed from `object` to the contract, which is covariant and so
-     * compatible: code that received an object still receives one, now with a
-     * surface it can call. Before this, generic code — a framework bridge, any
-     * middleware that resolves the gateway by name — had nothing to type
-     * against.
+     * **stays `object`, deliberately.** Narrowing it to `VerifiesSignature`
+     * would be compatible for callers but would break every *implementor*:
+     * return types are covariant, so a private gateway declaring `: object`
+     * would stop loading with a fatal error. Private gateways are a supported
+     * scenario, and that is not a minor-version change.
      *
-     * @return VerifiesSignature
+     * The facade narrows instead — `PHPay::webhookSignature()` answers with
+     * the contract, and that is the path generic code takes. Typing against
+     * this interface for dependency injection still gives `object`; closing
+     * that gap needs a major.
+     *
+     * @return object a verifier, which the library's own gateways always
+     *                implement as VerifiesSignature
      */
-    public function webhookSignature(): VerifiesSignature;
+    public function webhookSignature(): object;
 }

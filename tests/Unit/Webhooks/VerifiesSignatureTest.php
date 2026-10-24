@@ -1,7 +1,7 @@
 <?php
 
 use PHPay\Contracts\{Capability, SupportsWebhookSignature};
-use PHPay\Exceptions\NotImplementedException;
+use PHPay\Exceptions\{NotImplementedException, ValidationException};
 use PHPay\PHPay;
 use PHPay\Support\Gateway;
 use PHPay\Webhooks\VerifiesSignature;
@@ -84,4 +84,34 @@ it('o gateway que não assina continua recusando pela facade', function () {
     expect($cielo->supports(Capability::WEBHOOK_SIGNATURE))->toBeFalse()
         ->and(fn () => $cielo->webhookSignature())
         ->toThrow(NotImplementedException::class);
+})->group('phpay');
+
+it('a capacidade continua prometendo object, para não quebrar implementador', function () {
+    /*
+     * estreitar o retorno da *interface* seria compatível para quem consome e
+     * fatal para quem implementa: tipo de retorno é covariante, então gateway
+     * próprio declarando `: object` pararia de carregar. Gateway próprio é
+     * cenário suportado, e isso não é mudança de minor.
+     */
+    $retorno = (new ReflectionMethod(SupportsWebhookSignature::class, 'webhookSignature'))->getReturnType();
+
+    expect((string) $retorno)->toBe('object');
+})->group('phpay');
+
+it('a facade confere o contrato que a capacidade não exige', function () {
+    /* gateway próprio que devolva qualquer objeto é recusado com o motivo */
+    $proprio = new class () implements SupportsWebhookSignature {
+        public function name(): string
+        {
+            return 'Privado';
+        }
+
+        public function webhookSignature(): object
+        {
+            return new stdClass();
+        }
+    };
+
+    expect(fn () => PHPay::gateway($proprio)->webhookSignature())
+        ->toThrow(ValidationException::class, 'não cumpre');
 })->group('phpay');

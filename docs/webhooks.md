@@ -23,9 +23,15 @@ if (!$ok) {
 
 Todo verificador cumpre **`PHPay\Webhooks\VerifiesSignature`**, que carrega os
 quatro métodos acima. Isso importa para quem **não** sabe o gateway em tempo de
-escrita: [resolvendo por nome](resolvendo-o-gateway.md), o verificador vem
-tipado pelo contrato em vez de `object`, e dá para encadear sem conhecer o
+escrita: [resolvendo por nome](resolvendo-o-gateway.md), `$phpay->webhookSignature()`
+vem tipado pelo contrato em vez de `object`, e dá para encadear sem conhecer o
 concreto.
+
+> A **capacidade** `SupportsWebhookSignature` continua declarando `object`, e é
+> de propósito: estreitá-la seria fatal para quem implementa a capacidade num
+> gateway próprio, porque tipo de retorno é covariante. Quem tipa a capacidade
+> para injeção de dependência ainda recebe `object` — fechar essa ponta exige
+> um major.
 
 Os setters de esquema específico ficam **fora** do contrato, porque pertencem a
 um esquema cada: `setDataId()` no Mercado Pago, `setQuery()` e

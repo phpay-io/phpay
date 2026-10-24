@@ -251,6 +251,21 @@ class PHPay implements GatewayInterface
             throw NotImplementedException::forCapability($gateway, Capability::WEBHOOK_SIGNATURE);
         }
 
-        return $gateway->webhookSignature();
+        $verifier = $gateway->webhookSignature();
+
+        /*
+         * a capacidade promete `object`, para não quebrar gateway próprio que
+         * a implemente — então o contrato é conferido aqui. Nos nove da
+         * biblioteca nunca dispara, e há teste varrendo o enum para garantir.
+         */
+        if (!$verifier instanceof VerifiesSignature) {
+            throw ValidationException::make($gateway->name(), sprintf(
+                'O verificador de assinatura deste gateway não cumpre %s. '
+                . 'Gateway próprio que declare a capacidade precisa devolver um verificador que cumpra o contrato.',
+                VerifiesSignature::class
+            ));
+        }
+
+        return $verifier;
     }
 }
