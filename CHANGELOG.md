@@ -10,6 +10,12 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+## [2.7.0] - 2026-10-24
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.7.0) ·
+Quem **usa** a biblioteca passa a conseguir testar o próprio código sem sair
+para a rede. Só entraram métodos novos; nenhuma assinatura existente mudou.
+
 ### Adicionado
 
 - **`ClientFactory::fake()`**, para quem **usa** a biblioteca testar o próprio
