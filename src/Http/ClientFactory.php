@@ -3,6 +3,8 @@
 namespace PHPay\Http;
 
 use GuzzleHttp\{Client, HandlerStack, Middleware};
+use GuzzleHttp\Handler\MockHandler;
+use Psr\Http\Message\{RequestInterface, ResponseInterface};
 
 /**
  * the one place a gateway builds its http client.
@@ -32,6 +34,23 @@ final class ClientFactory
      * name of the retry middleware on the handler stack.
      */
     public const RETRY = 'phpay_retry';
+
+    /**
+     * name of the recorder installed while faking.
+     */
+    public const RECORDER = 'phpay_recorder';
+
+    /**
+     * handler that answers instead of the network, while faking.
+     */
+    private static ?MockHandler $fake = null;
+
+    /**
+     * requests the application made while faking.
+     *
+     * @var array<int, array{request: RequestInterface, options: array<mixed>}>
+     */
+    private static array $recorded = [];
 
     /**
      * build a client with the library defaults. keys in $config win.
@@ -64,7 +83,7 @@ final class ClientFactory
         $config += self::defaults();
         $policy ??= new RetryPolicy();
 
-        $handler = $config['handler'] ?? null;
+        $handler = $config['handler'] ?? self::$fake;
 
         // built here instead of in a helper: a method returning HandlerStack
         // would have to name the type, and Guzzle 8 made the class generic
@@ -77,6 +96,17 @@ final class ClientFactory
         // the middleware goes on last, which makes it the innermost: it sees
         // the raw response before `http_errors` turns a 5xx into an exception,
         // and the transport failure before anything wraps it.
+        /*
+         * o gravador entra antes do retry, o que o deixa mais externo: o
+         * histórico mostra as requisições que a aplicação fez, não cada
+         * tentativa. Quem precisa ver tentativa empurra o próprio, depois da
+         * fábrica.
+         */
+        if (self::$fake !== null) {
+            $stack->remove(self::RECORDER);
+            $stack->push(self::recorder(), self::RECORDER);
+        }
+
         $stack->remove(self::RETRY);
         $stack->push(Middleware::retry($policy->decider(), $policy->delay()), self::RETRY);
 
@@ -98,4 +128,96 @@ final class ClientFactory
         ];
     }
 
+    /**
+     * answer from a queue instead of from the network.
+     *
+     * **for tests, and only for tests.** Every client the library builds goes
+     * through this factory — all fourteen call sites, and a test over `src/`
+     * refuses any `new Client(` outside it — so faking here reaches every
+     * gateway at once, including the second clients that Efí, Cielo and Rede
+     * each keep for another host. That is the reason this lives here and not
+     * in the registry: a single injected client would cover half of those
+     * three, and the half it missed would quietly go to the network.
+     *
+     * the retry middleware stays installed. Faking the network should not
+     * switch off the policy that decides what may be repeated — a test that
+     * wants to exercise retrying puts two answers in the queue.
+     *
+     * it is static state, with the same contract as Laravel's `Mail::fake()`:
+     * opt-in, and `stopFaking()` restores. Call it in a test's setup, not
+     * anywhere a request can reach.
+     *
+     * @param array<int, ResponseInterface|\Throwable>|MockHandler $responses
+     * @return MockHandler the handler, for whoever wants to append to it
+     */
+    public static function fake(array|MockHandler $responses = []): MockHandler
+    {
+        self::$recorded = [];
+        self::$fake     = $responses instanceof MockHandler ? $responses : new MockHandler($responses);
+
+        return self::$fake;
+    }
+
+    /**
+     * whether the factory is answering from a queue.
+     *
+     * @return bool
+     */
+    public static function faking(): bool
+    {
+        return self::$fake !== null;
+    }
+
+    /**
+     * the requests the application made while faking.
+     *
+     * each entry carries the `request` and the `options` it went out with.
+     *
+     * **not Guzzle's history shape**, and not for lack of trying: that
+     * middleware takes its container by reference as
+     * `array|ArrayAccess<int, array>`, whose template is invariant, so no
+     * precisely typed property satisfies it at level 9. Writing the recorder
+     * here keeps the types and costs ten lines.
+     *
+     * the response is not recorded on purpose: while faking, the responses are
+     * the ones the test queued, so repeating them says nothing. What the test
+     * cannot know in advance is the **request**, and that is what this holds.
+     *
+     * @return array<int, array{request: RequestInterface, options: array<mixed>}>
+     */
+    public static function recorded(): array
+    {
+        return self::$recorded;
+    }
+
+    /**
+     * back to the network, with the history cleared.
+     *
+     * clients already built keep the fake handler they were born with — this
+     * only changes what the *next* `make()` produces. In a test that is what
+     * you want; outside one, do not rely on it.
+     *
+     * @return void
+     */
+    public static function stopFaking(): void
+    {
+        self::$fake     = null;
+        self::$recorded = [];
+    }
+
+    /**
+     * middleware that records what goes out.
+     *
+     * @return callable(callable): callable
+     */
+    private static function recorder(): callable
+    {
+        return static function (callable $handler): callable {
+            return static function (RequestInterface $request, array $options) use ($handler): mixed {
+                self::$recorded[] = ['request' => $request, 'options' => $options];
+
+                return $handler($request, $options);
+            };
+        };
+    }
 }

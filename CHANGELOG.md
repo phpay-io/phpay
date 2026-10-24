@@ -10,6 +10,25 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+### Adicionado
+
+- **`ClientFactory::fake()`**, para quem **usa** a biblioteca testar o próprio
+  código sem sair para a rede. A suíte daqui injeta `Client` nos Resources, mas
+  quem consome recebe o gateway montado — sobretudo resolvendo por nome — e o
+  registry não aceita `Client`. Sem isso, uma aplicação não escrevia teste de
+  controller, de listener de webhook nem de job sem falar com o gateway de
+  verdade ([#152]).
+- O modo falso alcança **todos** os clients de uma vez, inclusive os segundos
+  que Efí, Cielo e Rede mantêm para outro host. Aceitar `Client` no registry
+  falsearia metade — e na Rede, que pede token antes de cada chamada num host
+  separado, a outra metade iria para a rede na primeira linha do teste. Como
+  toda a biblioteca monta client em `ClientFactory::make()`, falsear ali resolve
+  uniformemente ([#152]).
+- `ClientFactory::recorded()` devolve as requisições que a aplicação fez, com
+  `request` e `options`. O retry continua instalado em modo falso, e o gravador
+  fica por fora dele — o histórico mostra as chamadas, não cada tentativa
+  ([#152]).
+
 ## [2.6.0] - 2026-10-24
 
 [Release](https://github.com/phpay-io/phpay/releases/tag/v2.6.0) ·
@@ -628,3 +647,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#140]: https://github.com/phpay-io/phpay/issues/140
 [#143]: https://github.com/phpay-io/phpay/issues/143
 [#146]: https://github.com/phpay-io/phpay/issues/146
+[#152]: https://github.com/phpay-io/phpay/issues/152
