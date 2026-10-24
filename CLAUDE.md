@@ -157,6 +157,14 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   **Nunca adicione linhas de co-autoria ou atribuição em commits e PRs.**
 - **Hooks Husky:** `pre-commit` (pint + phpstan), `pre-push` (pest), `commit-msg`.
   Instalados por `npm install`.
+- **`PHPay\PHPay` colide com qualquer alias de caixa diferente.** Nomes de classe em
+  PHP são **insensíveis a caixa**, então num arquivo com `use PHPay\PHPay;` o nome
+  `PHPay` é alias da classe — e FQN escrito inline começando em `PHPay\` resolve sob
+  ele (`PHPay\Exceptions\X` vira `PHPay\PHPay\Exceptions\X`, que não existe).
+  **Importe a classe** em vez de escrever o FQN inline; em teste, com alias quando o
+  nome curto colidir (`Charge as AsaasCharge`). O erro aparece como
+  `UnknownClassOrInterfaceException` ou `Cannot redeclare class`, e não é óbvio pelo
+  que a mensagem diz.
 - **Namespaces:** `PHPay\` → `src/`, e um root por gateway: `PHPay\Asaas\`,
   `PHPay\Efi\`, `PHPay\MercadoPago\` → `src/Gateways/<Gateway>/`. Gateway novo
   precisa de um root novo no `composer.json` — não introduza `PHPay\Gateways\...`.

@@ -5,7 +5,7 @@ namespace PHPay;
 use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Exceptions\{ApiException, NotImplementedException, ValidationException};
 use PHPay\Support\{Customer as CustomerData, Gateway, Money};
-use PHPay\Webhooks\Event;
+use PHPay\Webhooks\{Event, VerifiesSignature};
 
 /**
  * entry point of the library.
@@ -236,10 +236,14 @@ class PHPay implements GatewayInterface
     /**
      * get resource webhook signature from gateway.
      *
-     * @return object
+     * typed as the contract and not as `object`, because this is the path
+     * generic code takes: whoever resolved the gateway by name reaches the
+     * verifier through here.
+     *
+     * @return VerifiesSignature
      * @throws NotImplementedException
      */
-    public function webhookSignature(): object
+    public function webhookSignature(): VerifiesSignature
     {
         $gateway = $this->gateway;
 
@@ -247,6 +251,21 @@ class PHPay implements GatewayInterface
             throw NotImplementedException::forCapability($gateway, Capability::WEBHOOK_SIGNATURE);
         }
 
-        return $gateway->webhookSignature();
+        $verifier = $gateway->webhookSignature();
+
+        /*
+         * a capacidade promete `object`, para não quebrar gateway próprio que
+         * a implemente — então o contrato é conferido aqui. Nos nove da
+         * biblioteca nunca dispara, e há teste varrendo o enum para garantir.
+         */
+        if (!$verifier instanceof VerifiesSignature) {
+            throw ValidationException::make($gateway->name(), sprintf(
+                'O verificador de assinatura deste gateway não cumpre %s. '
+                . 'Gateway próprio que declare a capacidade precisa devolver um verificador que cumpra o contrato.',
+                VerifiesSignature::class
+            ));
+        }
+
+        return $verifier;
     }
 }

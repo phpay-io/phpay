@@ -2,7 +2,9 @@
 
 namespace PHPay\Woovi\Resources\WebhookSignature\Interface;
 
-interface WebhookSignatureInterface
+use PHPay\Webhooks\VerifiesSignature;
+
+interface WebhookSignatureInterface extends VerifiesSignature
 {
     /**
      * raw request body, exactly as it arrived

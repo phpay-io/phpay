@@ -2,7 +2,9 @@
 
 namespace PHPay\PagBank\Resources\WebhookSignature\Interface;
 
-interface WebhookSignatureInterface
+use PHPay\Webhooks\VerifiesSignature;
+
+interface WebhookSignatureInterface extends VerifiesSignature
 {
     /**
      * secret the webhook was registered with
