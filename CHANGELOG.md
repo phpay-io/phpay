@@ -10,6 +10,14 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+## [2.6.0] - 2026-10-24
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.6.0) ·
+Os cinco verificadores de assinatura ganharam contrato comum, para que código
+que não sabe o gateway em tempo de escrita tenha o que tipar. Nenhuma quebra: a
+capacidade continua devolvendo `object` de propósito, e quem explica por quê é a
+seção **Adicionado**.
+
 ### Adicionado
 
 - **`PHPay\Webhooks\VerifiesSignature`**, o contrato comum dos cinco verificadores
