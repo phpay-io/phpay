@@ -14,6 +14,7 @@ específico dele.
 | [Resolvendo o gateway](resolvendo-o-gateway.md) | `PHPay::gateway()` quando você sabe qual, `PHPay::make()` quando ele vem de configuração |
 | [Tratamento de erros](erros.md) | array é sucesso, falha é exceção — e qual exceção |
 | [Retry e idempotência](retry-e-idempotencia.md) | o que a biblioteca repete, o que ela recusa a repetir, e por quê |
+| [Testando](testando.md) | `ClientFactory::fake()`, para quem usa a biblioteca testar sem sair para a rede |
 | [Ambientes e credenciais](ambientes-e-credenciais.md) | sandbox e produção em cada gateway, e como a credencial fica fora de dump |
 | [Cliente](cliente.md) | o VO `Customer`, porque o mesmo campo tem seis grafias entre os gateways |
 | [Valores monetários](valores-monetarios.md) | `Money`, porque reais e centavos não se misturam |

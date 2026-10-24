@@ -274,6 +274,34 @@ vocabulários para os mesmos estados — `RECEIVED`, `COMPLETED`, `approved`, `P
   `SubscriptionStatusEnum` (Mercado Pago, PagBank) descrevem ativa/pausada/cancelada,
   que não se mapeia nestes treze casos. Merece VO próprio se alguém precisar.
 
+## Falseando a rede para quem usa a lib
+
+Use **`ClientFactory::fake()`**. A suíte daqui injeta `Client` nos Resources, mas quem
+**consome** não constrói Resource — recebe o gateway montado, sobretudo resolvendo por
+nome —, e o registry não aceita `Client`.
+
+- **Falseia na fábrica, e é por isso que funciona.** Toda a biblioteca monta client em
+  `ClientFactory::make()` (14 pontos, zero `new Client(` fora dela, com teste varrendo
+  `src/`), então falsear ali alcança **todos** os clients de uma vez.
+- **Aceitar `Client` no registry foi considerado e descartado**: Efí, Cielo e Rede têm
+  **dois clients cada** (Pix, consultas, OAuth). Um client só falsearia metade — e na
+  Rede, que pede token antes de cada chamada num host separado, a outra metade iria
+  para a rede na primeira linha do teste.
+- **O retry continua instalado** em modo falso: falsear a rede não é desligar a
+  política que impede cobrança dupla. Teste que queira exercitá-la põe duas respostas
+  na fila.
+- **O gravador é próprio, não o `Middleware::history` do Guzzle**, e não por capricho:
+  o container daquele middleware é por referência e tipado `array|ArrayAccess<int,
+  array>`, cujo template é invariante — **nenhuma** propriedade tipada com precisão
+  satisfaz isso no nível 9. Escrever dez linhas aqui mantém o tipo e evita supressão.
+- **A resposta não é gravada**, só `request` e `options`: em modo falso as respostas
+  são as que o teste enfileirou. O que o teste não sabe é a requisição.
+- **É estado estático**, com o contrato do `Mail::fake()`: opt-in e `stopFaking()`
+  restaura. Todo teste que chama `fake()` desliga no teardown, senão vaza para o
+  próximo — a suíte inteira passa justamente porque isso é respeitado.
+- **Client injetado não passa pela fábrica**, então não é falseado. É o que mantém a
+  suíte da própria biblioteca funcionando com `fake()` ligado, e há teste afirmando.
+
 ## Retry e idempotência
 
 A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra na
