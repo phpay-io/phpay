@@ -55,6 +55,10 @@ new EfiGateway(CLIENT_ID, CLIENT_SECRET, certificate: Certificate::fromBase64(ge
 > `0600`, apagado quando o processo termina. A senha nunca aparece num
 > `var_dump()`.
 
+O Efí entrega certificado e chave num arquivo só. Os formatos aceitos, o par
+`.crt` + `.key` que outros PSPs entregam e o que o `Certificate` confere estão
+em [Certificado e mTLS](../mtls.md).
+
 Certificado de homologação só funciona com `$sandbox = true`, e o de produção,
 com `false`. Sem certificado, a API de Cobranças continua funcionando e a API
 Pix responde com uma `ValidationException` clara, não com um erro de TLS.

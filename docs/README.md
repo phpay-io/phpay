@@ -20,6 +20,7 @@ específico dele.
 | [Valores monetários](valores-monetarios.md) | `Money`, porque reais e centavos não se misturam |
 | [Status de pagamento](status-de-pagamento.md) | `PaymentStatus`, porque "paga" tem dez grafias entre os gateways |
 | [Verificando o webhook que chega](webhooks.md) | provar que a notificação veio do gateway |
+| [Certificado e mTLS](mtls.md) | um `.p12` ou um par `.crt` + `.key`, que é como os PSPs de Pix entregam |
 | [QR Code estático](qr-code-estatico.md) | compor o BR Code de uma chave Pix localmente, que é como o padrão manda |
 
 ## Gateways

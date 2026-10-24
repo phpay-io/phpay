@@ -71,6 +71,7 @@ final class ClientFactory
      *     headers?: array<string, string>,
      *     auth?: array{0: string, 1: string},
      *     cert?: string|array{0: string, 1: string},
+ *     ssl_key?: string|array{0: string, 1: string},
      *     timeout?: int,
      *     connect_timeout?: int,
      *     handler?: callable
