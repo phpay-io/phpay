@@ -10,6 +10,14 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+## [2.8.0] - 2026-10-24
+
+[Release](https://github.com/phpay-io/phpay/releases/tag/v2.8.0) ·
+Décimo gateway, e o primeiro de um banco: o **Inter**. Para ele, o
+`Certificate` passou a aceitar certificado e chave em **arquivos separados**,
+que é como os bancos entregam. Só entraram métodos novos; nenhuma assinatura
+existente mudou.
+
 ### Adicionado
 
 - **Gateway do Inter**, o décimo e o primeiro de um banco: cobranças Pix
@@ -628,7 +636,11 @@ Primeira versão publicada no Packagist, sob licença MIT.
 - Exemplos manuais em `examples/`, contra o sandbox de cada gateway ([#23],
   [#25], [#42]).
 
-[Não lançado]: https://github.com/phpay-io/phpay/compare/v2.4.0...develop
+[Não lançado]: https://github.com/phpay-io/phpay/compare/v2.8.0...develop
+[2.8.0]: https://github.com/phpay-io/phpay/compare/v2.7.0...v2.8.0
+[2.7.0]: https://github.com/phpay-io/phpay/compare/v2.6.0...v2.7.0
+[2.6.0]: https://github.com/phpay-io/phpay/compare/v2.5.0...v2.6.0
+[2.5.0]: https://github.com/phpay-io/phpay/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/phpay-io/phpay/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/phpay-io/phpay/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/phpay-io/phpay/compare/v2.1.0...v2.2.0
