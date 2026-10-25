@@ -15,13 +15,17 @@ use PHPay\Inter\Traits\HasInterClient;
  * one webhook per Pix key, addressed by the key itself — there is no webhook
  * id, the same shape as Efí.
  *
- * **the notification does not arrive at the URL you registered.** Inter
- * appends `/pix` to it: the callback is declared as
- * `POST {$request.body#/webhookUrl/pix}`, so registering
- * `https://app.exemplo.com/webhook/` delivers to
- * `https://app.exemplo.com/webhook/pix`. Nothing here rewrites the URL —
- * changing what the caller passed would be worse — but it is the first thing
- * to check when notifications never show up.
+ * the URL is sent exactly as the caller passed it, and nothing here rewrites
+ * it. That is worth stating because the reference invites the opposite
+ * reading: Redoc renders the callback as
+ * `POST {$request.body#/webhookUrl/pix}`, which looks like `/pix` being
+ * appended to the registered URL. It is not. `#/` introduces a JSON Pointer,
+ * and that one would point at a `pix` property inside a string; what happened
+ * is that the callback is **named** `pix` in the spec and Redoc joined the
+ * name to the expression. Inter's own text describes a `POST` to the
+ * registered `webhookUrl`, and its example carries no suffix. The `/pix`
+ * suffix is a documented quirk of Itaú, which implements the same
+ * specification.
  *
  * there is no list-all: Inter exposes the key endpoints and the callback log,
  * and no `GET /webhook`. The error taxonomy in the reference does mention one,

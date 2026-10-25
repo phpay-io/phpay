@@ -59,7 +59,11 @@ de operações: gestão de chave Pix (não há endpoint de DICT), `/loc/{id}/qrc
 erros menciona um `GET /webhook`, mas aquela seção é o texto do BACEN copiado
 inteiro e nomeia endpoints que o Inter não serve.
 
-O callback não chega na URL cadastrada: o Inter acrescenta `/pix` a ela.
+O callback chega na URL cadastrada. A expressão `{$request.body#/webhookUrl/pix}`
+que o Redoc mostra na referência **não** quer dizer que o Inter acrescente
+`/pix`: o `#/` introduz um JSON Pointer, e o que houve é que o callback se chama
+`pix` na especificação e o renderizador juntou o nome à expressão. O sufixo
+`/pix` é quirk do Itaú, não do Inter.
 
 ### Segurança
 
