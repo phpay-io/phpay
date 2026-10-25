@@ -16,11 +16,12 @@ it('cadastra o webhook por chave pix, com put', function () {
         ->and(recordedBody($history, 1))->toBe(['webhookUrl' => 'https://app.exemplo.com/webhook/']);
 })->group('inter');
 
-it('a url é mandada como veio, sem o /pix que o inter acrescenta', function () {
+it('a url é mandada exatamente como veio', function () {
     /*
-     * o callback é declarado como POST {$request.body#/webhookUrl/pix}: o Inter
-     * entrega em <webhookUrl>/pix. Reescrever a URL de quem chamou seria pior
-     * que documentar, então nada aqui mexe nela.
+     * o Redoc mostra o callback como POST {$request.body#/webhookUrl/pix}, o que
+     * parece um /pix acrescentado — não é: o callback se *chama* `pix` na
+     * especificação e o nome foi juntado à expressão. De qualquer forma, nada
+     * aqui reescreve a URL de quem chamou, e é isso que este teste fixa.
      */
     $history = [];
 

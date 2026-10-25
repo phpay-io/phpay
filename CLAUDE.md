@@ -535,7 +535,11 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   **Não existe listagem de webhook** — a taxonomia de erros da referência menciona
   `GET /webhook`, mas aquela seção é o texto do BACEN copiado inteiro e nomeia
   endpoints que o gateway não serve; não acredite nela sem conferir a lista de
-  operações. O callback vai para `<webhookUrl>/pix`, não para a URL cadastrada.
+  operações. **O callback vai para a URL cadastrada**, e não para
+  `<webhookUrl>/pix` — a expressão `{$request.body#/webhookUrl/pix}` que o Redoc
+  mostra é artefato de renderização (o callback se *chama* `pix` e o nome foi
+  juntado à expressão; lida como JSON Pointer ela é malformada). O sufixo `/pix`
+  é quirk do Itaú. Não "corrija" o Resource para acrescentá-lo.
   Header `x-conta-corrente` só quando a aplicação está em mais de uma conta. Valor só
   como `Money` (reais em string), como na API Pix da Efí.
 

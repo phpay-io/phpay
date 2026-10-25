@@ -150,13 +150,19 @@ $gateway->webhook([
 ])->create();
 ```
 
-> **A notificação não chega na URL que você cadastrou.** O Inter acrescenta
-> `/pix` ao final: o callback é declarado como
-> `POST {$request.body#/webhookUrl/pix}`, então cadastrar
-> `https://app.exemplo.com/webhook/` entrega em
-> `https://app.exemplo.com/webhook/pix`. A biblioteca manda a URL como você
-> passou — reescrever o que o chamador informou seria pior —, mas é a primeira
-> coisa a conferir quando a notificação nunca aparece.
+> **A notificação chega na URL que você cadastrou**, e a biblioteca manda a URL
+> exatamente como você passou.
+>
+> Vale dizer porque a referência convida à leitura oposta: o Redoc mostra o
+> callback como `POST {$request.body#/webhookUrl/pix}`, o que parece um `/pix`
+> acrescentado ao final. Não é. O `#/` introduz um **JSON Pointer**, e esse
+> apontaria para uma propriedade `pix` dentro de uma string; o que houve é que
+> o callback se **chama** `pix` na especificação, e o Redoc juntou o nome à
+> expressão. O texto do Inter descreve um `POST` na `webhookUrl` cadastrada, e
+> o exemplo dele não tem sufixo.
+>
+> O sufixo `/pix` existe — é quirk documentado do **Itaú**, que implementa a
+> mesma especificação. Não confunda os dois.
 
 Só `https` é aceito. **Não existe listagem** de webhooks: o Inter expõe os
 endpoints por chave e o log de entregas, e nada mais. A taxonomia de erros da

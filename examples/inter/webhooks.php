@@ -20,9 +20,9 @@ try {
     | Um webhook por chave Pix, endereçado pela chave — não existe id de
     | webhook. Cadastrar de novo substitui a URL.
     |
-    | ATENÇÃO: o Inter NÃO entrega na URL que você cadastra. Ele acrescenta
-    | /pix ao final. Cadastrando https://app.exemplo.com/webhook/, a
-    | notificação chega em https://app.exemplo.com/webhook/pix.
+    | A notificação chega na URL que você cadastrou. Se você viu por aí que o
+    | Inter acrescenta /pix, isso é leitura equivocada da expressão que o Redoc
+    | mostra na referência — o sufixo /pix é quirk do Itaú, não do Inter.
     */
     $gateway->webhook([
         'chave'      => PIX_KEY,
