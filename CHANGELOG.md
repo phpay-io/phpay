@@ -10,6 +10,31 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+### Adicionado
+
+- **`Certificate::pair()`**, para o PSP que entrega certificado e chave em
+  arquivos separados. A Efí manda um `.p12` com as duas coisas dentro, e era o
+  único formato aceito; o Inter manda `.crt` e `.key`, e a documentação dele
+  manda juntar os dois com `openssl pkcs12 -export` antes de usar. O cURL
+  aceita as metades como vêm, então a conversão era atrito que a biblioteca
+  podia absorver ([#156]).
+- **`Certificate::pairFromBase64()`**, o mesmo para container e serverless,
+  onde cada metade chega numa variável de ambiente. Grava os dois temporários
+  com permissão `0600`, apagados ao fim do processo ([#156]).
+- `Certificate::keyPath()` e `Certificate::isPair()`, e `guzzleOptions()`
+  passou a emitir `ssl_key` quando há par. Num par a senha vai na **chave**, e
+  não no certificado: o Guzzle transforma o segundo elemento de `cert` em
+  `CURLOPT_SSLCERTPASSWD`, e o `.crt` é público — não tem o que decifrar
+  ([#156]).
+- Documentação: [Certificado e mTLS](docs/mtls.md), que reúne os dois formatos,
+  as extensões aceitas e o que o `Certificate` confere ([#156]).
+
+### Corrigido
+
+- A mensagem de formato recusado passou a apontar o `pair()`. Um `.crt` sozinho
+  dizia só "use .p12 ou .pem", sem dizer o que fazer com a chave que veio ao
+  lado ([#156]).
+
 ## [2.7.0] - 2026-10-24
 
 [Release](https://github.com/phpay-io/phpay/releases/tag/v2.7.0) ·
@@ -654,3 +679,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#143]: https://github.com/phpay-io/phpay/issues/143
 [#146]: https://github.com/phpay-io/phpay/issues/146
 [#152]: https://github.com/phpay-io/phpay/issues/152
+[#156]: https://github.com/phpay-io/phpay/issues/156

@@ -575,12 +575,28 @@ Use **`PHPay\Http\Certificate`**. O padrão do BACEN para API Pix exige mTLS em 
 requisição, inclusive a do token, e Inter, BB, Itaú, Sicoob e Sicredi seguem o mesmo
 esquema — por isso o certificado é genérico, não da Efí.
 
-- `guzzleOptions()` devolve `['cert' => ...]`. Some isso à config do `Client` que o
-  trait monta; **não** passe `CURLOPT_SSLCERTTYPE` em `curl`, porque o Guzzle recente
-  recusa opção cURL que conflita com a dele, e ele já deduz `P12` pela extensão.
-- Só `.p12` e `.pem`. Um `.pfx` é o mesmo formato, mas o Guzzle não o reconhece pela
-  extensão: a mensagem manda renomear.
-- `fromBase64()` grava num temporário 0600, apagado ao fim do processo.
+- `guzzleOptions()` devolve `['cert' => ...]` e, num par, também `ssl_key`. Some isso à
+  config do `Client` que o trait monta; **não** passe `CURLOPT_SSLCERTTYPE` em `curl`,
+  porque o Guzzle recente recusa opção cURL que conflita com a dele, e ele já deduz
+  `P12` pela extensão.
+- **Os PSPs entregam o certificado de duas formas, e as duas são aceitas.** A Efí manda
+  um `.p12` com certificado e chave dentro (`new Certificate($path, $senha)`); o Inter
+  manda `.crt` e `.key` separados (`Certificate::pair($crt, $key, $senha)`). A doc do
+  próprio Inter manda juntar com `openssl pkcs12 -export`, mas o cURL aceita as duas
+  metades como estão, e `ssl_key` existe nas duas majors do Guzzle — sem opção de tipo,
+  porque PEM é o default do cURL para a chave.
+- **Num par a senha vai na chave, nunca no certificado.** O Guzzle transforma o segundo
+  elemento de `cert` em `CURLOPT_SSLCERTPASSWD`, e o `.crt` é público: não tem o que
+  decifrar. É o erro que falha em silêncio, por isso tem teste próprio.
+- Arquivo único: só `.p12` e `.pem`. Um `.pfx` é o mesmo formato, mas o Guzzle não o
+  reconhece pela extensão: a mensagem manda renomear. Par: `.crt`, `.cer` ou `.pem` no
+  certificado e `.key` ou `.pem` na chave. **Não acrescente `crt` a `FORMATS`** para
+  "aceitar o Inter" — um certificado sozinho não tem chave privada e não faz mTLS; a
+  mensagem de formato aponta o `pair()`.
+- `fromBase64()` e `pairFromBase64()` gravam em temporários 0600, apagados ao fim do
+  processo. O par **não** tem parâmetro de formato: ali a extensão não informa nada, já
+  que as duas metades são PEM. No arquivo único a extensão é o que diz ao cURL se é um
+  bundle PKCS#12 ou um PEM.
 - `__debugInfo()` mascara a senha. Não crie getter para ela.
 
 ## Segurança
