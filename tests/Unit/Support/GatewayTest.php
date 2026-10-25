@@ -22,7 +22,7 @@ function configMinima(Gateway $gateway): array
     return array_fill_keys($gateway->credentials(), 'credencial-falsa');
 }
 
-it('constrói os nove a partir do nome', function (Gateway $gateway) {
+it('constrói os dez a partir do nome', function (Gateway $gateway) {
     /*
      * o teste varre Gateway::cases(), então gateway novo no enum sem braço no
      * match do make() reprova aqui, e não em produção.
@@ -160,10 +160,17 @@ it('declara o que cada gateway exige e aceita', function () {
         ->and(Gateway::CIELO->credentials())->toBe(['merchantId', 'merchantKey'])
         ->and(Gateway::REDE->credentials())->toBe(['affiliation', 'secret']);
 
-    expect(Gateway::names())->toHaveCount(9)
+    expect(Gateway::names())->toHaveCount(10)
         ->and(Gateway::ASAAS->gatewayClass())->toBe(AsaasGateway::class)
         ->and(Gateway::MERCADO_PAGO->gatewayClass())->toBe(MercadoPagoGateway::class)
         ->and(Gateway::CIELO->gatewayClass())->toBe(CieloGateway::class);
+
+    /*
+     * o Inter é o único com quatro opcionais: além de sandbox e certificate,
+     * o token é emitido por `scopes` e o `account` preenche x-conta-corrente.
+     */
+    expect(Gateway::INTER->credentials())->toBe(['clientId', 'clientSecret'])
+        ->and(Gateway::INTER->options())->toBe(['sandbox', 'certificate', 'scopes', 'account']);
 })->group('support');
 
 it('todo gateway de src/Gateways está no enum', function () {

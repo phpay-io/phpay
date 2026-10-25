@@ -71,7 +71,7 @@ Mercado Pago —, e `Money` tira a dúvida:
 ```php
 use PHPay\Support\Money;
 
-$phpay->refund($id, Money::reais(25.50));   // o mesmo valor nos nove
+$phpay->refund($id, Money::reais(25.50));   // o mesmo valor nos dez
 ```
 
 A [leitura de webhook](webhooks.md) é igual: o que divergia era a leitura, não

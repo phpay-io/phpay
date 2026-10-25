@@ -16,7 +16,7 @@ enum ChargeStatusEnum: string
      * the same state in the library's vocabulary.
      *
      * the Woovi set lines up almost one to one, which is why it is the
-     * shortest mapping of the nine: it is also the only gateway that reports a
+     * shortest mapping of the ten: it is also the only gateway that reports a
      * partial refund as a status of its own.
      *
      * @return PaymentStatus

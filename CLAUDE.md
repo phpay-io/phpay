@@ -9,7 +9,8 @@ integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** e
 **Woovi/OpenPix** (as sete capacidades), **Efí** (todas menos clientes e
 estornos), **Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças,
 estornos, assinaturas), **Cielo** (cobranças, estornos e recorrência),
-**AbacatePay** (clientes e cobranças) e **Rede** (cobranças e estornos).
+**AbacatePay** (clientes e cobranças), **Rede** (cobranças e estornos) e
+**Inter** (cobranças, webhooks e leitura de webhook).
 
 Requisitos: PHP `^8.1` para consumir a lib; `^8.2` para rodar o ambiente de dev
 (Pest 3 e Termwind 2 exigem 8.2+). Dependências de runtime: `ext-curl`,
@@ -175,7 +176,7 @@ Dois caminhos, e **`PHPay::gateway()` continua sendo o preferido**: segurando o 
 concreto, capacidade ausente é erro de análise e não de runtime. O registry é para quem
 não sabe o gateway em tempo de escrita.
 
-- **`PHPay\Support\Gateway`** é o enum com os nove, e é **o único lugar do núcleo que
+- **`PHPay\Support\Gateway`** é o enum com os dez, e é **o único lugar do núcleo que
   conhece gateway concreto** — é o que uma fábrica é. A propriedade que importa segue
   valendo: a facade despacha por capacidade e nunca nomeia gateway concreto no caminho
   de despacho.
@@ -190,7 +191,7 @@ não sabe o gateway em tempo de escrita.
 - **Chave desconhecida também levanta.** Mesma razão da forma fechada de array do
   `ClientFactory`: `skandbox` engolido é typo que só aparece em produção. A validação
   mora em `GatewayConfigRequest`, no par `validate()` + `messages()` como os outros.
-- **Nome errado levanta `ValidationException` listando os nove**, não `ValueError` do
+- **Nome errado levanta `ValidationException` listando os dez**, não `ValueError` do
   enum — o nome costuma vir de `.env`, e quem errou merece a lista. `tryFrom()` segue
   disponível para quem quer `null`.
 - **O registry não recebe `Client`.** Client injetado é de teste, e teste constrói
@@ -305,7 +306,7 @@ nome —, e o registry não aceita `Client`.
 ## Retry e idempotência
 
 A `PHPay\Http\RetryPolicy` decide o que pode ser repetido, e o middleware entra na
-`ClientFactory` — então os nove gateways herdam a política de uma vez.
+`ClientFactory` — então os dez gateways herdam a política de uma vez.
 
 - **Repetir é sobre dinheiro, não sobre resiliência.** Um `POST` repetido que o
   gateway já processou cobra o cliente duas vezes. Só é repetido: leitura
@@ -520,36 +521,58 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   access token, então o construtor não recebe `$sandbox`. `POST /v1/payments` exige
   `X-Idempotency-Key` (por isso `HasHttpClient::post()` aceita headers por requisição).
   Cliente não é pré-requisito de cobrança, e a API não oferece exclusão de cliente.
+- **Inter** — **primeiro banco, e o único com token emitido por escopo**. `scope` é
+  obrigatório na requisição do token e não existe token que carregue tudo, então o
+  gateway pede a união do que as capacidades usam (`InterGateway::SCOPES`); pedir
+  escopo que a aplicação não tem reprova a requisição inteira, por isso `lotecobv.*`
+  e `payloadlocation.*` ficam fora da constante. **Gerar token é limitado a 5 chamadas
+  por minuto** — cache não é otimização, é o que evita `429`. Host único, com mTLS em
+  tudo, inclusive o token; sandbox em **domínio próprio** (`uatinter.co`), como a
+  Woovi. Token em `form_params` com as credenciais no corpo, não em Basic como a Efí.
+  `charge()` é a cobrança **Pix** — na Efí `charge()` é o boleto —, porque o boleto do
+  Inter é outra API (`/cobranca/v3`) que a lib não fala. **Não existe `qrCode()`**: o
+  Inter não expõe `/loc/{id}/qrcode`, e o copia-e-cola volta na própria cobrança.
+  **Não existe listagem de webhook** — a taxonomia de erros da referência menciona
+  `GET /webhook`, mas aquela seção é o texto do BACEN copiado inteiro e nomeia
+  endpoints que o gateway não serve; não acredite nela sem conferir a lista de
+  operações. O callback vai para `<webhookUrl>/pix`, não para a URL cadastrada.
+  Header `x-conta-corrente` só quando a aplicação está em mais de uma conta. Valor só
+  como `Money` (reais em string), como na API Pix da Efí.
 
 ## O que ainda está em aberto
 
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente
   (`webhookrec`, `webhookcobr`), envio de Pix e split.
-- `SupportsRefunds` fica em sete gateways. Os dois de fora têm motivo, e não são
-  stub: a devolução Pix da **Efí** exige o valor (o BACEN pede `valor`, enquanto a
-  capacidade promete que ausente estorna integral), é endereçada pelo `endToEndId` e
-  vive na API Pix, não no `charge()` — continua em `pixCharge()->refund()`; e na
-  **AbacatePay** os endpoints de reembolso documentados são da v2, para checkout e
+- `SupportsRefunds` fica em sete dos dez gateways. Os três de fora têm motivo, e não
+  são stub: a devolução Pix da **Efí** e do **Inter** exige o valor (o BACEN pede
+  `valor`, enquanto a capacidade promete que ausente estorna integral) e é endereçada
+  pelo `endToEndId`, não pela cobrança — continua em `pixCharge()->refund()` na Efí e
+  em `charge()->refund()` no Inter; e na **AbacatePay** os endpoints de reembolso documentados são da v2, para checkout e
   link de pagamento, enquanto a lib fala com a v1 (`billing/create`). Também ficaram
   fora, de propósito: `capture()` (Cielo, Pagar.me, Rede), que é captura de
   pré-autorização e não devolução; o estorno de boleto do Asaas, que é endpoint
   assíncrono próprio e devolve `requestUrl`; e a listagem de estornos.
-- `SupportsWebhookEvents` fica em sete gateways. **Rede** e **AbacatePay** ficam de
-  fora por formato não confirmado, e entram quando alguém verificar em sandbox — da
-  Rede falta o nome dos campos do envelope, da AbacatePay o payload da v1 (e a doc
-  deles recomenda não validar o schema, que muda).
+- `SupportsWebhookEvents` fica em oito dos dez gateways. **Rede** e **AbacatePay**
+  ficam de fora por formato não confirmado, e entram quando alguém verificar em
+  sandbox — da Rede falta o nome dos campos do envelope, da AbacatePay o payload da
+  v1 (e a doc deles recomenda não validar o schema, que muda). **O Inter é a prova de
+  que essa cautela não é teatro**: a API Pix dele é a especificação do BACEN quase
+  literal, então o envelope `{"pix": [...]}` era a aposta óbvia — e está errada, o
+  corpo dele é o array direto. Chutar devolveria zero eventos em silêncio.
 - Chave de idempotência existe em três gateways: Mercado Pago, Pagar.me e PagBank. Nos
   outros sete, `POST` só é repetido quando o erro provou que a requisição não saiu da
   máquina. O `correlationID` da Woovi deduplica de fato, mas vive no corpo e não em
   header, então o middleware não o vê.
 - `SupportsWebhookSignature` fica em cinco gateways: Asaas, PagBank, Mercado Pago,
-  Woovi e AbacatePay. Efí (mTLS), Cielo, Rede e Pagar.me ficam fora, cada um pelo
-  seu motivo, e os motivos estão em `docs/webhooks.md`. O HMAC-SHA1 da Woovi é aceito, mas é
+  Woovi e AbacatePay. Efí e Inter (mTLS), Cielo, Rede e Pagar.me ficam fora, cada um
+  pelo seu motivo, e os motivos estão em `docs/webhooks.md`. O HMAC-SHA1 da Woovi é aceito, mas é
   depreciado pela própria Woovi.
-- `SupportsWebhooks` e `SupportsPixKeys` só no Asaas, no Woovi e na Efí — os três são
-  PSP. Mercado Pago, PagBank e Pagar.me registram endpoints por painel, e Pix neles é
-  forma de pagamento. Não
+- `SupportsWebhooks` fica no Asaas, no Woovi, na Efí e no Inter; `SupportsPixKeys` só
+  nos três primeiros. O Inter cadastra webhook por chave Pix como a Efí, mas a API
+  dele **não tem endpoint de DICT**: a chave que endereça o webhook é uma que você já
+  tem, e não há como criar, listar ou remover. Mercado Pago, PagBank e Pagar.me
+  registram endpoints por painel, e Pix neles é forma de pagamento. Não
   "resolva" isso criando stubs — e não declare a capacidade por causa de uma API
   parecida: o `/hooks` do Pagar.me lê entregas, é outra coisa, e por isso virou um
   recurso fora do modelo.

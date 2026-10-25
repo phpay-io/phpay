@@ -1,7 +1,7 @@
 # Retry e idempotência
 
 A biblioteca repete uma requisição **só quando repetir não pode cobrar de novo**.
-Vale para os nove gateways, porque o middleware vive na
+Vale para os dez gateways, porque o middleware vive na
 `PHPay\Http\ClientFactory`, o único lugar onde um client nasce.
 
 | Situação | Repete |

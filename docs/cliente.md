@@ -17,7 +17,7 @@ $cliente = Customer::make(
     phone: '(11) 94002-8922',
 );
 
-$phpay->charge()->setCustomer($cliente);   // funciona nos nove
+$phpay->charge()->setCustomer($cliente);   // funciona nos dez
 ```
 
 Ele também carrega o que cada gateway deriva do cliente, e que antes ficava
@@ -40,4 +40,4 @@ $cliente->withExtra(['externalReference' => 'x']); // vai junto no payload
 
 > O `withExtra()` existe para o que é específico de um gateway — endereço,
 > data de nascimento, referência externa. **Nenhum campo obrigatório de
-> nenhum dos nove gateways precisa dele**: o value object cobre todos.
+> nenhum dos dez gateways precisa dele**: o value object cobre todos.

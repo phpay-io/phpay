@@ -255,7 +255,7 @@ class PHPay implements GatewayInterface
 
         /*
          * a capacidade promete `object`, para não quebrar gateway próprio que
-         * a implemente — então o contrato é conferido aqui. Nos nove da
+         * a implemente — então o contrato é conferido aqui. Nos dez da
          * biblioteca nunca dispara, e há teste varrendo o enum para garantir.
          */
         if (!$verifier instanceof VerifiesSignature) {

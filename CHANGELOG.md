@@ -12,6 +12,53 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ### Adicionado
 
+- **Gateway do Inter**, o décimo e o primeiro de um banco: cobranças Pix
+  (imediata e com vencimento), webhooks por chave Pix e leitura de notificação
+  ([#156]).
+- O Inter é o **primeiro gateway cujo token é emitido por escopo**. `scope` é
+  obrigatório na requisição e não existe token que carregue todas as permissões,
+  então o gateway pede a união do que as capacidades dele usam
+  (`InterGateway::SCOPES`); aplicação com permissão mais estreita passa a sua em
+  `scopes:` ([#156]).
+- O cache de token do Inter **não é otimização**: gerar um é limitado a 5
+  chamadas por minuto, e a própria documentação manda reaproveitar por toda a
+  hora de validade. Um processo que pedisse token por requisição levaria `429`
+  na sexta ([#156]).
+- `account:` preenche o header `x-conta-corrente`, que o Inter exige só quando a
+  aplicação está vinculada a mais de uma conta corrente. Sem valor, o header não
+  é mandado ([#156]).
+- Documentação: [Inter](docs/gateways/inter.md), e a tabela de capacidades do
+  README ganhou as colunas de **estornos** e **leitura de webhook**, que faltavam
+  desde que as duas capacidades entraram ([#156]).
+
+### Notas sobre a API do Inter
+
+A API Pix dele é a especificação do BACEN quase literal — mesmos caminhos,
+mesmos schemas, mesma taxonomia de erro. **A notificação é onde ela diverge, e
+as duas divergências falham em silêncio:**
+
+- **o corpo é um array na raiz**, não o `{"pix": [...]}` do padrão e da Efí. Um
+  parser escrito pela especificação não acharia a chave `pix` e devolveria zero
+  eventos para todo pagamento de verdade. O envelope `pix` também é aceito,
+  porque a "Evolução da API Pix" da referência reserva o direito de acrescentar
+  campos a qualquer momento;
+- **`devolucoes` é um objeto**, onde o padrão manda array. Pode ser erro de
+  documentação deles, então as duas formas são lidas.
+
+Três coisas que a referência tem e o gateway **não** expõe, conferidas na lista
+de operações: gestão de chave Pix (não há endpoint de DICT), `/loc/{id}/qrcode`
+— o copia-e-cola volta na cobrança — e a listagem de webhooks. A taxonomia de
+erros menciona um `GET /webhook`, mas aquela seção é o texto do BACEN copiado
+inteiro e nomeia endpoints que o Inter não serve.
+
+O callback não chega na URL cadastrada: o Inter acrescenta `/pix` a ela.
+
+### Segurança
+
+- O `.gitignore` passou a ignorar `*.crt`, `*.cer` e `*.key`, além dos formatos
+  que já cobria. O Inter entrega a chave privada em arquivo próprio, e uma chave
+  commitada não se desfaz com um revert ([#156]).
+
 - **`Certificate::pair()`**, para o PSP que entrega certificado e chave em
   arquivos separados. A Efí manda um `.p12` com as duas coisas dentro, e era o
   único formato aceito; o Inter manda `.crt` e `.key`, e a documentação dele

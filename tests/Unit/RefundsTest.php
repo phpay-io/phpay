@@ -59,7 +59,7 @@ it('recusa o estorno na AbacatePay, cuja v1 não descreve reembolso de billing',
     expect($history)->toBeEmpty();
 })->group('phpay');
 
-it('declara estornos em sete dos nove gateways', function () {
+it('declara estornos em sete dos dez gateways', function () {
     $declaram = [
         new AsaasGateway('token', true, mockClient([])),
         new WooviGateway('app-id', true, wooviClient([])),

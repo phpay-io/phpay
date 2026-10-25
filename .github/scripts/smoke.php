@@ -16,9 +16,9 @@ declare(strict_types = 1);
  * constroem — inclusive o client que a ClientFactory monta, com o middleware
  * da RetryPolicy.
  *
- * A Efí é a exceção do laço de capacidades: todo acessor dela troca credencial
- * por token antes de devolver o Resource, e isso é rede. Os Resources dela são
- * construídos direto, com um token falso, como a suíte faz.
+ * A Efí e o Inter são a exceção do laço de capacidades: todo acessor dos dois
+ * troca credencial por token antes de devolver o Resource, e isso é rede. Os
+ * Resources deles são construídos direto, com um token falso, como a suíte faz.
  *
  * Nenhuma credencial aqui é real — são strings fixas, e o CPF é o mesmo
  * sequencial usado nos testes.
@@ -44,6 +44,10 @@ use PHPay\Efi\Resources\Subscription\Subscription as EfiSubscription;
 use PHPay\Efi\Resources\Webhook\Webhook as EfiWebhook;
 use PHPay\Exceptions\{NotImplementedException, ValidationException};
 use PHPay\Http\Certificate;
+use PHPay\Inter\Enums\{PixChargeStatusEnum as InterPixChargeStatusEnum, RefundStatusEnum as InterRefundStatusEnum};
+use PHPay\Inter\InterGateway;
+use PHPay\Inter\Resources\Charge\Charge as InterCharge;
+use PHPay\Inter\Resources\Webhook\Webhook as InterWebhook;
 use PHPay\MercadoPago\Enums\PaymentStatusEnum;
 use PHPay\MercadoPago\MercadoPagoGateway;
 use PHPay\PagarMe\Enums\ChargeStatusEnum as PagarMeChargeStatusEnum;
@@ -145,6 +149,7 @@ $gateways = [
     'Cielo'        => new CieloGateway('fake-merchant-id', 'fake-merchant-key'),
     'Rede'         => new RedeGateway('fake-affiliation', 'fake-secret'),
     'AbacatePay'   => new AbacatePayGateway('fake-token'),
+    'Inter'        => new InterGateway('fake-client-id', 'fake-client-secret', true, $certificate),
 ];
 
 // o estorno e a leitura de webhook ficam fora: são as duas capacidades que
@@ -176,8 +181,8 @@ $check('a lista cobre todos os gateways de src/Gateways', function () use ($gate
 });
 
 // o registry é o caminho de quem não sabe o gateway em tempo de escrita, e
-// montar os nove por nome prova que todo case tem braço no match do make().
-$check('o registry constrói os nove por nome', function () use ($ensure, $expect): void {
+// montar os dez por nome prova que todo case tem braço no match do make().
+$check('o registry constrói os dez por nome', function () use ($ensure, $expect): void {
     foreach (Gateway::cases() as $gateway) {
         $config = array_fill_keys($gateway->credentials(), 'credencial-falsa');
 
@@ -209,9 +214,9 @@ foreach ($gateways as $label => $gateway) {
         $ensure($phpay->capabilities() !== [], 'capabilities() não deveria ser vazio');
     });
 
-    // a Efí fica fora: os acessores dela fazem rede antes de devolver o
-    // Resource. Os Resources dela são construídos logo abaixo.
-    if ($label === 'Efí') {
+    // a Efí e o Inter ficam fora: os acessores dos dois fazem rede antes de
+    // devolver o Resource. Os Resources deles são construídos logo abaixo.
+    if ($label === 'Efí' || $label === 'Inter') {
         continue;
     }
 
@@ -305,6 +310,50 @@ $check('Efí: API Pix sem certificado explica o mTLS', function () use ($token, 
     $expect(ValidationException::class, static fn () => new EfiPix($token));
 });
 
+echo "\nInter (Resources construídos direto, sem troca de token)\n";
+
+$check('Inter: Charge da API Pix (mTLS)', function () use ($token, $certificate, $ensure): void {
+    $ensure(new InterCharge($token, $certificate) instanceof InterCharge, 'deveria construir');
+});
+
+$check('Inter: Webhook da API Pix (mTLS)', function () use ($token, $certificate, $ensure): void {
+    $ensure(new InterWebhook($token, [], $certificate) instanceof InterWebhook, 'deveria construir');
+});
+
+$check('Inter: sem certificado explica o mTLS e o par de arquivos', function () use ($token, $expect): void {
+    $expect(ValidationException::class, static fn () => new InterCharge($token));
+});
+
+// a notificação do Inter é um array na raiz, não o {"pix": [...]} do padrão.
+// Vale no smoke porque é parsing puro, e porque é o desvio que devolveria zero
+// eventos em silêncio se alguém "arrumasse" o parser para o envelope do BACEN.
+$check('Inter: a notificação é um array na raiz', function () use ($gateways, $ensure): void {
+    $eventos = PHPay::gateway($gateways['Inter'])->webhookEvents([[
+        'endToEndId' => 'E87654321202009091221dfghi123456',
+        'txid'       => '971122d8f37211eaadc10242ac120002',
+        'valor'      => '110.00',
+        'horario'    => '2020-09-09T20:15:00.358Z',
+    ]]);
+
+    $ensure(count($eventos) === 1, sprintf('deveria ler 1 evento, leu %d', count($eventos)));
+    $ensure($eventos[0]->type === EventType::PAID, 'deveria ser pagamento recebido');
+    $ensure($eventos[0]->status === PaymentStatus::PAID, 'o corpo traz o pagamento, então não precisa consultar');
+    $ensure($eventos[0]->resourceId === '971122d8f37211eaadc10242ac120002', 'o id deveria ser o txid');
+});
+
+$check('Inter: devolucoes vem como objeto, não como array', function () use ($gateways, $ensure): void {
+    $eventos = PHPay::gateway($gateways['Inter'])->webhookEvents([[
+        'endToEndId'  => 'E105735212026021113145BVE1RX4kbc6',
+        'txid'        => 'c3e0e7a4e7f1469a9f782d3d4999343c',
+        'valor'       => '110.00',
+        'devolucoes'  => ['id' => '123ABC', 'valor' => '10.00', 'status' => 'DEVOLVIDO'],
+    ]]);
+
+    $ensure(count($eventos) === 2, sprintf('pagamento + devolução = 2 eventos, leu %d', count($eventos)));
+    $ensure($eventos[1]->type === EventType::REFUNDED, 'o segundo deveria ser estorno');
+    $ensure($eventos[1]->status === PaymentStatus::REFUNDED, 'DEVOLVIDO significa que o dinheiro voltou');
+});
+
 echo "\nvalue objects\n";
 
 // o ponto do VO: dez vocabulários lidos de uma forma só. Vale no smoke porque é
@@ -322,6 +371,7 @@ $check('PaymentStatus: os vocabulários dos gateways convergem', function () use
         'Pagar.me'     => PagarMeChargeStatusEnum::of('paid'),
         'Efí'          => EfiChargeStatusEnum::of('paid'),
         'Efí (pix)'    => PixChargeStatusEnum::of('CONCLUIDA'),
+        'Inter'        => InterPixChargeStatusEnum::of('CONCLUIDA'),
     ];
 
     foreach ($pagas as $gateway => $status) {
@@ -337,6 +387,10 @@ $check('PaymentStatus: os vocabulários dos gateways convergem', function () use
         'na Rede, código não listado é recusa'
     );
     $ensure(!PaymentStatus::PAID->isFinal(), 'paga não é final: estorno ainda vem depois');
+    $ensure(
+        InterRefundStatusEnum::of('EM_PROCESSAMENTO') === PaymentStatus::PAID,
+        'no Inter, devolução em processamento não devolveu nada ainda'
+    );
 });
 
 $check('Money: reais e centavos convertem nos dois sentidos', function () use ($ensure): void {

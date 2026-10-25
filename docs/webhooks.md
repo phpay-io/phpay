@@ -60,12 +60,13 @@ cálculo, e omiti-lo muda o manifesto. Na Woovi, a chave pública é buscada em
 para evitar a chamada — e a lista inteira é aceita, porque durante uma rotação
 ainda chegam notificações assinadas pela chave anterior.
 
-Quem **não** declara a capacidade: **Efí**, porque a notificação Pix chega por
-mTLS e o certificado já cobre isso; **Cielo** e **Rede**, porque a notificação
-não traz assinatura e o caminho que a própria documentação indica é consultar a
-transação de volta; e **Pagar.me**, porque a v5 não documenta esquema de
-assinatura. Nos quatro, `webhookSignature()` levanta `NotImplementedException`
-em vez de devolver um verificador que sempre diz sim.
+Quem **não** declara a capacidade: **Efí** e **[Inter](gateways/inter.md)**,
+porque a notificação Pix dos dois chega por mTLS e o certificado já cobre isso;
+**Cielo** e **Rede**, porque a notificação não traz assinatura e o caminho que a
+própria documentação indica é consultar a transação de volta; e **Pagar.me**,
+porque a v5 não documenta esquema de assinatura. Nos cinco,
+`webhookSignature()` levanta `NotImplementedException` em vez de devolver um
+verificador que sempre diz sim.
 
 ---
 
@@ -101,7 +102,7 @@ A API Pix da Efí manda `pix` como **array**: vários pagamentos recebidos numa
 requisição só. E a notificação de devolução traz o array `devolucoes` inteiro,
 não uma por chamada. O PagBank manda o pedido com todas as `charges`.
 
-Por isso o retorno é `array<Event>` nos nove, mesmo onde hoje sempre vem um.
+Por isso o retorno é `array<Event>` nos dez, mesmo onde hoje sempre vem um.
 Tratar como objeto único perderia pagamento em silêncio.
 
 ### Quando o gateway não manda o estado
@@ -128,6 +129,7 @@ Isso **não** é falha da leitura: é o que o gateway manda. Responder
 | PagBank | o pedido inteiro, **sem campo de evento** — o tipo sai do status | ✅ |
 | Efí (Pix) | `pix[]` ou `devolucoes[]`, **sem campo de evento** | ✅ |
 | Efí (Cobranças) | um token para trocar pelo detalhe | — |
+| Inter | um **array na raiz**, sem envelope e sem campo de evento | ✅ |
 | Mercado Pago | `type`, `action` e **só** `data.id` | — |
 | Cielo | `PaymentId` e `ChangeType`, três campos | — |
 | **Rede** | não declarada | — |
@@ -136,6 +138,14 @@ Isso **não** é falha da leitura: é o que o gateway manda. Responder
 Rede e AbacatePay levantam `NotImplementedException`: o formato das duas não
 está confirmado, e parser montado sobre forma chutada responderia `UNKNOWN`
 para evento real — ou, pior, leria o campo errado como id.
+
+O [Inter](gateways/inter.md#lendo-a-notificação-dois-desvios-do-padrão) é a
+prova de que essa cautela não é teatro. Ele implementa a especificação do BACEN
+quase literal, então o envelope `{"pix": [...]}` era a aposta óbvia — e está
+errada: o corpo dele é **o array direto**. Um parser escrito pela especificação
+devolveria zero eventos para todo pagamento de verdade, calado. Pelo mesmo
+motivo, o `devolucoes` dele vem como **objeto** onde o padrão manda array, e as
+duas formas são aceitas.
 
 ### O tipo e o status respondem perguntas diferentes
 

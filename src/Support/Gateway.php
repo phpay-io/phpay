@@ -9,6 +9,7 @@ use PHPay\Contracts\GatewayInterface;
 use PHPay\Efi\EfiGateway;
 use PHPay\Exceptions\ValidationException;
 use PHPay\Http\Certificate;
+use PHPay\Inter\InterGateway;
 use PHPay\MercadoPago\MercadoPagoGateway;
 use PHPay\PagarMe\PagarMeGateway;
 use PHPay\PagBank\PagBankGateway;
@@ -25,7 +26,7 @@ use PHPay\Woovi\WooviGateway;
  * object.
  *
  * the constructors do not agree, which is why resolving by name needs a place
- * to live: six gateways take one credential and three take two, and three have
+ * to live: six gateways take one credential and four take two, and three have
  * no `$sandbox` at all because their environment comes from the credential's
  * own prefix.
  *
@@ -45,6 +46,7 @@ enum Gateway: string
     case CIELO        = 'cielo';
     case REDE         = 'rede';
     case ABACATEPAY   = 'abacatepay';
+    case INTER        = 'inter';
 
     /**
      * the concrete class of this gateway.
@@ -63,6 +65,7 @@ enum Gateway: string
             self::CIELO        => CieloGateway::class,
             self::REDE         => RedeGateway::class,
             self::ABACATEPAY   => AbacatePayGateway::class,
+            self::INTER        => InterGateway::class,
         };
     }
 
@@ -78,7 +81,7 @@ enum Gateway: string
             self::WOOVI                                  => ['appId'],
             self::MERCADO_PAGO                           => ['accessToken'],
             self::PAGARME                                => ['secretKey'],
-            self::EFI                                    => ['clientId', 'clientSecret'],
+            self::EFI, self::INTER                       => ['clientId', 'clientSecret'],
             self::CIELO                                  => ['merchantId', 'merchantKey'],
             self::REDE                                   => ['affiliation', 'secret'],
         };
@@ -114,6 +117,16 @@ enum Gateway: string
         /* the Pix API of the Efí is mTLS-only, so the certificate is config */
         if ($this === self::EFI) {
             $options[] = 'certificate';
+        }
+
+        /*
+         * the Inter needs the certificate on every request, and two more keys
+         * no other gateway has: the token is issued per `scopes`, and
+         * `account` fills `x-conta-corrente` for an application tied to more
+         * than one account.
+         */
+        if ($this === self::INTER) {
+            $options = [...$options, 'certificate', 'scopes', 'account'];
         }
 
         return $options;
@@ -161,6 +174,14 @@ enum Gateway: string
                 null,
                 $this->certificateOf($config)
             ),
+            self::INTER => new InterGateway(
+                $this->credential($config, 'clientId'),
+                $this->credential($config, 'clientSecret'),
+                $sandbox,
+                $this->certificateOf($config),
+                $this->optional($config, 'scopes'),
+                $this->optional($config, 'account')
+            ),
         };
     }
 
@@ -181,6 +202,7 @@ enum Gateway: string
             self::CIELO        => 'Cielo',
             self::REDE         => 'Rede',
             self::ABACATEPAY   => 'AbacatePay',
+            self::INTER        => 'Inter',
         };
     }
 
@@ -235,6 +257,20 @@ enum Gateway: string
     private function sandboxOf(array $config): bool
     {
         return is_bool($config['sandbox'] ?? null) ? $config['sandbox'] : true;
+    }
+
+    /**
+     * an optional string key, absent when it was not given.
+     *
+     * @param array<string, mixed> $config
+     * @param string $key
+     * @return string|null
+     */
+    private function optional(array $config, string $key): ?string
+    {
+        $value = $config[$key] ?? null;
+
+        return is_string($value) && trim($value) !== '' ? $value : null;
     }
 
     /**

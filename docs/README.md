@@ -30,3 +30,4 @@ específico dele.
 | [Asaas](gateways/asaas.md) | [Woovi/OpenPix](gateways/woovi.md) | [Efí](gateways/efi.md) |
 | [Mercado Pago](gateways/mercado-pago.md) | [PagBank](gateways/pagbank.md) | [Pagar.me](gateways/pagarme.md) |
 | [AbacatePay](gateways/abacatepay.md) | [Cielo](gateways/cielo.md) | [Rede](gateways/rede.md) |
+| [Inter](gateways/inter.md) | | |

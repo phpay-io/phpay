@@ -35,10 +35,8 @@ Certificate::pair('/caminho/certificado.crt', '/caminho/chave.key');
 Certificate::pair('/caminho/certificado.crt', '/caminho/chave.key', 'senha-da-chave');
 ```
 
-Hoje o único gateway da biblioteca que fala mTLS é a [Efí](gateways/efi.md),
-que usa arquivo único. O `pair()` existe porque o `Certificate` é genérico, e é
-o formato que o gateway do Inter vai precisar
-([#156](https://github.com/phpay-io/phpay/issues/156)).
+Dois gateways da biblioteca falam mTLS: a [Efí](gateways/efi.md), com arquivo
+único, e o [Inter](gateways/inter.md), com o par.
 
 ## A senha é da chave, não do certificado
 
