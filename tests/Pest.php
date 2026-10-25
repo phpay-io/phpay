@@ -4,6 +4,7 @@ use GuzzleHttp\{Client, HandlerStack, Middleware};
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Response;
 use PHPay\Efi\EfiGateway;
+use PHPay\Inter\InterGateway;
 
 /*
 |--------------------------------------------------------------------------
@@ -216,5 +217,55 @@ function efiPixGateway(array $responses, array &$history = []): EfiGateway
         true,
         mockClient([]),
         pixClient: efiPixClient([efiPixToken(), ...$responses], $history),
+    );
+}
+
+/**
+ * mock client already pointed at the Inter sandbox host.
+ *
+ * one host for everything, token included — so a single client answers both.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @return Client
+ */
+function interClient(array $responses, array &$history = []): Client
+{
+    return mockClient($responses, $history, 'https://cdpj-sandbox.partners.uatinter.co/');
+}
+
+/**
+ * token response of the Inter API.
+ *
+ * @param string $token
+ * @param int $expiresIn
+ * @return Response
+ */
+function interToken(string $token = 'inter_tok', int $expiresIn = 3600): Response
+{
+    return jsonResponse([
+        'access_token' => $token,
+        'token_type'   => 'Bearer',
+        'expires_in'   => $expiresIn,
+        'scope'        => InterGateway::SCOPES,
+    ]);
+}
+
+/**
+ * Inter gateway whose client answers with a token first, then the responses.
+ *
+ * @param array<int, Response|Throwable> $responses
+ * @param array<int, mixed> $history filled with the recorded transactions
+ * @param string|null $account `x-conta-corrente`
+ * @return InterGateway
+ */
+function interGateway(array $responses, array &$history = [], ?string $account = null): InterGateway
+{
+    return new InterGateway(
+        'client-id',
+        'client-secret',
+        true,
+        account: $account,
+        client: interClient([interToken(), ...$responses], $history),
     );
 }

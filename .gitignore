@@ -12,14 +12,20 @@ examples/pagbank/credentials.php
 examples/pagarme/credentials.php
 examples/cielo/credentials.php
 examples/rede/credentials.php
+examples/inter/credentials.php
 
 # configurações locais do Claude Code (pessoais, não versionar)
 .claude/settings.local.json
 
 # certificados de mTLS (nunca versionar)
+# o Inter entrega certificado e chave em arquivos separados, então .crt e .key
+# entram aqui também — uma chave privada commitada não se desfaz com um revert
 *.p12
 *.pfx
 *.pem
+*.crt
+*.cer
+*.key
 
 # arquivos gerados pelos exemplos (carnês, boletos)
 examples/*/*.pdf

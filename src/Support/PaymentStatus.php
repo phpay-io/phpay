@@ -6,7 +6,7 @@ namespace PHPay\Support;
  * the state of a payment, in one vocabulary.
  *
  * the same problem `Money` and `Customer` solve on the way in, solved on the
- * way out: nine gateways answer with nine vocabularies — `RECEIVED`,
+ * way out: ten gateways answer with ten vocabularies — `RECEIVED`,
  * `COMPLETED`, `approved`, `PAID`, `paid`, `CONCLUIDA`, `'00'` — and whoever
  * changes gateway rewrites every `if`. Each gateway's own enum stays where it
  * is and gains a `status()` that answers in these terms, so the specific state

@@ -10,7 +10,7 @@ use PHPay\Webhooks\{Event, EventRequest};
 /**
  * reads an Asaas notification.
  *
- * the richest of the nine: the event name and the whole `payment` object come
+ * the richest of the ten: the event name and the whole `payment` object come
  * in the body, so nothing has to be fetched back.
  */
 final class AsaasWebhookEventRequest

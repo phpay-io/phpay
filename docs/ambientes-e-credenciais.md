@@ -14,13 +14,21 @@ que cada um faz em vez de inventar um padrão:
 | **Pagar.me** | Prefixo da chave (`sk_test_`); host único, sem `$sandbox` |
 | **Woovi** | `$sandbox` no construtor — o sandbox tem **domínio próprio** |
 | **AbacatePay** | Pela chave usada; host único, **sem prefixo** — a cobrança informa em `devMode` |
+| **Inter** | `$sandbox` no construtor — o sandbox tem **domínio próprio** (`uatinter.co`) |
 
-Nos dois últimos, `isSandbox()` diz em qual ambiente você está:
+Onde o ambiente vem do prefixo da credencial, `isSandbox()` diz em qual você
+está — e no Inter também, porque lá o `$sandbox` troca o domínio inteiro:
 
 ```php
 (new MercadoPagoGateway($token))->isSandbox();
 (new PagarMeGateway($secretKey))->isSandbox();
+(new InterGateway($id, $secret))->isSandbox();
 ```
+
+O Inter tem ainda uma credencial que os outros não têm: o token é emitido **por
+escopo**, e `scope` é obrigatório na requisição. O gateway pede a união do que
+as capacidades dele usam, e `scopes()` diz qual conjunto foi pedido — ver
+[Inter](gateways/inter.md#o-token-é-emitido-por-escopo-e-tem-de-ser-reaproveitado).
 
 > **Nunca** versione credenciais. Os arquivos `examples/*/credentials.php` são
 > ignorados pelo git por padrão.

@@ -144,7 +144,7 @@ it('não falseia client que a fábrica não montou', function () {
         ->and(ClientFactory::recorded())->toBe([]);
 })->group('phpay');
 
-it('alcança os nove gateways, porque todos passam pela fábrica', function () {
+it('alcança os dez gateways, porque todos passam pela fábrica', function () {
     foreach (Gateway::cases() as $gateway) {
         ClientFactory::fake([jsonResponse(['ok' => true])]);
 

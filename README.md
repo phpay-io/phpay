@@ -57,24 +57,26 @@ Trocar de gateway é trocar a linha do construtor.
 
 ## Gateways suportados
 
-| Gateway | Clientes | Cobranças | Assinaturas | Webhooks | Webhook assinado | Chaves Pix |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Efí** | — | ✅ | ✅ | ✅ | — | ✅ |
-| **Mercado Pago** | ✅ | ✅ | ✅ | — | ✅ | — |
-| **PagBank** | ✅ | ✅ | ✅ | — | ✅ | — |
-| **Pagar.me** | ✅ | ✅ | ✅ | — | — | — |
-| **AbacatePay** | ✅ | ✅ | — | — | ✅ | — |
-| **Cielo** | — | ✅ | ✅ | — | — | — |
-| **Rede** | — | ✅ | — | — | — | — |
+| Gateway | Clientes | Cobranças | Estornos | Assinaturas | Webhooks | Webhook assinado | Leitura de webhook | Chaves Pix |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Efí** | — | ✅ | — | ✅ | ✅ | — | ✅ | ✅ |
+| **Mercado Pago** | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| **PagBank** | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| **Pagar.me** | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | — |
+| **AbacatePay** | ✅ | ✅ | — | — | — | ✅ | — | — |
+| **Cielo** | — | ✅ | ✅ | ✅ | — | — | ✅ | — |
+| **Rede** | — | ✅ | ✅ | — | — | — | — | — |
+| **Inter** | — | ✅ | — | — | ✅ | — | ✅ | — |
 
 As interfaces correspondentes são `SupportsCustomers`, `SupportsCharges`,
-`SupportsSubscriptions`, `SupportsWebhooks`, `SupportsWebhookSignature` e
-`SupportsPixKeys`.
+`SupportsRefunds`, `SupportsSubscriptions`, `SupportsWebhooks`,
+`SupportsWebhookSignature`, `SupportsWebhookEvents` e `SupportsPixKeys`.
 
-Três colunas merecem explicação, porque a ausência de ✅ **não** quer dizer que o
-gateway não aceita Pix, não manda webhook ou não assina nada:
+Quatro colunas merecem explicação, porque a ausência de ✅ **não** quer dizer que
+o gateway não aceita Pix, não manda webhook, não devolve dinheiro ou não assina
+nada:
 
 - **`SupportsPixKeys`** significa *gerenciar chaves Pix e QR Code estático*, o
   que só um PSP que emite chave própria oferece. Nos outros gateways, Pix é
@@ -90,10 +92,16 @@ gateway não aceita Pix, não manda webhook ou não assina nada:
 - **`SupportsWebhookSignature`** significa *provar que a notificação recebida
   veio do gateway*. É outra coisa que cadastrar endpoint, e as duas não andam
   juntas: Mercado Pago, PagBank e AbacatePay assinam sem deixar cadastrar pela
-  API, enquanto Efí, Cielo, Rede e Pagar.me não dão o que verificar — a Efí
-  notifica por mTLS, Cielo e Rede não mandam assinatura, e a v5 do Pagar.me não
-  documenta esquema. O motivo de cada um está em
-  [Verificando o webhook que chega](docs/webhooks.md).
+  API, enquanto Efí, Inter, Cielo, Rede e Pagar.me não dão o que verificar — Efí
+  e [Inter](docs/gateways/inter.md) notificam por mTLS, Cielo e Rede não mandam
+  assinatura, e a v5 do Pagar.me não documenta esquema. O motivo de cada um está
+  em [Verificando o webhook que chega](docs/webhooks.md).
+- **`SupportsRefunds`** significa *devolver o dinheiro de uma cobrança pela
+  chamada normalizada*. Faltam dois, e nenhum é lacuna: na Efí e no Inter a
+  devolução Pix exige o valor — a capacidade promete que valor ausente estorna
+  integral — e é endereçada pelo `endToEndId` do pagamento, não pela cobrança,
+  então ela vive no recurso de cobrança desses dois. Na AbacatePay os endpoints
+  de reembolso documentados são de outra versão da API.
 
 ---
 
@@ -108,7 +116,7 @@ A compatibilidade com PHP 8.1 é verificada de duas formas a cada build: o
 PHPStan analisa `src/` com `phpVersion` mínimo em 8.1, e um job do CI roda no
 PHP 8.1 de verdade — valida o `composer.json`, instala só as dependências de
 runtime (`--no-dev`), confere a sintaxe de `src/` e roda um smoke test que
-carrega o autoload e instancia os nove gateways. A suíte do Pest não roda
+carrega o autoload e instancia os dez gateways. A suíte do Pest não roda
 nessa versão porque o toolchain de dev exige 8.2+.
 
 ---
