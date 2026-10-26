@@ -15,6 +15,7 @@ it('declara clientes, cobranças e verificação de assinatura', function () {
         Capability::CUSTOMERS,
         Capability::CHARGES,
         Capability::WEBHOOK_SIGNATURE,
+        Capability::CHARGE_INTENTS,
     ]);
 })->group('abacatepay');
 

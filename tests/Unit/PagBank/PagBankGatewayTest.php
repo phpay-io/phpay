@@ -18,6 +18,7 @@ it('declara clientes, cobranças, estornos, assinaturas e verificação de assin
         Capability::SUBSCRIPTIONS,
         Capability::WEBHOOK_SIGNATURE,
         Capability::WEBHOOK_EVENTS,
+        Capability::CHARGE_INTENTS,
     ]);
 })->group('pagbank');
 

@@ -113,7 +113,7 @@ it('exige vencimento no asaas, que não cria cobrança sem ele', function () {
 it('recusa a capacidade em quem não declara, antes de qualquer HTTP', function () {
     ClientFactory::fake([]);
 
-    expect(fn () => PHPay::make('pagbank', ['token' => 't'])->createCharge(intentDeTeste()))
+    expect(fn () => PHPay::make('rede', ['affiliation' => 'pv', 'secret' => 's'])->createCharge(intentDeTeste()))
         ->toThrow(NotImplementedException::class)
         ->and(ClientFactory::recorded())->toBe([]);
 })->group('support');

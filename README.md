@@ -73,11 +73,11 @@ Trocar de gateway é trocar a linha do construtor.
 | **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Efí** | — | ✅ | — | ✅ | ✅ | ✅ | — | ✅ | — |
 | **Mercado Pago** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | ✅ |
-| **PagBank** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | — |
-| **Pagar.me** | ✅ | ✅ | ✅ | — | — | ✅ | — | ✅ | — |
+| **PagBank** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | ✅ |
+| **Pagar.me** | ✅ | ✅ | ✅ | — | — | ✅ | — | ✅ | ✅ |
 | **Cielo** | — | ✅ | ✅ | — | — | ✅ | — | ✅ | — |
 | **Rede** | — | ✅ | ✅ | — | — | — | — | — | — |
-| **AbacatePay** | ✅ | ✅ | — | — | — | — | ✅ | — | — |
+| **AbacatePay** | ✅ | ✅ | — | — | — | — | ✅ | — | ✅ |
 | **Inter** | — | ✅ | — | ✅ | — | — | — | ✅ | ✅ |
 <!-- capacidades:fim -->
 

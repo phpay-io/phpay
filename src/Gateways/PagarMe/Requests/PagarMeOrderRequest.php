@@ -4,9 +4,24 @@ namespace PHPay\PagarMe\Requests;
 
 use PHPay\Exceptions\ValidationException;
 use PHPay\PagarMe\Enums\PaymentMethodEnum;
+use PHPay\Support\ChargeIntent;
 
 class PagarMeOrderRequest
 {
+    /**
+     * the Pagar.me order for a portable charge description.
+     *
+     * only the envelope: the items, the customer and the payment go in
+     * through the Charge's own setters.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     */
+    public static function fromIntent(ChargeIntent $intent): array
+    {
+        return $intent->extra();
+    }
+
     /**
      * validate order payload before sending it to the gateway.
      *

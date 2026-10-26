@@ -23,6 +23,9 @@ use PHPay\Exceptions\ValidationException;
  */
 final class ChargeIntent
 {
+    /** @var array<int, Item> */
+    private array $items;
+
     /** @var array<mixed> */
     private array $extra;
 
@@ -33,6 +36,7 @@ final class ChargeIntent
      * @param string|null $dueDate `Y-m-d`
      * @param string|null $description
      * @param string|null $reference the integrator's own id for this charge
+     * @param array<int, Item> $items empty when the amount is a scalar
      * @param array<mixed> $extra fields specific to one gateway
      */
     private function __construct(
@@ -42,8 +46,10 @@ final class ChargeIntent
         public readonly ?string $dueDate = null,
         public readonly ?string $description = null,
         public readonly ?string $reference = null,
+        array $items = [],
         array $extra = [],
     ) {
+        $this->items = $items;
         $this->extra = $extra;
     }
 
@@ -73,7 +79,70 @@ final class ChargeIntent
     ): self {
         self::validate($amount, $dueDate);
 
-        return new self(Method::PIX, $amount, $customer, $dueDate, $description, $reference, $extra);
+        return new self(Method::PIX, $amount, $customer, $dueDate, $description, $reference, [], $extra);
+    }
+
+    /**
+     * a charge billed by items, where the amount is their sum.
+     *
+     * three gateways have no amount on the charge at all — the PagBank and
+     * the Pagar.me build it from `items`, the AbacatePay from `products` —
+     * so for those this is the shape, not a convenience. On the other seven
+     * the sum is what goes out, and the line detail is dropped: that is a
+     * limit of those APIs, and it is written down rather than silent.
+     *
+     * @param Method $method
+     * @param array<int, Item> $items
+     * @param Customer|null $customer
+     * @param string|null $dueDate `Y-m-d`
+     * @param string|null $description defaults to the first item's name
+     * @param string|null $reference
+     * @param array<mixed> $extra
+     * @return self
+     * @throws ValidationException
+     */
+    public static function comItens(
+        Method $method,
+        array $items,
+        ?Customer $customer = null,
+        ?string $dueDate = null,
+        ?string $description = null,
+        ?string $reference = null,
+        array $extra = [],
+    ): self {
+        $amount = Item::sum($items);
+
+        self::validate($amount, $dueDate);
+
+        return new self($method, $amount, $customer, $dueDate, $description, $reference, array_values($items), $extra);
+    }
+
+    /**
+     * the items, empty when the amount was given as a scalar.
+     *
+     * @return array<int, Item>
+     */
+    public function items(): array
+    {
+        return $this->items;
+    }
+
+    /**
+     * the items, or the whole charge as a single one.
+     *
+     * the three gateways that bill by item refuse a charge with none, so a
+     * scalar intent has to become a line. The library already does this in
+     * one other place — `Efi\Resources\Charge\Charge::getItems()` builds
+     * one item from the description and the value — and doing it here keeps
+     * it written once instead of three times.
+     *
+     * @return array<int, Item>
+     */
+    public function itemsOrOne(): array
+    {
+        return $this->items !== []
+            ? $this->items
+            : [new Item($this->descriptionOrDefault(), $this->amount)];
     }
 
     /**
@@ -105,6 +174,7 @@ final class ChargeIntent
             $this->dueDate,
             $this->description,
             $this->reference,
+            $this->items,
             array_merge($this->extra, $extra)
         );
     }
@@ -129,6 +199,7 @@ final class ChargeIntent
             $this->dueDate,
             $this->description,
             $this->reference ?? $reference,
+            $this->items,
             $this->extra
         );
     }
@@ -144,7 +215,7 @@ final class ChargeIntent
      */
     public function descriptionOrDefault(): string
     {
-        return $this->description ?? 'Cobrança';
+        return $this->description ?? ($this->items[0]->name ?? 'Cobrança');
     }
 
     /**

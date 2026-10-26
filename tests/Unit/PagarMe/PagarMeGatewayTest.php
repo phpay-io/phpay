@@ -18,6 +18,7 @@ it('declara clientes, cobranças, estornos, assinaturas e leitura de webhook', f
         Capability::REFUNDS,
         Capability::SUBSCRIPTIONS,
         Capability::WEBHOOK_EVENTS,
+        Capability::CHARGE_INTENTS,
     ]);
 })->group('pagarme');
 
