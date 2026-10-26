@@ -107,6 +107,7 @@ composer test:lint   # pint --test (PSR-12 + regras do pint.json)
 composer test:unit   # pest
 composer test:types  # phpstan (nível e phpVersion vêm do phpstan.neon)
 composer test:links  # links relativos e âncoras dos markdowns (.github/scripts/check-links.php)
+composer test:matrix # a matriz de capacidades do README contra o código
 composer lint        # pint -v (corrige)
 ```
 
@@ -166,6 +167,17 @@ e rode `php examples/asaas/charges.php` (ou `make asaas resource=charges`).
   nome curto colidir (`Charge as AsaasCharge`). O erro aparece como
   `UnknownClassOrInterfaceException` ou `Cannot redeclare class`, e não é óbvio pelo
   que a mensagem diz.
+- **A matriz de capacidades do README é gerada**, não escrita. Ela fica entre
+  `<!-- capacidades:inicio -->` e `<!-- capacidades:fim -->`, e
+  `.github/scripts/capability-matrix.php` a monta de `Gateway::cases()` ×
+  `Capability::cases()` usando o `label()` de cada enum — rótulo novo aparece
+  sozinho, e nada de rótulo é duplicado no script. Depois de mexer em capacidade
+  ou gateway, rode `--write`; o `--check` entra no `composer test` e no CI.
+  **Não edite a tabela à mão**: ela ficou duas releases sem as colunas de
+  estornos e de leitura de webhook justamente por ser escrita à mão, e são 80
+  células que ninguém revisa. A tabela de *roteiro* em "Cobertura por gateway" é
+  outra coisa — mostra o que está planejado e usa semântica própria na coluna
+  Pix; quem manda é a gerada.
 - **Namespaces:** `PHPay\` → `src/`, e um root por gateway: `PHPay\Asaas\`,
   `PHPay\Efi\`, `PHPay\MercadoPago\` → `src/Gateways/<Gateway>/`. Gateway novo
   precisa de um root novo no `composer.json` — não introduza `PHPay\Gateways\...`.

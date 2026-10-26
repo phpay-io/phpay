@@ -12,6 +12,15 @@
     Uma interface só para os gateways de pagamento brasileiros.
 </p>
 
+<p align="center">
+    <sub>
+        <b>Sobre a licença:</b> você <b>pode</b> usar em produção, inclusive em software
+        fechado e comercial, para processar pagamentos seus ou dos seus clientes. O que a
+        BUSL-1.1 não permite é revender o PHPay como SDK ou serviço concorrente. Em
+        <b>2030-09-20 ela vira MIT</b>. Detalhes em <a href="#licença">Licença</a>.
+    </sub>
+</p>
+
 ---
 
 ## Sumário
@@ -57,18 +66,20 @@ Trocar de gateway é trocar a linha do construtor.
 
 ## Gateways suportados
 
-| Gateway | Clientes | Cobranças | Estornos | Assinaturas | Webhooks | Webhook assinado | Leitura de webhook | Chaves Pix |
+<!-- capacidades:inicio -->
+| Gateway | Clientes | Cobranças | Estornos | Webhooks | Chaves Pix | Assinaturas | Assinatura de webhook | Leitura de webhook |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Efí** | — | ✅ | — | ✅ | ✅ | — | ✅ | ✅ |
-| **Mercado Pago** | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
-| **PagBank** | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
-| **Pagar.me** | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | — |
-| **AbacatePay** | ✅ | ✅ | — | — | — | ✅ | — | — |
-| **Cielo** | — | ✅ | ✅ | ✅ | — | — | ✅ | — |
+| **Efí** | — | ✅ | — | ✅ | ✅ | ✅ | — | ✅ |
+| **Mercado Pago** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ |
+| **PagBank** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ |
+| **Pagar.me** | ✅ | ✅ | ✅ | — | — | ✅ | — | ✅ |
+| **Cielo** | — | ✅ | ✅ | — | — | ✅ | — | ✅ |
 | **Rede** | — | ✅ | ✅ | — | — | — | — | — |
-| **Inter** | — | ✅ | — | — | ✅ | — | ✅ | — |
+| **AbacatePay** | ✅ | ✅ | — | — | — | — | ✅ | — |
+| **Inter** | — | ✅ | — | ✅ | — | — | — | ✅ |
+<!-- capacidades:fim -->
 
 As interfaces correspondentes são `SupportsCustomers`, `SupportsCharges`,
 `SupportsRefunds`, `SupportsSubscriptions`, `SupportsWebhooks`,
@@ -263,13 +274,19 @@ Dois pontos merecem auditoria de quem vem da v1:
 | **Cielo** | ✅ | ✅ | — | ✅ | — | ✅ |
 | **Rede** | ✅ | ✅ | — | — | — | 🕥 |
 | **Efí** | ✅ | só Pix ✅ | — | ✅ | ✅ | ✅ |
+| **Inter** | ✅ | só Pix ✅ | — | — | ✅ | ✅ |
 
 **✅** pronto · **✍️** parcial · **🕥** planejado · **—** não existe na API do gateway
 
-A **leitura de webhook** (`webhookEvents()`) fica em sete gateways: Asaas,
-Woovi, Pagar.me, PagBank, Efí, Mercado Pago e Cielo. Rede e AbacatePay ficam
-fora porque o formato de notificação das duas não está confirmado — detalhes em
-[docs/webhooks.md](docs/webhooks.md).
+> Esta tabela é de **roteiro**: ela mostra também o que está planejado, e a
+> coluna Pix aqui significa *aceitar Pix*, não gerenciar chaves. A matriz
+> autoritativa é a de [Gateways suportados](#gateways-suportados), que é
+> **gerada do código** — se as duas discordarem, aquela está certa.
+
+A **leitura de webhook** (`webhookEvents()`) fica em oito gateways: Asaas,
+Woovi, Pagar.me, PagBank, Efí, Mercado Pago, Cielo e Inter. Rede e AbacatePay
+ficam fora porque o formato de notificação das duas não está confirmado —
+detalhes em [docs/webhooks.md](docs/webhooks.md).
 
 O estorno da **Efí** é a devolução Pix, alcançável em `pixCharge()->refund()`: a
 API dela exige o valor e endereça pelo `endToEndId`, então fica fora da
