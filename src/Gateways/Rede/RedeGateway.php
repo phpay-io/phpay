@@ -3,12 +3,14 @@
 namespace PHPay\Rede;
 
 use GuzzleHttp\Client;
-use PHPay\Exceptions\ApiException;
-use PHPay\Http\{ClientFactory, MasksCredentials};
+use PHPay\Exceptions\{ApiException, ValidationException};
+use PHPay\Http\{ClientFactory, Idempotency, MasksCredentials};
+use PHPay\Rede\Enums\TransactionKindEnum;
 use PHPay\Rede\Interface\RedeGatewayInterface;
+use PHPay\Rede\Requests\RedeTransactionRequest;
 use PHPay\Rede\Resources\Authorization\Authorization;
 use PHPay\Rede\Resources\Charge\Charge;
-use PHPay\Support\Money;
+use PHPay\Support\{Card, ChargeIntent, Method, Money};
 
 class RedeGateway implements RedeGatewayInterface
 {
@@ -96,6 +98,50 @@ class RedeGateway implements RedeGatewayInterface
      * @return array<mixed>
      * @throws ApiException
      */
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the Rede is a credit acquirer and nothing else in this library: its
+     * TransactionKindEnum has one case. This is the gateway that makes
+     * supportedMethods() necessary — it declares SupportsCharges like the
+     * other nine, and a Pix charge handed to it would never work.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::CREDIT_CARD];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Rede', $this->supportedMethods());
+
+        if (!$intent->card instanceof Card) {
+            throw ValidationException::make('Rede', RedeTransactionRequest::messages()->card);
+        }
+
+        return $this->charge()
+            ->setTransaction($intent->extra())
+            ->setReference($intent->reference ?? Idempotency::key())
+            ->setCard(
+                $intent->card->number,
+                $intent->card->holderName,
+                $intent->card->expirationMonth,
+                $intent->card->expirationYear,
+                $intent->card->securityCode
+            )
+            ->setPayment($intent->amount, TransactionKindEnum::CREDIT, $intent->installments)
+            ->create();
+    }
+
     public function refund(string $id, Money|int|null $amount = null): array
     {
         return $this->charge()->refund($id, $amount);

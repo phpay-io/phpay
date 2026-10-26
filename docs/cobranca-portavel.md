@@ -21,8 +21,9 @@ $intent = ChargeIntent::pix(
 $phpay->createCharge($intent);
 ```
 
-O **mesmo** `$intent` nos três gateways da primeira fase produz três corpos
-diferentes, cada um na unidade e no vocabulário daquele gateway:
+Os **dez** declaram a capacidade, e cada um aceita os meios que sabe fazer —
+pergunte com `supportedMethods()`. O **mesmo** `$intent` produz um corpo
+diferente em cada um, na unidade e no vocabulário dele:
 
 | gateway | o que sai no corpo |
 | --- | --- |
@@ -130,6 +131,56 @@ aceita — como a `NotImplementedException` já faz com capacidades.
 > não aparecem aqui porque `createCharge()` ainda não sabe montá-los, e
 > declarar um meio que a chamada recusaria é o mesmo erro que declarar uma
 > capacidade e lançar de dentro dela.
+
+## Boleto e cartão
+
+```php
+ChargeIntent::boleto($valor, $cliente, '2026-11-10');
+
+ChargeIntent::credito($valor, $cliente, Card::make(
+    number: '4111 1111 1111 1111',
+    holderName: 'MARIA OLIVEIRA',
+    expirationMonth: '07',
+    expirationYear: '2030',
+    securityCode: '123',
+    brand: 'Visa',
+), installments: 3);
+```
+
+O vencimento é **obrigatório no boleto** e opcional no Pix, porque é assim que
+os gateways são: boleto sem vencimento não tem o que imprimir.
+
+### `Card` não cobre cartão em todo lugar, e não teria como
+
+| gateway | como recebe o cartão | declara crédito? |
+| --- | --- | :-: |
+| Cielo | o número, em `Payment.CreditCard` | ✅ |
+| Rede | o número, em campos planos | ✅ |
+| Mercado Pago | **um token** do SDK de navegador deles — o número nunca chega ao seu servidor | — |
+| PagBank, Pagar.me | cifrado ou tokenizado | — |
+| Asaas | token **ou** número, mas só modelado em assinatura | — |
+
+Não existe um objeto honesto sobre todos esses casos ao mesmo tempo. O `Card`
+descreve o primeiro, e **quem não consegue usá-lo simplesmente não declara o
+método** — que é exatamente para isso que `supportedMethods()` existe.
+
+### O número é conferido com Luhn antes de sair
+
+Um dígito trocado custa nada se for pego aqui, e custa uma recusa no checkout
+de alguém se for pego no gateway. O `Card` também **nunca aparece num dump**:
+`print_r` mostra `**** **** **** 1111` e `***` no CVV.
+
+### A bandeira não é adivinhada
+
+A Cielo exige a bandeira, e o `Card` não a deriva da faixa do número — isso
+seria a biblioteca inventando um fato sobre o cartão. Sem ela, a chamada
+recusa antes de qualquer HTTP.
+
+### Débito não existe no caminho portável
+
+A Cielo e o Pagar.me conhecem `DebitCard`/`debit_card`, mas débito pede
+autenticação 3DS, que a biblioteca não modela. Nenhum dos dez declara
+`Method::DEBIT_CARD` — e há teste varrendo isso.
 
 ## Vencimento
 

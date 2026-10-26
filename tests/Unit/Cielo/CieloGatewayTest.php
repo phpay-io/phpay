@@ -15,6 +15,7 @@ it('declara cobranças, estornos, assinaturas e leitura de webhook', function ()
         Capability::REFUNDS,
         Capability::SUBSCRIPTIONS,
         Capability::WEBHOOK_EVENTS,
+        Capability::CHARGE_INTENTS,
     ]);
 })->group('cielo');
 

@@ -84,6 +84,7 @@ it('declara as capacidades das duas APIs, menos clientes', function () {
         Capability::PIX_KEYS,
         Capability::SUBSCRIPTIONS,
         Capability::WEBHOOK_EVENTS,
+        Capability::CHARGE_INTENTS,
     ]);
 })->group('efi');
 
@@ -92,7 +93,7 @@ it('avisa pela facade que a efí não tem clientes', function () {
 
     expect($phpay->supports(Capability::CUSTOMERS))->toBeFalse()
         ->and(fn () => $phpay->customer())
-        ->toThrow(NotImplementedException::class, 'Capacidades disponíveis: cobranças, webhooks, chaves Pix, assinaturas, leitura de webhook.');
+        ->toThrow(NotImplementedException::class, 'Capacidades disponíveis: cobranças, webhooks, chaves Pix, assinaturas, leitura de webhook, cobrança portável.');
 })->group('efi');
 
 it('monta o payload de pessoa física na cobrança', function () {

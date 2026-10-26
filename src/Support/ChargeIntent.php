@@ -37,6 +37,8 @@ final class ChargeIntent
      * @param string|null $description
      * @param string|null $reference the integrator's own id for this charge
      * @param array<int, Item> $items empty when the amount is a scalar
+     * @param Card|null $card only on card methods
+     * @param int $installments only meaningful on credit
      * @param array<mixed> $extra fields specific to one gateway
      */
     private function __construct(
@@ -47,6 +49,8 @@ final class ChargeIntent
         public readonly ?string $description = null,
         public readonly ?string $reference = null,
         array $items = [],
+        public readonly ?Card $card = null,
+        public readonly int $installments = 1,
         array $extra = [],
     ) {
         $this->items = $items;
@@ -79,7 +83,81 @@ final class ChargeIntent
     ): self {
         self::validate($amount, $dueDate);
 
-        return new self(Method::PIX, $amount, $customer, $dueDate, $description, $reference, [], $extra);
+        return new self(Method::PIX, $amount, $customer, $dueDate, $description, $reference, [], null, 1, $extra);
+    }
+
+    /**
+     * a billet.
+     *
+     * the due date is required here and optional on Pix, because that is how
+     * the gateways are: a billet without one has nothing to print.
+     *
+     * @param Money $amount
+     * @param Customer $customer
+     * @param string $dueDate `Y-m-d`
+     * @param string|null $description
+     * @param string|null $reference
+     * @param array<mixed> $extra
+     * @return self
+     * @throws ValidationException
+     */
+    public static function boleto(
+        Money $amount,
+        Customer $customer,
+        string $dueDate,
+        ?string $description = null,
+        ?string $reference = null,
+        array $extra = [],
+    ): self {
+        self::validate($amount, $dueDate);
+
+        return new self(Method::BOLETO, $amount, $customer, $dueDate, $description, $reference, [], null, 1, $extra);
+    }
+
+    /**
+     * a credit card charge, with the number on the server.
+     *
+     * only the gateways that take the number itself declare this method —
+     * see `Card` for why there is no single object that covers the ones
+     * that want a token instead.
+     *
+     * @param Money $amount
+     * @param Customer $customer
+     * @param Card $card
+     * @param int $installments
+     * @param string|null $description
+     * @param string|null $reference
+     * @param array<mixed> $extra
+     * @return self
+     * @throws ValidationException
+     */
+    public static function credito(
+        Money $amount,
+        Customer $customer,
+        Card $card,
+        int $installments = 1,
+        ?string $description = null,
+        ?string $reference = null,
+        array $extra = [],
+    ): self {
+        self::validate($amount, null);
+
+        if ($installments < 1) {
+            throw ValidationException::make('PHPay', self::messages()->installments);
+        }
+
+        return new self(
+            Method::CREDIT_CARD,
+            $amount,
+            $customer,
+            null,
+            $description,
+            $reference,
+            [],
+            $card,
+            $installments,
+            $extra
+        );
     }
 
     /**
@@ -114,7 +192,7 @@ final class ChargeIntent
 
         self::validate($amount, $dueDate);
 
-        return new self($method, $amount, $customer, $dueDate, $description, $reference, array_values($items), $extra);
+        return new self($method, $amount, $customer, $dueDate, $description, $reference, array_values($items), null, 1, $extra);
     }
 
     /**
@@ -175,6 +253,8 @@ final class ChargeIntent
             $this->description,
             $this->reference,
             $this->items,
+            $this->card,
+            $this->installments,
             array_merge($this->extra, $extra)
         );
     }
@@ -200,6 +280,8 @@ final class ChargeIntent
             $this->description,
             $this->reference ?? $reference,
             $this->items,
+            $this->card,
+            $this->installments,
             $this->extra
         );
     }
@@ -246,15 +328,16 @@ final class ChargeIntent
     /**
      * messages for every refusal above.
      *
-     * @return object{amount: string, dueDate: string, dueDatePast: string, method: string}
+     * @return object{amount: string, dueDate: string, dueDatePast: string, method: string, installments: string}
      */
     public static function messages(): object
     {
         return (object) [
-            'amount'      => 'O valor da cobrança precisa ser maior que zero.',
-            'dueDate'     => 'A data de vencimento precisa ser uma data no formato Y-m-d, como "2026-11-10".',
-            'dueDatePast' => 'A data de vencimento não pode estar no passado.',
-            'method'      => 'Este gateway não cria cobrança por %s a partir de um ChargeIntent. Aceita: %s.',
+            'amount'       => 'O valor da cobrança precisa ser maior que zero.',
+            'dueDate'      => 'A data de vencimento precisa ser uma data no formato Y-m-d, como "2026-11-10".',
+            'dueDatePast'  => 'A data de vencimento não pode estar no passado.',
+            'method'       => 'Este gateway não cria cobrança por %s a partir de um ChargeIntent. Aceita: %s.',
+            'installments' => 'O número de parcelas precisa ser um inteiro maior que zero.',
         ];
     }
 

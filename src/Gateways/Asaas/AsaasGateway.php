@@ -93,16 +93,17 @@ class AsaasGateway implements AsaasGatewayInterface
     /**
      * the payment methods createCharge() accepts here.
      *
-     * the Asaas also sells billets and credit card through `setCharge()`;
-     * they are absent here because the portable path cannot build them yet,
-     * and declaring a method this call would refuse is the same mistake as
-     * declaring a capability and throwing from inside it.
+     * the card is absent: the Asaas takes it as `creditCard` plus
+     * `creditCardHolderInfo`, or as a `creditCardToken`, and neither is
+     * modelled on the charge today — only on the subscription. Declaring a
+     * method this call would refuse is the same mistake as declaring a
+     * capability and throwing from inside it.
      *
      * @return array<int, Method>
      */
     public function supportedMethods(): array
     {
-        return [Method::PIX];
+        return [Method::PIX, Method::BOLETO];
     }
 
     /**
