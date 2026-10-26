@@ -18,8 +18,9 @@ Se você encontrar problemas, dúvidas ou precisa de ajuda, siga estas etapas:
 
    - Se não encontrar resposta, crie uma nova issue descrevendo o problema de forma clara e detalhada.
 
-4. **Entre em contato diretamente** (para questões críticas ou vulnerabilidades de segurança):
-   - Email: fale@phpay.io
+4. **Falha de segurança é outro caminho**:
+   - Não abra issue pública. Use o [relato privado de vulnerabilidade](https://github.com/phpay-io/phpay/security/advisories/new),
+     como descrito na [política de segurança](./SECURITY.md).
 
 ## Política de Resposta
 

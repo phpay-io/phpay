@@ -25,6 +25,6 @@ Comportamentos inaceitáveis incluem:
 
 ## Aplicação do Código de Conduta
 
-Casos de comportamento abusivo, assediador ou inaceitável podem ser relatados à equipe responsável em fale@phpay.io. Todas as queixas serão analisadas e investigadas com imparcialidade e respeito pela privacidade.
+Casos de comportamento abusivo, assediador ou inaceitável podem ser relatados à equipe responsável pelo [canal privado do repositório](https://github.com/phpay-io/phpay/security/advisories/new), que é visível apenas para você e para os mantenedores. Todas as queixas serão analisadas e investigadas com imparcialidade e respeito pela privacidade.
 
 Os mantenedores do projeto que não seguirem ou aplicarem o Código de Conduta podem enfrentar repercussões temporárias ou permanentes conforme determinado pelos outros membros da liderança do projeto.

@@ -338,5 +338,6 @@ Precisa de termos diferentes? Escreva para [fale@phpay.io](mailto:fale@phpay.io)
 
 <p align="center">
     Feito por <a href="https://github.com/mariolucasdev">Mário Lucas</a> ·
-    <a href="mailto:fale@phpay.io">fale@phpay.io</a>
+    <a href="https://github.com/phpay-io/phpay/issues">Issues</a> ·
+    <a href="https://github.com/phpay-io/phpay/security/policy">Segurança</a>
 </p>
