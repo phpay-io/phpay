@@ -142,6 +142,10 @@ composer require phpay-io/phpay
 
 ## Início rápido
 
+<p align="center">
+    <img src="docs/img/primeira-cobranca.gif" alt="Do composer require à primeira cobrança Pix: três requisições saem de uma cadeia só" width="680">
+</p>
+
 Uma cobrança Pix no Asaas, do zero:
 
 ```php
