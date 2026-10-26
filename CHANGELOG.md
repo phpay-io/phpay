@@ -12,6 +12,23 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ### Corrigido
 
+- **A matriz de capacidades do README passou a ser gerada do código.** Ela ficou
+  **duas releases errada** — faltavam as colunas de estornos e de leitura de
+  webhook desde que as capacidades entraram, nas v2.5 e v2.6 — e só foi notado
+  ao gerá-la para conferir. Dez gateways por oito capacidades são 80 células que
+  ninguém revisa à mão. `.github/scripts/capability-matrix.php` monta a tabela de
+  `Gateway::cases()` × `Capability::cases()`, e o modo `--check` entra no
+  `composer test` e no CI, então ela não pode mais divergir ([#165]).
+- A tabela de roteiro ("Cobertura por gateway") estava **sem o Inter** e dizia
+  "sete gateways" onde já são oito. Corrigida, e agora diz explicitamente que a
+  matriz gerada é a autoritativa — a coluna Pix dela significa *aceitar Pix*, não
+  gerenciar chaves ([#165]).
+- **O grant da licença estava invisível.** A seção de licença no fim do README é
+  completa, mas quem vê só o badge `BUSL-1.1` no topo nunca chega nela e assume
+  restrição. Uma linha no topo agora diz o que pode (produção, fechado,
+  comercial), o que não pode (revender como SDK concorrente) e quando vira MIT
+  ([#165]).
+
 - **A cobrança da Efí mandava multa e juros fixos no código**, sem como trocar:
   2% e 0,033% ao dia em todo boleto. Agora há `setConfigurations()`. O default
   **fica** — tirar faria boleto de quem já usa a v2 parar de carregar encargo
@@ -776,3 +793,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#152]: https://github.com/phpay-io/phpay/issues/152
 [#156]: https://github.com/phpay-io/phpay/issues/156
 [#163]: https://github.com/phpay-io/phpay/issues/163
+[#165]: https://github.com/phpay-io/phpay/issues/165

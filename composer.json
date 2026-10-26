@@ -76,11 +76,13 @@
         "test:unit": "pest --colors=always",
         "test:types": "phpstan analyse",
         "test:links": "@php .github/scripts/check-links.php",
+        "test:matrix": "@php .github/scripts/capability-matrix.php --check",
         "test": [
             "@test:lint",
             "@test:unit",
             "@test:types",
-            "@test:links"
+            "@test:links",
+        "@test:matrix"
         ]
     }
 }

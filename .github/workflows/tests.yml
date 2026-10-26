@@ -49,6 +49,12 @@ jobs:
       - name: Links da documentação
         run: composer test:links
 
+      # dez gateways por oito capacidades são 80 células que ninguém revisa à
+      # mão: a tabela ficou duas releases sem as colunas de estornos e de
+      # leitura de webhook. Aqui ela é conferida contra o código.
+      - name: Matriz de capacidades do README
+        run: composer test:matrix
+
   test:
     name: PHP ${{ matrix.php }} - ${{ matrix.dependencies }}
     runs-on: ubuntu-latest
