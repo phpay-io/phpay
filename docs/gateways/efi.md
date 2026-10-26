@@ -31,6 +31,71 @@ $cobranca = PHPay::gateway($gateway)->charge([
     ->create();
 ```
 
+### Multa e juros: as duas escalas são diferentes
+
+Sem configurar nada, o boleto sai com **2% de multa** e **0,033% de juros ao
+dia** — é o que este gateway sempre mandou. `setConfigurations()` troca isso:
+
+```php
+$gateway->charge([...])
+    ->setAmount(Money::reais('100,50'))
+    ->setCustomer($cliente)
+    ->setConfigurations([
+        'fine'              => 250,   // 2,5%
+        'interest'          => 100,   // 0,1% ao dia
+        'days_to_write_off' => 40,    // baixa automática, 0 a 120 dias
+    ])
+    ->create();
+```
+
+> **Os dois campos usam escalas diferentes, e é a própria Efí que documenta
+> isso:** `fine` é percentual **× 100** (`200` = 2%) e `interest` é percentual
+> **× 1000** (`33` = 0,033%). Por isso os dois são inteiros — 2,5% de multa é
+> `250`, nunca `2.5`. A biblioteca recusa decimal com uma mensagem que repete
+> as duas escalas, em vez de deixar o valor errado passar.
+
+Boleto sem encargo:
+
+```php
+->setConfigurations(['fine' => 0, 'interest' => 0])
+```
+
+**Array vazio não serve para isso** e é recusado: ele não diz "sem encargo", e
+a Efí não documenta se o objeto `configurations` pode ser omitido.
+
+`interest` também aceita a forma de objeto, com `type` em `daily` ou `monthly`
+(omitido, a Efí calcula ao dia):
+
+```php
+->setConfigurations(['fine' => 200, 'interest' => ['value' => 330, 'type' => 'monthly']])
+```
+
+A **escala da forma mensal a Efí não documenta**, então a biblioteca não
+converte nada: o valor vai como você escreveu. Campo de `configurations` que
+esta versão não modela também passa adiante — ao contrário do array de
+configuração do gateway, aqui o array é payload da Efí, e recusar um campo que
+funciona quebraria quem o manda.
+
+### Boleto com mais de um item
+
+O payload da Efí não tem valor no nível da cobrança — tem `items`. O
+`setAmount()` com a `description` é o atalho que monta um item; para mais de
+uma linha, use `setItems()`:
+
+```php
+$gateway->charge(['expire_at' => date('Y-m-d', strtotime('+3 days'))])
+    ->setCustomer($cliente)
+    ->setItems([
+        ['name' => 'Camiseta', 'value' => 4990, 'amount' => 2],
+        ['name' => 'Frete',    'value' => 1500],
+    ])
+    ->create();
+```
+
+Com itens explícitos, `description` e `value` deixam de ser exigidos: eles
+pertencem ao atalho, não ao gateway. `value` é **em centavos**, como no resto
+da Efí.
+
 ## API Pix
 
 **Toda requisição da API Pix é por mTLS**, inclusive a do token. Passe o

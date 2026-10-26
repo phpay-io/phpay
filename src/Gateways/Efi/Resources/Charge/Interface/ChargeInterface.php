@@ -3,6 +3,7 @@
 namespace PHPay\Efi\Resources\Charge\Interface;
 
 use PHPay\Efi\Resources\Charge\Charge;
+use PHPay\Exceptions\ValidationException;
 use PHPay\Support\{Customer, Money};
 
 interface ChargeInterface
@@ -45,6 +46,29 @@ interface ChargeInterface
      * @return ChargeInterface
      */
     public function setQueryParams(array $queryParams): ChargeInterface;
+
+    /**
+     * set the items of the charge, for billing more than one line.
+     *
+     * each item needs `name` and `value` in **cents**.
+     *
+     * @param array<mixed> $items
+     * @return ChargeInterface
+     * @throws ValidationException
+     */
+    public function setItems(array $items): ChargeInterface;
+
+    /**
+     * set fine, interest and automatic write-off of the billet.
+     *
+     * the scales differ: `fine` is percent × 100 and `interest` is
+     * percent × 1000, both as integers.
+     *
+     * @param array<mixed> $configurations
+     * @return ChargeInterface
+     * @throws ValidationException
+     */
+    public function setConfigurations(array $configurations): ChargeInterface;
 
     /**
      * get status charge by id

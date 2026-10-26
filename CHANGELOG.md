@@ -10,6 +10,38 @@ O de-para completo da v1 para a v2, quebra por quebra, está no
 
 ## [Não lançado]
 
+### Corrigido
+
+- **A cobrança da Efí mandava multa e juros fixos no código**, sem como trocar:
+  2% e 0,033% ao dia em todo boleto. Agora há `setConfigurations()`. O default
+  **fica** — tirar faria boleto de quem já usa a v2 parar de carregar encargo
+  que o lojista pode estar contando, e isso é mudança de comportamento numa
+  minor —, mas passou a ser visível e sobrescrevível ([#163]).
+- **`create()` duas vezes no mesmo Resource da cobrança da Efí falhava**, com
+  uma mensagem que culpava quem chamou por um campo que ele tinha preenchido: o
+  `getItems()` dava `unset()` em `description` e `value` depois de montar o
+  item. Os `unset()` não serviam para nada — o payload é montado a partir dos
+  itens e de `expire_at` — e saíram, com teste de regressão ([#163]).
+
+### Adicionado
+
+- **`setItems()` na cobrança da Efí**, para boleto com mais de uma linha. O
+  payload da Efí não tem valor no nível da cobrança, tem `items`; o `setAmount()`
+  com a `description` é o atalho que monta um item só, e era o único caminho.
+  Com itens explícitos, `description` e `value` deixam de ser exigidos, porque
+  pertencem ao atalho e não ao gateway ([#163]).
+- **`setConfigurations()`**, com validação do que a Efí documenta:
+  `days_to_write_off` entre 0 e 120, `interest.type` em `daily`/`monthly`, e
+  `fine`/`interest` como inteiros. **As duas escalas são diferentes** — `fine` é
+  percentual × 100 (`200` = 2%) e `interest` é × 1000 (`33` = 0,033%) —, e a
+  mensagem de erro repete as duas em vez de deixar passar valor errado. Array
+  vazio é recusado: não diz "sem encargo", e a Efí não documenta se o objeto pode
+  ser omitido; sem encargo é `['fine' => 0, 'interest' => 0]` ([#163]).
+- Chave de `configurations` que esta versão não modela **passa adiante**, ao
+  contrário do array de configuração do gateway. A assimetria é de propósito: lá
+  o array é superfície da biblioteca e chave desconhecida é typo; aqui é payload
+  da Efí, e recusar um campo que funciona quebraria quem o manda ([#163]).
+
 ## [2.8.0] - 2026-10-24
 
 [Release](https://github.com/phpay-io/phpay/releases/tag/v2.8.0) ·
@@ -743,3 +775,4 @@ Primeira versão publicada no Packagist, sob licença MIT.
 [#146]: https://github.com/phpay-io/phpay/issues/146
 [#152]: https://github.com/phpay-io/phpay/issues/152
 [#156]: https://github.com/phpay-io/phpay/issues/156
+[#163]: https://github.com/phpay-io/phpay/issues/163
