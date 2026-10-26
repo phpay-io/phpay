@@ -472,9 +472,21 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   A cobrança Pix é `pixCharge()`, **extra do gateway concreto**: `charge()` já é o
   boleto e mudar o retorno quebraria a v2. **Na API Pix, valor só como `Money`**
   (reais em string, `toDecimal()`), porque a API de Cobranças do mesmo gateway usa
-  centavos — não abra `Money|int` ali. O certificado só é exigido quando o recurso
-  monta o próprio client, por isso os testes injetam `pixClient` e não precisam de
-  arquivo. Webhook é **um por chave Pix**, endereçado pela chave. Chaves Pix: só EVP.
+  centavos — não abra `Money|int` ali. **No boleto, `fine` e `interest` do
+  `configurations` usam escalas DIFERENTES, e é a Efí que documenta assim**:
+  `fine` é percentual × 100 (`200` = 2%) e `interest` é × 1000 (`33` = 0,033% ao
+  dia). Os dois são inteiros por isso, e o validador recusa decimal repetindo as
+  duas escalas. O default de 2% / 0,033% **fica** quando ninguém chama
+  `setConfigurations()`: tirar seria mudança de comportamento numa minor, e boleto
+  de quem já usa a v2 pararia de carregar encargo. Array vazio é recusado — não diz
+  "sem encargo", e a Efí não documenta se o objeto pode faltar; sem encargo é
+  `['fine' => 0, 'interest' => 0]`. Chave de `configurations` que a lib não modela
+  **passa adiante**, ao contrário do array de config do gateway: ali o array é
+  superfície da lib e typo é erro, aqui é payload da Efí. **`getItems()` não muta
+  estado** — ele dava `unset()` em `description`/`value` e a segunda `create()` no
+  mesmo Resource falhava culpando quem chamou; há teste de regressão. O certificado
+  só é exigido quando o recurso monta o próprio client, por isso os testes injetam
+  `pixClient` e não precisam de arquivo. Webhook é **um por chave Pix**, endereçado pela chave. Chaves Pix: só EVP.
   Rotas conferidas no SDK oficial (`efipay/sdk-php-apis-efi`), e status e campos do
   Pix Automático na especificação do BACEN (`bacen/pix-api`, `openapi.yaml`).
 - **PagBank** — **duas APIs em hosts diferentes**: pedidos em `api.pagseguro.com`,
@@ -580,9 +592,11 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   "resolva" isso criando stubs — e não declare a capacidade por causa de uma API
   parecida: o `/hooks` do Pagar.me lê entregas, é outra coisa, e por isso virou um
   recurso fora do modelo.
-- `Efi\Resources\Charge\Charge` tem `$items` e `$configuration` privados sem setter —
-  hoje sempre caem no fallback (`getItems()` monta um item a partir de
-  `description`/`value`; `getConfigurations()` usa fine 200 / interest 33).
+- Da cobrança da Efí ficaram de fora **converter percentual para a unidade dela**
+  (um `setFine(2.0)`) e o **`discount`**. O primeiro porque a escala da forma mensal
+  de `interest` não está documentada, e meia conversão segura é pior que nenhuma; o
+  segundo porque `discount` não vive em `configurations` — é irmão de
+  `banking_billet`, outro recurso.
 - O CI roda a matriz do Pest em 8.2/8.3/8.4, porque o toolchain de dev exige
   8.2+. O 8.1 tem um job próprio (`minimum`), que não roda a suíte: valida o
   `composer.json`, instala com `--no-dev` depois de liberar o `config.platform`

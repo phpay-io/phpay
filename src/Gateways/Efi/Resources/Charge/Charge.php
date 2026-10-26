@@ -37,9 +37,16 @@ class Charge implements ChargeInterface
     private array $queryParams = [];
 
     /**
-     * @var array<mixed>
+     * fine, interest and write-off of the billet.
+     *
+     * **null is not the same as an empty array.** null means nobody chose, so
+     * the historical default applies; an empty array is refused, because it
+     * does not say "no charges" and Efí does not document whether the object
+     * can be omitted at all.
+     *
+     * @var array<mixed>|null
      */
-    private array $configuration = [];
+    private ?array $configuration = null;
 
     /**
      * construct
@@ -103,6 +110,72 @@ class Charge implements ChargeInterface
     }
 
     /**
+     * set the items of the charge.
+     *
+     * the gateway's payload has no charge-level amount — it has `items`, and
+     * setAmount() plus the charge `description` are a shortcut that builds one.
+     * This is the way to bill more than one line.
+     *
+     * each item needs `name` and `value` **in cents**; any other field Efí
+     * accepts (`amount`, for instance) passes through untouched.
+     *
+     * ```php
+     * $charge->setItems([
+     *     ['name' => 'Camiseta', 'value' => 4990, 'amount' => 2],
+     *     ['name' => 'Frete',    'value' => 1500],
+     * ]);
+     * ```
+     *
+     * @param array<mixed> $items
+     * @return ChargeInterface
+     * @throws ValidationException
+     */
+    public function setItems(array $items): ChargeInterface
+    {
+        EfiChargeRequest::validateItems($items);
+
+        $this->items = $items;
+
+        return $this;
+    }
+
+    /**
+     * set fine, interest and automatic write-off of the billet.
+     *
+     * **the two scales are different, and that is Efí's own doing:** `fine` is
+     * percent × 100, so `200` is 2%; `interest` is percent × 1000, so `33` is
+     * 0.033%. Both are integers for that reason — 2.5% of fine is `250`, not
+     * `2.5`.
+     *
+     * `interest` also takes the object form `['value' => 330, 'type' =>
+     * 'monthly']`; omitting the type makes Efí calculate per day. **The scale
+     * of the monthly form is not documented by Efí**, so nothing here converts
+     * it — the value goes as you wrote it.
+     *
+     * ```php
+     * $charge->setConfigurations([
+     *     'fine'              => 200,   // 2%
+     *     'interest'          => 33,    // 0,033% ao dia
+     *     'days_to_write_off' => 40,
+     * ]);
+     *
+     * $charge->setConfigurations(['fine' => 0, 'interest' => 0]);   // sem encargo
+     * ```
+     *
+     * @param array<mixed> $configurations
+     * @return ChargeInterface
+     * @throws ValidationException
+     */
+    public function setConfigurations(array $configurations): ChargeInterface
+    {
+        EfiChargeRequest::validateConfigurations($configurations);
+
+        $this->configuration = $configurations;
+
+        return $this;
+    }
+
+    /**
      * set filters
      *
      * @param array<mixed> $queryParams
@@ -152,7 +225,7 @@ class Charge implements ChargeInterface
      */
     public function create(): array
     {
-        EfiChargeRequest::validate($this->charge, $this->customer);
+        EfiChargeRequest::validate($this->charge, $this->customer, $this->items !== []);
 
         $items          = $this->getItems();
         $configurations = $this->getConfigurations();
@@ -233,46 +306,51 @@ class Charge implements ChargeInterface
     }
 
     /**
-     * get items
+     * the items of the request: the ones that were set, or one built from the
+     * charge's description and amount.
+     *
+     * **this reads the state and does not touch it.** It used to `unset()` the
+     * description and the value after building the item, which made a second
+     * `create()` on the same Resource fail validation — and the message blamed
+     * the caller for a field they had set. The unsets served nothing: the
+     * payload is assembled from the items and from `expire_at`, and never
+     * reads those two back.
      *
      * @return array<mixed>
      */
     private function getItems(): array
     {
-        $items = $this->items;
-
-        if (empty($this->items)) {
-            $value = $this->charge['value'];
-
-            $items[] = [
-                'name'  => $this->charge['description'],
-                'value' => $value instanceof Money ? $value->toCentavos() : $value,
-            ];
-
-            unset($this->charge['description']);
-            unset($this->charge['value']);
+        if ($this->items !== []) {
+            return $this->items;
         }
 
-        return $items;
+        $value = $this->charge['value'];
+
+        return [[
+            'name'  => $this->charge['description'],
+            'value' => $value instanceof Money ? $value->toCentavos() : $value,
+        ]];
     }
 
     /**
-     * get configuration
+     * the `configurations` of the request.
+     *
+     * the default is 2% of fine (`200`) and 0.033% of interest per day (`33`),
+     * which is what this gateway has always sent. **It stays because removing
+     * it would be a behaviour change in a minor**: a billet from an
+     * integration that never configured anything would stop carrying charges
+     * the merchant may be counting on. What changed is that it is now visible
+     * and overridable — `setConfigurations(['fine' => 0, 'interest' => 0])`
+     * bills without them.
      *
      * @return array<mixed>
      */
     private function getConfigurations(): array
     {
-        $configurations = $this->configuration;
-
-        if (empty($configurations)) {
-            $configurations = [
-                'fine'     => 200,
-                'interest' => 33,
-            ];
-        }
-
-        return $configurations;
+        return $this->configuration ?? [
+            'fine'     => 200,
+            'interest' => 33,
+        ];
     }
 
     /**
