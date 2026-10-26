@@ -14,8 +14,10 @@ examples/cielo/credentials.php
 examples/rede/credentials.php
 examples/inter/credentials.php
 
-# configurações locais do Claude Code (pessoais, não versionar)
-.claude/settings.local.json
+# estado do Claude Code: configuração local, worktrees e notas de trabalho.
+# O diretório inteiro, não só o settings: um `git add -A` commitaria rascunho
+# num repositório público, e nada aqui precisa ser versionado.
+.claude/
 
 # certificados de mTLS (nunca versionar)
 # o Inter entrega certificado e chave em arquivos separados, então .crt e .key
