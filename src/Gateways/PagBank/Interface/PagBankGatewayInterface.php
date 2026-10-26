@@ -2,7 +2,7 @@
 
 namespace PHPay\PagBank\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature};
+use PHPay\Contracts\{SupportsChargeIntents, SupportsCharges, SupportsCustomers, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature};
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
@@ -22,6 +22,7 @@ use PHPay\Support\Customer as CustomerData;
 interface PagBankGatewayInterface extends
     SupportsCustomers,
     SupportsCharges,
+    SupportsChargeIntents,
     SupportsRefunds,
     SupportsSubscriptions,
     SupportsWebhookSignature,

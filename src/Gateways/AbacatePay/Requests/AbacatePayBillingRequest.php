@@ -4,9 +4,41 @@ namespace PHPay\AbacatePay\Requests;
 
 use PHPay\AbacatePay\Enums\{BillingFrequencyEnum, BillingMethodEnum};
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\ChargeIntent;
 
 class AbacatePayBillingRequest
 {
+    /**
+     * the AbacatePay billing for a portable charge description.
+     *
+     * the AbacatePay is the only one of the ten that cannot create a charge
+     * without two URLs: its v1 charge IS a checkout link, so it needs
+     * somewhere to send the payer back to. They have no place in a portable
+     * description — they belong to the application — so they come through
+     * withExtra() and are refused when absent, rather than invented.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException
+     */
+    public static function fromIntent(ChargeIntent $intent): array
+    {
+        $extra = $intent->extra();
+
+        foreach (['returnUrl', 'completionUrl'] as $field) {
+            $url = $extra[$field] ?? null;
+
+            if (!is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+                throw ValidationException::make('AbacatePay', self::messages()->urlsFromIntent);
+            }
+        }
+
+        return [
+            'frequency' => BillingFrequencyEnum::ONE_TIME->value,
+            'methods'   => [BillingMethodEnum::PIX->value],
+        ] + $extra;
+    }
+
     /**
      * smallest price the API accepts per product, in cents
      */
@@ -31,7 +63,7 @@ class AbacatePayBillingRequest
 
     /**
      * @param array<mixed> $billing
-     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string} $messages
+     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string, urlsFromIntent: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -59,7 +91,7 @@ class AbacatePayBillingRequest
 
     /**
      * @param array<mixed> $billing
-     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string} $messages
+     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string, urlsFromIntent: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -97,7 +129,7 @@ class AbacatePayBillingRequest
 
     /**
      * @param array<mixed> $billing
-     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string} $messages
+     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string, urlsFromIntent: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -115,7 +147,7 @@ class AbacatePayBillingRequest
 
     /**
      * @param array<mixed> $billing
-     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string} $messages
+     * @param object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string, urlsFromIntent: string} $messages
      * @return void
      * @throws ValidationException
      */
@@ -141,19 +173,20 @@ class AbacatePayBillingRequest
     /**
      * messages for validation
      *
-     * @return object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string}
+     * @return object{frequency: string, methods: string, products: string, productFields: string, price: string, returnUrl: string, completionUrl: string, customer: string, urlsFromIntent: string}
      */
     public static function messages(): object
     {
         return (object) [
-            'frequency'     => 'O campo frequency aceita apenas ONE_TIME — o AbacatePay não tem cobrança recorrente.',
-            'methods'       => 'O campo methods aceita exatamente um método, e hoje só PIX é suportado.',
-            'products'      => 'A cobrança precisa de ao menos um produto em products. Use addProduct().',
-            'productFields' => 'Cada produto precisa de externalId, name e quantity — o externalId é o id do produto no SEU sistema, e precisa ser único.',
-            'price'         => 'O campo products[].price é obrigatório e deve ser um inteiro em CENTAVOS de no mínimo 100 (R$ 1,00). O AbacatePay não aceita valor decimal: R$ 20,00 é 2000.',
-            'returnUrl'     => 'O campo returnUrl é obrigatório e deve ser uma URL válida — para onde o cliente volta se desistir.',
-            'completionUrl' => 'O campo completionUrl é obrigatório e deve ser uma URL válida — para onde o cliente vai após pagar.',
-            'customer'      => 'A cobrança precisa de customerId ou de um customer completo. Use setCustomerId() ou setCustomer().',
+            'frequency'      => 'O campo frequency aceita apenas ONE_TIME — o AbacatePay não tem cobrança recorrente.',
+            'methods'        => 'O campo methods aceita exatamente um método, e hoje só PIX é suportado.',
+            'products'       => 'A cobrança precisa de ao menos um produto em products. Use addProduct().',
+            'productFields'  => 'Cada produto precisa de externalId, name e quantity — o externalId é o id do produto no SEU sistema, e precisa ser único.',
+            'price'          => 'O campo products[].price é obrigatório e deve ser um inteiro em CENTAVOS de no mínimo 100 (R$ 1,00). O AbacatePay não aceita valor decimal: R$ 20,00 é 2000.',
+            'returnUrl'      => 'O campo returnUrl é obrigatório e deve ser uma URL válida — para onde o cliente volta se desistir.',
+            'urlsFromIntent' => 'A cobrança da AbacatePay é um link de checkout, então ela precisa de returnUrl e completionUrl — e eles são da sua aplicação, não da descrição da cobrança. Informe os dois por withExtra([\'returnUrl\' => ..., \'completionUrl\' => ...]).',
+            'completionUrl'  => 'O campo completionUrl é obrigatório e deve ser uma URL válida — para onde o cliente vai após pagar.',
+            'customer'       => 'A cobrança precisa de customerId ou de um customer completo. Use setCustomerId() ou setCustomer().',
         ];
     }
 }

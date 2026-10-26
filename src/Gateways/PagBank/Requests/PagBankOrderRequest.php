@@ -3,9 +3,26 @@
 namespace PHPay\PagBank\Requests;
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\ChargeIntent;
 
 class PagBankOrderRequest
 {
+    /**
+     * the PagBank order for a portable charge description.
+     *
+     * only the envelope: the items, the customer and the QR Code go in
+     * through the Charge's own setters, which already know the shapes.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     */
+    public static function fromIntent(ChargeIntent $intent): array
+    {
+        $order = $intent->reference !== null ? ['reference_id' => $intent->reference] : [];
+
+        return $order + $intent->extra();
+    }
+
     /**
      * validate order payload before sending it to the gateway.
      *

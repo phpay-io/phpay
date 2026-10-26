@@ -4,13 +4,14 @@ namespace PHPay\AbacatePay;
 
 use GuzzleHttp\Client;
 use PHPay\AbacatePay\Interface\AbacatePayGatewayInterface;
-use PHPay\AbacatePay\Requests\AbacatePayCustomerRequest;
+use PHPay\AbacatePay\Requests\{AbacatePayBillingRequest, AbacatePayCustomerRequest};
 use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\AbacatePay\Resources\Coupon\Coupon;
 use PHPay\AbacatePay\Resources\Customer\Customer;
 use PHPay\AbacatePay\Resources\WebhookSignature\WebhookSignature;
+use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
-use PHPay\Support\Customer as CustomerData;
+use PHPay\Support\{ChargeIntent, Customer as CustomerData, Method};
 
 class AbacatePayGateway implements AbacatePayGatewayInterface
 {
@@ -70,6 +71,56 @@ class AbacatePayGateway implements AbacatePayGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->token, $this->client);
+    }
+
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the AbacatePay only does Pix: `frequency` accepts ONE_TIME alone, and
+     * `methods` accepts PIX alone.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * the AbacatePay bills by products, never by an amount, and refuses a
+     * product under one real — so a cheap scalar intent is refused here
+     * rather than rounded up, which would charge the wrong value.
+     *
+     * the externalId is the product's id in YOUR system. When the item
+     * carries no reference, it is derived from the name instead of being
+     * random, so the same product does not get a new id on every charge.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('AbacatePay', $this->supportedMethods());
+
+        $charge = $this->charge()->setBilling(AbacatePayBillingRequest::fromIntent($intent));
+
+        foreach ($intent->itemsOrOne() as $item) {
+            $charge->addProduct(
+                $item->reference ?? substr(sha1($item->name), 0, 16),
+                $item->name,
+                $item->unitAmount,
+                $item->quantity
+            );
+        }
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        return $charge->create();
     }
 
     /**

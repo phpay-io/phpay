@@ -29,6 +29,9 @@ diferentes, cada um na unidade e no vocabulário daquele gateway:
 | Asaas | `"value": 149.9` — reais, porque o Asaas é de reais |
 | Woovi | `"value": 14990` — centavos |
 | Inter | `"valor": {"original": "149.90"}` — reais em **string**, que é o terceiro formato |
+| PagBank | `items[].unit_amount` em centavos, e o total repetido em `qr_codes[0]` |
+| Pagar.me | `items[].amount` em centavos, com o meio em `payments[0]` |
+| AbacatePay | `products[].price` em centavos, com mínimo de 100 |
 
 E o cliente, que tem seis grafias entre os gateways, sai certo em cada um:
 `cpfCnpj` no Asaas, `taxID` na Woovi, `payer.identification.number` no Mercado
@@ -43,6 +46,67 @@ escolha da biblioteca.** O Asaas exige `billingType` e `dueDate`; a Woovi exige
 caminho de quem quer o corpo cru daquele gateway — nada aqui o substitui.
 
 O que a capacidade fecha é a **chamada**: quem integra escreve uma, e não dez.
+
+## Três gateways não têm valor na cobrança
+
+O PagBank e o Pagar.me somam `items`; a AbacatePay soma `products`. Neles não
+existe "o valor da cobrança" — existe a conta das linhas. Por isso o
+`ChargeIntent` tem as duas formas, e as duas funcionam nos dez:
+
+```php
+use PHPay\Support\Item;
+
+$intent = ChargeIntent::comItens(Method::PIX, [
+    new Item('Camiseta', Money::reais('54,90'), 2),
+    new Item('Caneca', Money::reais('40,00')),
+], $cliente);
+
+$intent->amount->toCentavos();   // 14980 — a soma, e ela é autoritativa
+```
+
+| de | para | o que acontece |
+| --- | --- | --- |
+| valor escalar | gateway de itens | vira **uma linha só**, com o `description` por nome. A Efí já fazia isso no boleto desde antes |
+| itens | gateway de valor escalar | sai o **total**. O detalhe das linhas se perde, porque a API deles não tem onde guardá-lo |
+
+A segunda linha é limite da API, não descuido — e por isso está escrita aqui
+em vez de acontecer calada. O valor nunca se perde: `amount` é a soma e é o
+que vai.
+
+### A AbacatePay recusa produto abaixo de R$ 1,00
+
+```php
+ChargeIntent::pix(Money::centavos(50));   // na AbacatePay: ValidationException
+```
+
+Ela exige 100 centavos por produto. A cobrança é **recusada antes de qualquer
+HTTP**, nunca arredondada para cima — arredondar cobraria o valor errado, que é
+o erro que o `Money` existe para impedir.
+
+### O `externalId` da AbacatePay
+
+É o id do produto **no seu sistema**, e ela o exige. Quando o `Item` traz
+`reference`, é ele que vai. Quando não traz, o id é **derivado do nome** em vez
+de sorteado, para o mesmo produto não aparecer com id diferente a cada
+cobrança:
+
+```php
+new Item('Camiseta', Money::reais('54,90'), 2, reference: 'sku-123');
+```
+
+### A AbacatePay precisa de duas URLs
+
+É a única dos dez cuja cobrança **é um link de checkout**, então ela precisa
+saber para onde mandar o pagador de volta. As duas são da sua aplicação, não da
+descrição da cobrança, então vêm por `withExtra()` — e a chamada recusa quando
+faltam, em vez de inventar:
+
+```php
+$intent->withExtra([
+    'returnUrl'     => 'https://loja.exemplo.com/volta',
+    'completionUrl' => 'https://loja.exemplo.com/obrigado',
+]);
+```
 
 ## Pergunte o meio antes, ou deixe a chamada recusar
 

@@ -6,12 +6,12 @@ use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\PagarMe\Interface\PagarMeGatewayInterface;
-use PHPay\PagarMe\Requests\{PagarMeCustomerRequest, PagarMeWebhookEventRequest};
+use PHPay\PagarMe\Requests\{PagarMeCustomerRequest, PagarMeOrderRequest, PagarMeWebhookEventRequest};
 use PHPay\PagarMe\Resources\Charge\Charge;
 use PHPay\PagarMe\Resources\Customer\Customer;
 use PHPay\PagarMe\Resources\Subscription\Subscription;
 use PHPay\PagarMe\Resources\WebhookDelivery\WebhookDelivery;
-use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Support\{ChargeIntent, Customer as CustomerData, Method, Money};
 use PHPay\Webhooks\Event;
 
 class PagarMeGateway implements PagarMeGatewayInterface
@@ -98,6 +98,46 @@ class PagarMeGateway implements PagarMeGatewayInterface
      * @return array<mixed>
      * @throws ApiException
      */
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the Pagar.me is the gateway with the widest menu — card, debit, billet
+     * and Pix — and only Pix is reachable from the portable path so far.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * the Pagar.me has no amount on the order either: it is the sum of
+     * `items`, and the payment method rides in `payments[]`.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Pagar.me', $this->supportedMethods());
+
+        $charge = $this->charge()->setOrder(PagarMeOrderRequest::fromIntent($intent));
+
+        foreach ($intent->itemsOrOne() as $item) {
+            $charge->addItem($item->name, $item->unitAmount, $item->quantity);
+        }
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        return $charge->setPix()->create();
+    }
+
     public function refund(string $id, Money|int|null $amount = null): array
     {
         return $this->charge()->refund($id, $amount);

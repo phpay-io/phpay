@@ -6,12 +6,12 @@ use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\PagBank\Interface\PagBankGatewayInterface;
-use PHPay\PagBank\Requests\{PagBankCustomerRequest, PagBankWebhookEventRequest};
+use PHPay\PagBank\Requests\{PagBankCustomerRequest, PagBankOrderRequest, PagBankWebhookEventRequest};
 use PHPay\PagBank\Resources\Charge\Charge;
 use PHPay\PagBank\Resources\Customer\Customer;
 use PHPay\PagBank\Resources\Subscription\Subscription;
 use PHPay\PagBank\Resources\WebhookSignature\WebhookSignature;
-use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Support\{ChargeIntent, Customer as CustomerData, Method, Money};
 use PHPay\Webhooks\Event;
 
 class PagBankGateway implements PagBankGatewayInterface
@@ -82,6 +82,47 @@ class PagBankGateway implements PagBankGatewayInterface
      * @return array<mixed>
      * @throws ApiException
      */
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the PagBank also takes card through `charges`; it is absent because
+     * the portable path cannot build it yet.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * the PagBank has no amount on the order: it is the sum of `items`, and
+     * the Pix amount is repeated in `qr_codes[0]`. A scalar intent becomes a
+     * single line, which is what itemsOrOne() is for.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('PagBank', $this->supportedMethods());
+
+        $charge = $this->charge()->setOrder(PagBankOrderRequest::fromIntent($intent));
+
+        foreach ($intent->itemsOrOne() as $item) {
+            $charge->addItem($item->name, $item->unitAmount, $item->quantity);
+        }
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        return $charge->setQrCode($intent->amount)->create();
+    }
+
     public function refund(string $id, Money|int|null $amount = null): array
     {
         return $this->charge()->refund($id, $amount);

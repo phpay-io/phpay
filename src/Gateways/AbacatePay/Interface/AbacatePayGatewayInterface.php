@@ -6,7 +6,7 @@ use PHPay\AbacatePay\Resources\Charge\Charge;
 use PHPay\AbacatePay\Resources\Coupon\Coupon;
 use PHPay\AbacatePay\Resources\Customer\Customer;
 use PHPay\AbacatePay\Resources\WebhookSignature\WebhookSignature;
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsWebhookSignature};
+use PHPay\Contracts\{SupportsChargeIntents, SupportsCharges, SupportsCustomers, SupportsWebhookSignature};
 use PHPay\Support\Customer as CustomerData;
 
 /**
@@ -23,6 +23,7 @@ use PHPay\Support\Customer as CustomerData;
 interface AbacatePayGatewayInterface extends
     SupportsCustomers,
     SupportsCharges,
+    SupportsChargeIntents,
     SupportsWebhookSignature
 {
     /**

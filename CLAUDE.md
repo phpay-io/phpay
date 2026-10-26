@@ -264,7 +264,19 @@ descrição de cobrança que vale em mais de um gateway, com o mapeamento no
   montá-los, eles **não** entram em `supportedMethods()` — declarar meio que a
   chamada recusaria é o mesmo erro de declarar capacidade e lançar de dentro.
 - **`amount` é sempre `Money` e sempre autoritativo.** Não existe intent em que
-  o valor precise ser descoberto.
+  o valor precise ser descoberto. Com `comItens()` ele é a soma das linhas, e
+  `Item` guarda **preço unitário**, não o da linha.
+- **Três gateways não têm valor na cobrança**: PagBank e Pagar.me somam
+  `items`, AbacatePay soma `products`. Intent escalar vira **uma linha só** —
+  o mesmo que o `getItems()` da Efí já fazia no boleto —, e intent por itens
+  nos de valor escalar manda o total e **perde o detalhe das linhas**, que é
+  limite da API deles e está documentado em vez de acontecer calado.
+- **A AbacatePay recusa produto abaixo de 100 centavos**, e a recusa acontece
+  antes de qualquer HTTP. Não arredonde: arredondar cobra o valor errado. O
+  `externalId` dela sai do `reference` do `Item` e, sem ele, é **derivado do
+  nome** — sortear daria id novo ao mesmo produto a cada cobrança. E ela é a
+  única dos dez que exige `returnUrl` e `completionUrl`, porque a cobrança
+  dela é link de checkout; as duas são da aplicação e vêm por `withExtra()`.
 - **Onde o gateway expira por duração, `dueDate` é recusado**, não convertido:
   a Woovi usa `expiresIn` em segundos e o Mercado Pago usa
   `date_of_expiration` com fuso, e converter exigiria assumir um fuso que a
@@ -597,11 +609,10 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 
 ## O que ainda está em aberto
 
-- `ChargeIntent` está na **fase 1**: só `pix()`, e só nos quatro de valor
-  escalar que fazem Pix (Asaas, Woovi, Mercado Pago, Inter). Faltam a fase 2
-  (`comItens()` para PagBank, Pagar.me e AbacatePay, que montam cobrança por
-  itens e não por valor — e o mínimo de 100 centavos da AbacatePay) e a fase 3
-  (`boleto()`, `cartao()` e um VO `Card`, para Cielo, Rede e o boleto da Efí).
+- `ChargeIntent` cobre **Pix em sete dos dez**: Asaas, Woovi, Mercado Pago e
+  Inter por valor escalar, PagBank, Pagar.me e AbacatePay por itens. Falta a
+  fase 3 — `boleto()`, `cartao()` e um VO `Card`, para Cielo, Rede e o boleto
+  da Efí. A **Rede não entra em Pix**: ela só faz crédito.
   **A Efí entra pela fase 3 roteando por dentro**: lá `charge()` é boleto e
   `pixCharge()` é a cobrança Pix, e é o `createCharge()` que decide — mudar o
   retorno de `charge()` quebraria a v2.
