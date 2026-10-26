@@ -12,7 +12,9 @@ Se você encontrar uma vulnerabilidade de segurança, siga estas etapas:
 
 2. **Envie um relatório privado**:
 
-   - Entre em contato diretamente pelo e-mail: [sec@phpay.io](mailto:sec@phpay.io).
+   - Use o **[relato privado de vulnerabilidade do GitHub](https://github.com/phpay-io/phpay/security/advisories/new)**. Ele abre
+     um canal visível só para você e para os mantenedores, no próprio
+     repositório — não precisa de e-mail e o histórico fica junto da correção.
    - Inclua detalhes suficientes para que possamos entender e reproduzir o problema, como:
      - Descrição da vulnerabilidade.
      - Passos para reproduzi-la (se aplicável).

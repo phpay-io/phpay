@@ -21,6 +21,13 @@
         "phpay"
     ],
     "license": "BUSL-1.1",
+    "homepage": "https://github.com/phpay-io/phpay",
+    "support": {
+        "issues": "https://github.com/phpay-io/phpay/issues",
+        "source": "https://github.com/phpay-io/phpay",
+        "docs": "https://github.com/phpay-io/phpay/blob/develop/docs/README.md",
+        "security": "https://github.com/phpay-io/phpay/security/policy"
+    },
     "autoload": {
         "psr-4": {
             "PHPay\\": "src/",

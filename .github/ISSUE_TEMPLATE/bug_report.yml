@@ -20,7 +20,7 @@ body:
         Use valores falsos (`fake-token`, `123.456.789-01`) ao reduzir o caso.
         Se o problema **é** uma falha de segurança, não abra issue: siga a
         [política de segurança](https://github.com/phpay-io/phpay/blob/develop/.github/SECURITY.md)
-        e escreva para `sec@phpay.io`.
+        e use o [relato privado](https://github.com/phpay-io/phpay/security/advisories/new).
 
   - type: input
     id: phpay-version
