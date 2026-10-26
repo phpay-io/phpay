@@ -85,11 +85,29 @@ it('NÃO cai num 5xx, porque o gateway pode ter criado a cobrança', function ()
 })->group('phpay');
 
 it('NÃO cai num timeout com a conexão já aberta', function () {
+    /* o corpo pode ter sido processado: cair aqui cobra de novo, noutro PSP */
     ClientFactory::fake([transporte(28, 0.4), new Response(200, [], '{"id":"pay_1"}')]);
 
     expect(fn () => PHPay::gateway(cadeia())->createCharge(intentPix()))
         ->toThrow(ApiException::class);
-})->group('phpay');
+})->skip(
+    !method_exists(ConnectException::class, 'getHandlerContext'),
+    'cenário só existe no Guzzle 7: no 8, timeout com conexão aberta é NetworkTimeoutException, não ConnectException'
+)->group('phpay');
+
+it('no Guzzle 8, ConnectException por si já autoriza cair', function () {
+    ClientFactory::fake([
+        transporte(28, 0.42),
+        transporte(28, 0.42),
+        transporte(28, 0.42),
+        new Response(200, [], '{"id":"pay_1"}'),
+    ]);
+
+    expect(PHPay::gateway(cadeia())->createCharge(intentPix()))->toHaveKey('id');
+})->skip(
+    method_exists(ConnectException::class, 'getHandlerContext'),
+    'só vale no Guzzle 8: no 7 o errno é que decide, e 28 com conexão aberta não autoriza'
+)->group('phpay');
 
 it('cai num timeout que nem chegou a conectar, depois do retry', function () {
     ClientFactory::fake([
