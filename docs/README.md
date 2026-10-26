@@ -16,6 +16,7 @@ específico dele.
 | [Retry e idempotência](retry-e-idempotencia.md) | o que a biblioteca repete, o que ela recusa a repetir, e por quê |
 | [Testando](testando.md) | `ClientFactory::fake()`, para quem usa a biblioteca testar sem sair para a rede |
 | [Ambientes e credenciais](ambientes-e-credenciais.md) | sandbox e produção em cada gateway, e como a credencial fica fora de dump |
+| [Cobrança portável](cobranca-portavel.md) | `ChargeIntent`, uma descrição de cobrança que vale em mais de um gateway |
 | [Cliente](cliente.md) | o VO `Customer`, porque o mesmo campo tem seis grafias entre os gateways |
 | [Valores monetários](valores-monetarios.md) | `Money`, porque reais e centavos não se misturam |
 | [Status de pagamento](status-de-pagamento.md) | `PaymentStatus`, porque "paga" tem dez grafias entre os gateways |

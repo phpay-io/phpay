@@ -31,7 +31,7 @@ it('responde supports() e capabilities() pela facade', function () {
     $efi   = PHPay::gateway(new EfiGateway('id', 'secret', true, mockClient([])));
 
     expect($asaas->supports(Capability::PIX_KEYS))->toBeTrue()
-        ->and($asaas->capabilities())->toHaveCount(8)
+        ->and($asaas->capabilities())->toHaveCount(9)
         ->and($efi->supports(Capability::PIX_KEYS))->toBeTrue()
         ->and($efi->supports(Capability::CUSTOMERS))->toBeFalse()
         ->and($efi->capabilities())->toBe([

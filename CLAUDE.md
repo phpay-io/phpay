@@ -6,7 +6,7 @@ Orientações para o Claude Code trabalhar neste repositório.
 
 PHPay (`phpay-io/phpay`) é uma **biblioteca PHP** (não uma aplicação) que padroniza a
 integração com gateways de pagamento brasileiros. Hoje suporta **Asaas** e
-**Woovi/OpenPix** (as sete capacidades), **Efí** (todas menos clientes e
+**Woovi/OpenPix** (as nove capacidades), **Efí** (todas menos clientes e
 estornos), **Mercado Pago**, **PagBank** e **Pagar.me** (clientes, cobranças,
 estornos, assinaturas), **Cielo** (cobranças, estornos e recorrência),
 **AbacatePay** (clientes e cobranças), **Rede** (cobranças e estornos) e
@@ -38,7 +38,7 @@ Regras que valem para todo código novo:
 - **Capacidade, não contrato único.** `GatewayInterface` carrega só `name()`. Cada
   recurso é uma interface em `src/Contracts/` (`SupportsCustomers`, `SupportsCharges`,
   `SupportsRefunds`, `SupportsWebhooks`, `SupportsPixKeys`, `SupportsSubscriptions`,
-  `SupportsWebhookSignature`, `SupportsWebhookEvents`) que o gateway
+  `SupportsWebhookSignature`, `SupportsWebhookEvents`, `SupportsChargeIntents`) que o gateway
   implementa se — e só se — oferecer aquele recurso. **Nunca** declare um recurso para
   depois lançar de dentro dele.
 - **Recurso novo = interface nova + case na enum `Capability` + método guardado na
@@ -246,6 +246,34 @@ quebra a integração, cobra o valor errado.
   `setAmount()`. Gateway novo com valor em array deve ter o mesmo.
 - `Money::reais()` **recusa mais de duas casas decimais** de propósito. Não "conserte"
   isso com arredondamento: é o que impede erro de um centavo na conciliação.
+
+## Cobrança portável
+
+Use **`PHPay\Support\ChargeIntent`**. É o `Customer` do outro lado: uma
+descrição de cobrança que vale em mais de um gateway, com o mapeamento no
+`fromIntent()` de cada `*ChargeRequest` — mesmo lugar do `fromCustomer()`.
+
+- **Capacidade, e declara operação**: `SupportsChargeIntents extends
+  SupportsCharges`, com `Capability::CHARGE_INTENTS` e guard na facade. É a
+  forma do `SupportsRefunds`, não invenção.
+- **`supportedMethods()` existe porque `SupportsCharges` não diz o meio.** Os
+  dez declaram cobrança e mesmo assim a Rede só faz crédito, e só quatro fazem
+  boleto. Sem a pergunta, um fallback cairia de um Pix para quem não faz Pix.
+- **Ele descreve o caminho portável, não o catálogo do gateway.** O Asaas vende
+  boleto e cartão por `setCharge()`; enquanto `createCharge()` não souber
+  montá-los, eles **não** entram em `supportedMethods()` — declarar meio que a
+  chamada recusaria é o mesmo erro de declarar capacidade e lançar de dentro.
+- **`amount` é sempre `Money` e sempre autoritativo.** Não existe intent em que
+  o valor precise ser descoberto.
+- **Onde o gateway expira por duração, `dueDate` é recusado**, não convertido:
+  a Woovi usa `expiresIn` em segundos e o Mercado Pago usa
+  `date_of_expiration` com fuso, e converter exigiria assumir um fuso que a
+  lib não assume em lugar nenhum. O campo nativo vai por `withExtra()`.
+- **`setCharge(array)` não é substituído** e não deve ser. Continua sendo o
+  caminho de quem quer o corpo cru daquele gateway.
+- **A chave Pix do Inter é da conta**, por isso entra em `options()` do registry
+  (`pixKey`) e no construtor **depois** de `$client` — inserir antes quebraria
+  construção posicional. `setKey()` fica para quem atende mais de uma chave.
 
 ## Status de pagamento
 
@@ -507,7 +535,7 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   inteiro em centavos** — os validadores recusam decimal, porque mandar `10.50` onde
   se espera `1050` cobra onze centavos. Pix é `qr_codes` do pedido (um só por pedido,
   copia-e-cola em `qr_codes[0].text`), não uma `charge`.
-- **Woovi/OpenPix** — **segundo gateway com as cinco capacidades**, junto com o Asaas.
+- **Woovi/OpenPix** — **segundo gateway completo**, junto com o Asaas.
   AppID vai **cru** no `Authorization`, sem esquema. Sandbox tem **domínio próprio**
   (`api.woovi-sandbox.com`). O webhook fica em `api/openpix/v1/` enquanto os demais
   recursos ficam em `api/v1/` — herança da fusão das marcas, não erro. Todo objeto é
@@ -568,6 +596,15 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
   como `Money` (reais em string), como na API Pix da Efí.
 
 ## O que ainda está em aberto
+
+- `ChargeIntent` está na **fase 1**: só `pix()`, e só nos quatro de valor
+  escalar que fazem Pix (Asaas, Woovi, Mercado Pago, Inter). Faltam a fase 2
+  (`comItens()` para PagBank, Pagar.me e AbacatePay, que montam cobrança por
+  itens e não por valor — e o mínimo de 100 centavos da AbacatePay) e a fase 3
+  (`boleto()`, `cartao()` e um VO `Card`, para Cielo, Rede e o boleto da Efí).
+  **A Efí entra pela fase 3 roteando por dentro**: lá `charge()` é boleto e
+  `pixCharge()` é a cobrança Pix, e é o `createCharge()` que decide — mudar o
+  retorno de `charge()` quebraria a v2.
 
 - Da API Pix da Efí ficaram de fora: Pix Automático pela jornada 1 (`solicrec`,
   notificação no app do pagador), webhooks de recorrência e de cobrança recorrente

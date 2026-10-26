@@ -170,7 +170,7 @@ it('declara o que cada gateway exige e aceita', function () {
      * o token é emitido por `scopes` e o `account` preenche x-conta-corrente.
      */
     expect(Gateway::INTER->credentials())->toBe(['clientId', 'clientSecret'])
-        ->and(Gateway::INTER->options())->toBe(['sandbox', 'certificate', 'scopes', 'account']);
+        ->and(Gateway::INTER->options())->toBe(['sandbox', 'certificate', 'scopes', 'account', 'pixKey']);
 })->group('support');
 
 it('todo gateway de src/Gateways está no enum', function () {

@@ -40,15 +40,16 @@ use PHPay\Contracts\SupportsCharges;
 public function __construct(private SupportsCharges $gateway) {}
 ```
 
-## Duas capacidades executam, em vez de devolver recurso
+## Três capacidades executam, em vez de devolver recurso
 
 Seis capacidades devolvem um **recurso** — `customer()`, `charge()`, `pix()`,
-`subscription()`, `webhook()`, `webhookSignature()`. O estorno e a leitura de
-webhook **executam a operação**:
+`subscription()`, `webhook()`, `webhookSignature()`. O estorno, a leitura de
+webhook e a cobrança portável **executam a operação**:
 
 ```php
 $phpay->refund($id);              // devolve o dinheiro
 $phpay->webhookEvents($corpo);    // lê a notificação
+$phpay->createCharge($intent);    // cria a cobrança
 ```
 
 No estorno:
@@ -77,3 +78,17 @@ $phpay->refund($id, Money::reais(25.50));   // o mesmo valor nos dez
 A [leitura de webhook](webhooks.md) é igual: o que divergia era a leitura, não
 um handle para alcançar. Ela devolve **lista** de eventos, nunca um — a API Pix
 da Efí manda vários pagamentos numa notificação só.
+
+A [cobrança portável](cobranca-portavel.md) pela mesma razão: `charge()` já
+devolve o recurso daquele gateway, com o payload daquele gateway. O que faltava
+era a **chamada** que aceita uma descrição e traduz.
+
+### Uma capacidade que não basta sozinha
+
+`SupportsCharges` responde *"este gateway cobra?"*. Não responde *"cobra
+assim?"* — os dez declaram cobrança, e mesmo assim a Rede só faz cartão de
+crédito. Por isso a cobrança portável traz uma segunda pergunta:
+
+```php
+$phpay->supportedMethods();   // [Method::PIX]
+```

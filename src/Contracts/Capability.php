@@ -18,6 +18,7 @@ enum Capability: string
     case SUBSCRIPTIONS     = 'subscriptions';
     case WEBHOOK_SIGNATURE = 'webhook-signature';
     case WEBHOOK_EVENTS    = 'webhook-events';
+    case CHARGE_INTENTS    = 'charge-intents';
 
     /**
      * interface that declares this capability.
@@ -35,6 +36,7 @@ enum Capability: string
             self::SUBSCRIPTIONS     => SupportsSubscriptions::class,
             self::WEBHOOK_SIGNATURE => SupportsWebhookSignature::class,
             self::WEBHOOK_EVENTS    => SupportsWebhookEvents::class,
+            self::CHARGE_INTENTS    => SupportsChargeIntents::class,
         };
     }
 
@@ -54,6 +56,7 @@ enum Capability: string
             self::SUBSCRIPTIONS     => 'assinaturas',
             self::WEBHOOK_SIGNATURE => 'assinatura de webhook',
             self::WEBHOOK_EVENTS    => 'leitura de webhook',
+            self::CHARGE_INTENTS    => 'cobrança portável',
         };
     }
 

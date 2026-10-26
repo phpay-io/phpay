@@ -6,12 +6,12 @@ use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
 use PHPay\MercadoPago\Interface\MercadoPagoGatewayInterface;
-use PHPay\MercadoPago\Requests\{MercadoPagoCustomerRequest, MercadoPagoWebhookEventRequest};
+use PHPay\MercadoPago\Requests\{MercadoPagoChargeRequest, MercadoPagoCustomerRequest, MercadoPagoWebhookEventRequest};
 use PHPay\MercadoPago\Resources\Charge\Charge;
 use PHPay\MercadoPago\Resources\Customer\Customer;
 use PHPay\MercadoPago\Resources\Subscription\Subscription;
 use PHPay\MercadoPago\Resources\WebhookSignature\WebhookSignature;
-use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Support\{ChargeIntent, Customer as CustomerData, Method, Money};
 use PHPay\Webhooks\Event;
 
 class MercadoPagoGateway implements MercadoPagoGatewayInterface
@@ -99,6 +99,41 @@ class MercadoPagoGateway implements MercadoPagoGatewayInterface
      * @return array<mixed>
      * @throws ApiException
      */
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the Mercado Pago also sells billets and card through `setCharge()`;
+     * they are absent because the portable path cannot build them yet.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Mercado Pago', $this->supportedMethods());
+
+        $charge = $this->charge()
+            ->setCharge(MercadoPagoChargeRequest::fromIntent($intent))
+            ->setAmount($intent->amount);
+
+        if ($intent->customer !== null) {
+            $charge->setPayer($intent->customer);
+        }
+
+        return $charge->create();
+    }
+
     public function refund(string $id, Money|int|float|null $amount = null): array
     {
         return $this->charge()->refund($id, $amount);
