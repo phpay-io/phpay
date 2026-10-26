@@ -101,14 +101,14 @@ class PagarMeGateway implements PagarMeGatewayInterface
     /**
      * the payment methods createCharge() accepts here.
      *
-     * the Pagar.me is the gateway with the widest menu — card, debit, billet
-     * and Pix — and only Pix is reachable from the portable path so far.
+     * the card is absent: the Pagar.me takes it encrypted or tokenized, and
+     * neither is modelled on the charge today.
      *
      * @return array<int, Method>
      */
     public function supportedMethods(): array
     {
-        return [Method::PIX];
+        return [Method::PIX, Method::BOLETO];
     }
 
     /**
@@ -135,7 +135,13 @@ class PagarMeGateway implements PagarMeGatewayInterface
             $charge->setCustomer($intent->customer);
         }
 
-        return $charge->setPix()->create();
+        if ($intent->method === Method::BOLETO) {
+            $charge->setBoleto($intent->dueDate);
+        } else {
+            $charge->setPix();
+        }
+
+        return $charge->create();
     }
 
     public function refund(string $id, Money|int|null $amount = null): array

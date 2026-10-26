@@ -4,7 +4,7 @@ namespace PHPay\Asaas\Requests;
 
 use PHPay\Asaas\Enums\BillingTypeEnum;
 use PHPay\Exceptions\ValidationException;
-use PHPay\Support\ChargeIntent;
+use PHPay\Support\{ChargeIntent, Method};
 
 class AsaasChargeRequest
 {
@@ -29,11 +29,31 @@ class AsaasChargeRequest
         }
 
         return [
-            'billingType' => BillingTypeEnum::PIX->value,
+            'billingType' => self::billingType($intent->method),
             'value'       => $intent->amount->toReais(),
             'dueDate'     => $intent->dueDate,
             'description' => $intent->descriptionOrDefault(),
         ] + $intent->extra();
+    }
+
+    /**
+     * the Asaas name for a payment method.
+     *
+     * the card is absent: the Asaas takes it as `creditCard` plus
+     * `creditCardHolderInfo`, or as a `creditCardToken`, and neither is
+     * modelled on the charge today — only on the subscription.
+     *
+     * @param Method $method
+     * @return string
+     * @throws ValidationException
+     */
+    private static function billingType(Method $method): string
+    {
+        return match ($method) {
+            Method::PIX    => BillingTypeEnum::PIX->value,
+            Method::BOLETO => BillingTypeEnum::BOLETO->value,
+            default        => throw ValidationException::make('Asaas', self::messages()->method),
+        };
     }
 
     /**
@@ -70,7 +90,7 @@ class AsaasChargeRequest
     /**
      * messages for validation
      *
-     * @return object{customer: string, billingType: string, value: string, dueDate: string, dueDateRequired: string}
+     * @return object{customer: string, billingType: string, value: string, dueDate: string, dueDateRequired: string, method: string}
      */
     public static function messages(): object
     {
@@ -79,6 +99,7 @@ class AsaasChargeRequest
             'billingType'     => 'O campo billingType é obrigatório, e tem como disponível as seguintes opções: UNDEFINED, BOLETO, CREDIT_CARD, PIX.',
             'value'           => 'O campo value é obrigatório, deve ser numérico e maior que zero.',
             'dueDate'         => 'O campo dueDate é obrigatório e deve ser do tipo string.',
+            'method'          => 'O caminho portável do Asaas cria Pix e boleto. O cartão dele pede creditCard com creditCardHolderInfo, ou um creditCardToken, e isso ainda não está modelado na cobrança.',
             'dueDateRequired' => 'O Asaas exige data de vencimento mesmo no Pix, então informe dueDate no ChargeIntent. É limite do gateway, não da biblioteca: inventar uma data aqui criaria cobrança com vencimento que ninguém escolheu.',
         ];
     }

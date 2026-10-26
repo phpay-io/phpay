@@ -40,6 +40,7 @@ it('responde supports() e capabilities() pela facade', function () {
             Capability::PIX_KEYS,
             Capability::SUBSCRIPTIONS,
             Capability::WEBHOOK_EVENTS,
+            Capability::CHARGE_INTENTS,
         ]);
 })->group('phpay');
 

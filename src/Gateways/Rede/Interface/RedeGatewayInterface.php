@@ -2,7 +2,7 @@
 
 namespace PHPay\Rede\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsRefunds};
+use PHPay\Contracts\{SupportsChargeIntents, SupportsCharges, SupportsRefunds};
 use PHPay\Rede\Resources\Authorization\Authorization;
 use PHPay\Rede\Resources\Charge\Charge;
 
@@ -15,7 +15,7 @@ use PHPay\Rede\Resources\Charge\Charge;
  * recurring charge for the acquirer — it is not a subscription you can list,
  * change or cancel, so SupportsSubscriptions is deliberately not declared.
  */
-interface RedeGatewayInterface extends SupportsCharges, SupportsRefunds
+interface RedeGatewayInterface extends SupportsCharges, SupportsChargeIntents, SupportsRefunds
 {
     /**
      * get resource charge from gateway.
