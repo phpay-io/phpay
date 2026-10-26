@@ -4,7 +4,7 @@ namespace PHPay\Efi;
 
 use GuzzleHttp\Client;
 use PHPay\Efi\Interface\EfiGatewayInterface;
-use PHPay\Efi\Requests\EfiWebhookEventRequest;
+use PHPay\Efi\Requests\{EfiChargeRequest, EfiWebhookEventRequest};
 use PHPay\Efi\Resources\Authorization\Authorization;
 use PHPay\Efi\Resources\Charge\Charge;
 use PHPay\Efi\Resources\Pix\Pix;
@@ -14,6 +14,7 @@ use PHPay\Efi\Resources\Subscription\Subscription;
 use PHPay\Efi\Resources\Webhook\Webhook;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\{Certificate, MasksCredentials};
+use PHPay\Support\{ChargeIntent, Method};
 use PHPay\Webhooks\Event;
 
 class EfiGateway implements EfiGatewayInterface
@@ -158,6 +159,42 @@ class EfiGateway implements EfiGatewayInterface
      * @return PixCharge
      * @throws ValidationException|ApiException
      */
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * only the billet. On the Efí, `charge()` IS the billet and the Pix
+     * charge lives in `pixCharge()`, on another API — so routing PIX here
+     * would mean changing what `charge()` returns, which would break the v2.
+     * Declaring PIX and refusing it would be worse: the honest answer is
+     * that the portable path does billets on this gateway.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::BOLETO];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Efí', $this->supportedMethods());
+
+        $charge = $this->charge(EfiChargeRequest::fromIntent($intent));
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        return $charge->create();
+    }
+
     public function pixCharge(): PixCharge
     {
         return new PixCharge($this->getPixToken(), $this->certificate, $this->sandbox, $this->pixClient);

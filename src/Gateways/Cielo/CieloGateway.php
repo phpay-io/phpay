@@ -4,12 +4,12 @@ namespace PHPay\Cielo;
 
 use GuzzleHttp\Client;
 use PHPay\Cielo\Interface\CieloGatewayInterface;
-use PHPay\Cielo\Requests\CieloWebhookEventRequest;
+use PHPay\Cielo\Requests\{CieloSaleRequest, CieloWebhookEventRequest};
 use PHPay\Cielo\Resources\Charge\Charge;
 use PHPay\Cielo\Resources\Subscription\Subscription;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
-use PHPay\Support\Money;
+use PHPay\Support\{Card, ChargeIntent, Method, Money};
 use PHPay\Webhooks\Event;
 
 class CieloGateway implements CieloGatewayInterface
@@ -75,6 +75,57 @@ class CieloGateway implements CieloGatewayInterface
      * @return array<mixed>
      * @throws ApiException
      */
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the Cielo is the widest of the ten on the portable path: it takes the
+     * card number on the server, so the credit method is reachable. Debit is
+     * absent because it needs 3DS authentication, which the library does not
+     * model.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX, Method::BOLETO, Method::CREDIT_CARD];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Cielo', $this->supportedMethods());
+
+        $charge = $this->charge()->setSale(CieloSaleRequest::fromIntent($intent));
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        if ($intent->method === Method::PIX) {
+            $charge->setPix($intent->amount);
+        } elseif ($intent->method === Method::BOLETO) {
+            $charge->setBoleto($intent->amount);
+        } else {
+            if (!$intent->card instanceof Card) {
+                throw ValidationException::make('Cielo', CieloSaleRequest::messages()->payment);
+            }
+
+            $charge->setCreditCard(
+                $intent->amount,
+                CieloSaleRequest::cardFromIntent($intent->card),
+                $intent->installments
+            );
+        }
+
+        return $charge->create();
+    }
+
     public function refund(string $id, Money|int|null $amount = null): array
     {
         return $this->charge()->refund($id, $amount);

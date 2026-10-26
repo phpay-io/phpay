@@ -3,10 +3,31 @@
 namespace PHPay\Efi\Requests;
 
 use PHPay\Exceptions\ValidationException;
-use PHPay\Support\Money;
+use PHPay\Support\{ChargeIntent, Money};
 
 class EfiChargeRequest
 {
+    /**
+     * the Efí payload for a portable charge description.
+     *
+     * `charge()` on the Efí is the BILLET — the Pix charge is `pixCharge()`,
+     * on a different API with different credentials and mTLS — so this maps
+     * a billet and nothing else. The value is cents here, while the same
+     * gateway's Pix API wants reais in a string; `Money` is what keeps the
+     * two apart.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     */
+    public static function fromIntent(ChargeIntent $intent): array
+    {
+        return [
+            'description' => $intent->descriptionOrDefault(),
+            'value'       => $intent->amount->toCentavos(),
+            'expire_at'   => $intent->dueDate,
+        ] + $intent->extra();
+    }
+
     /**
      * validate charge payload before sending it to the gateway.
      *

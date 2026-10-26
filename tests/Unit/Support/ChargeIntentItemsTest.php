@@ -171,10 +171,10 @@ it('um intent por itens também serve nos gateways de valor escalar, somando', f
         ->and($corpo)->not->toHaveKey('items');
 })->group('support');
 
-it('declara só pix nos três que cobram por item', function (string $gateway, array $config) {
-    expect(PHPay::make($gateway, $config)->supportedMethods())->toBe([Method::PIX]);
+it('declara o que cada um dos três que cobram por item aceita', function (string $gateway, array $config, array $metodos) {
+    expect(PHPay::make($gateway, $config)->supportedMethods())->toBe($metodos);
 })->with([
-    ['pagbank', ['token' => 't']],
-    ['pagarme', ['secretKey' => 'sk_test_1']],
-    ['abacatepay', ['token'  => 't']],
+    ['pagbank', ['token' => 't'], [Method::PIX]],
+    ['pagarme', ['secretKey' => 'sk_test_1'], [Method::PIX, Method::BOLETO]],
+    ['abacatepay', ['token'  => 't'], [Method::PIX]],
 ])->group('support');

@@ -271,15 +271,17 @@ foreach ($gateways as $label => $gateway) {
                     $ensure($gateway instanceof SupportsChargeIntents, 'deveria implementar SupportsChargeIntents');
                     $ensure($phpay->supportedMethods() !== [], 'deveria declarar ao menos um meio');
 
-                    // nenhum deles faz boleto pelo caminho portável na fase
-                    // 1, então a recusa acontece antes de qualquer rede.
+                    // nenhum dos dez faz débito pelo caminho portável — a
+                    // Cielo e o Pagar.me o conhecem, mas ele pede 3DS, que a
+                    // biblioteca não modela. Serve de meio sempre recusado,
+                    // sem depender de qual fase já entrou.
                     $ensure(
-                        !in_array(Method::BOLETO, $phpay->supportedMethods(), true),
-                        'boleto ainda não existe no caminho portável'
+                        !in_array(Method::DEBIT_CARD, $phpay->supportedMethods(), true),
+                        'débito não existe no caminho portável'
                     );
                     $expect(
                         ValidationException::class,
-                        static fn () => $intent->ensureSupportedBy('x', [Method::BOLETO])
+                        static fn () => $intent->ensureSupportedBy('x', [Method::DEBIT_CARD])
                     );
                 }
             );

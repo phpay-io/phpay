@@ -4,7 +4,7 @@ namespace PHPay\Cielo\Interface;
 
 use PHPay\Cielo\Resources\Charge\Charge;
 use PHPay\Cielo\Resources\Subscription\Subscription;
-use PHPay\Contracts\{SupportsCharges, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents};
+use PHPay\Contracts\{SupportsChargeIntents, SupportsCharges, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents};
 
 /**
  * the Cielo gateway offers charges and recurrences.
@@ -16,6 +16,7 @@ use PHPay\Contracts\{SupportsCharges, SupportsRefunds, SupportsSubscriptions, Su
  */
 interface CieloGatewayInterface extends
     SupportsCharges,
+    SupportsChargeIntents,
     SupportsRefunds,
     SupportsSubscriptions,
     SupportsWebhookEvents

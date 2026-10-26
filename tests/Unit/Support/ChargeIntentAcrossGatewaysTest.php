@@ -1,6 +1,7 @@
 <?php
 
 use GuzzleHttp\Psr7\Response;
+use PHPay\Contracts\SupportsCharges;
 use PHPay\Exceptions\{NotImplementedException, ValidationException};
 use PHPay\Http\ClientFactory;
 use PHPay\PHPay;
@@ -111,17 +112,37 @@ it('exige vencimento no asaas, que não cria cobrança sem ele', function () {
 })->group('support');
 
 it('recusa a capacidade em quem não declara, antes de qualquer HTTP', function () {
-    ClientFactory::fake([]);
+    /*
+     * depois da fase 3 os DEZ declaram a capacidade, então não há gateway da
+     * biblioteca para exercitar a recusa — e é a facade que está sendo
+     * testada, não um gateway. Um que implemente só SupportsCharges prova o
+     * guard sem depender de qual gateway ficou de fora.
+     */
+    $semIntent = new class () implements SupportsCharges {
+        public function name(): string
+        {
+            return 'Minimo';
+        }
 
-    expect(fn () => PHPay::make('rede', ['affiliation' => 'pv', 'secret' => 's'])->createCharge(intentDeTeste()))
-        ->toThrow(NotImplementedException::class)
-        ->and(ClientFactory::recorded())->toBe([]);
+        public function charge(): object
+        {
+            return new stdClass();
+        }
+    };
+
+    expect(fn () => PHPay::gateway($semIntent)->createCharge(intentDeTeste()))
+        ->toThrow(NotImplementedException::class, 'Minimo não suporta cobrança portável.')
+        ->and(fn () => PHPay::gateway($semIntent)->supportedMethods())
+        ->toThrow(NotImplementedException::class);
 })->group('support');
 
-it('declara só o que createCharge() aceita hoje', function (string $gateway, array $config) {
-    expect(PHPay::make($gateway, $config)->supportedMethods())->toBe([Method::PIX]);
+it('declara só o que createCharge() aceita hoje', function (string $gateway, array $config, array $metodos) {
+    expect(PHPay::make($gateway, $config)->supportedMethods())->toBe($metodos);
 })->with([
-    ['asaas', ['token' => 't']],
-    ['woovi', ['appId'             => 'a']],
-    ['mercadopago', ['accessToken' => 'TEST-1']],
+    ['asaas', ['token' => 't'], [Method::PIX, Method::BOLETO]],
+    ['woovi', ['appId'             => 'a'], [Method::PIX]],
+    ['mercadopago', ['accessToken' => 'TEST-1'], [Method::PIX]],
+    ['efi', ['clientId'            => 'i', 'clientSecret' => 's'], [Method::BOLETO]],
+    ['cielo', ['merchantId'        => 'i', 'merchantKey' => 'k'], [Method::PIX, Method::BOLETO, Method::CREDIT_CARD]],
+    ['rede', ['affiliation'        => 'pv', 'secret' => 's'], [Method::CREDIT_CARD]],
 ])->group('support');

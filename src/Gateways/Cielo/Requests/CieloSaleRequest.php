@@ -4,10 +4,50 @@ namespace PHPay\Cielo\Requests;
 
 use PHPay\Cielo\Enums\PaymentTypeEnum;
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\{Card, ChargeIntent};
 use PHPay\Support\Customer;
 
 class CieloSaleRequest
 {
+    /**
+     * the Cielo envelope for a portable charge description.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     */
+    public static function fromIntent(ChargeIntent $intent): array
+    {
+        $sale = $intent->reference !== null ? ['MerchantOrderId' => $intent->reference] : [];
+
+        return $sale + $intent->extra();
+    }
+
+    /**
+     * the Cielo shape for the card itself.
+     *
+     * the brand is required and is NOT guessed from the number: a wrong
+     * brand is refused by the Cielo, and deriving it from the BIN range
+     * would be the library inventing a fact about the card.
+     *
+     * @param Card $card
+     * @return array<string, string>
+     * @throws ValidationException
+     */
+    public static function cardFromIntent(Card $card): array
+    {
+        if ($card->brand === null || trim($card->brand) === '') {
+            throw ValidationException::make('Cielo', self::messages()->brand);
+        }
+
+        return [
+            'CardNumber'     => $card->number,
+            'Holder'         => $card->holderName,
+            'ExpirationDate' => $card->expiration(),
+            'SecurityCode'   => $card->securityCode,
+            'Brand'          => $card->brand,
+        ];
+    }
+
     /**
      * validate sale payload before sending it to the gateway.
      *
@@ -59,7 +99,7 @@ class CieloSaleRequest
     /**
      * messages for validation
      *
-     * @return object{merchantOrderId: string, customer: string, customerName: string, payment: string, paymentType: string, amount: string}
+     * @return object{merchantOrderId: string, customer: string, customerName: string, payment: string, paymentType: string, amount: string, brand: string}
      */
     public static function messages(): object
     {
@@ -70,6 +110,7 @@ class CieloSaleRequest
             'payment'         => 'O campo Payment é obrigatório. Use setPix(), setBoleto() ou setCreditCard().',
             'paymentType'     => 'O campo Payment.Type é obrigatório e aceita apenas: CreditCard, DebitCard, Pix, Boleto.',
             'amount'          => 'O campo Payment.Amount é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. A Cielo não aceita valor decimal: R$ 157,00 é 15700.',
+            'brand'           => 'A Cielo exige a bandeira do cartão (Visa, Master, Elo…). Informe-a no Card: a biblioteca não a adivinha pela faixa do número, porque isso seria inventar um fato sobre o cartão.',
         ];
     }
 

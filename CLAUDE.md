@@ -281,6 +281,25 @@ descrição de cobrança que vale em mais de um gateway, com o mapeamento no
   a Woovi usa `expiresIn` em segundos e o Mercado Pago usa
   `date_of_expiration` com fuso, e converter exigiria assumir um fuso que a
   lib não assume em lugar nenhum. O campo nativo vai por `withExtra()`.
+- **`Card` não cobre cartão em todo lugar, e não teria como.** Cielo e Rede
+  recebem o número no servidor; o **Mercado Pago recebe um token** do SDK de
+  navegador dele, então o PAN nunca chega lá; PagBank e Pagar.me querem
+  cifrado ou tokenizado; o Asaas aceita os dois, mas só tem isso modelado em
+  **assinatura**. Por isso só Cielo e Rede declaram `CREDIT_CARD` — e é
+  exatamente para isso que `supportedMethods()` serve. **Não invente mapeamento
+  de cartão** para os outros: no Mercado Pago seria impossível, não só errado.
+- **O `Card` confere Luhn e mascara no `__debugInfo()`.** Dígito trocado pego
+  aqui custa nada; pego no gateway custa recusa no checkout. Número e CVV levam
+  `#[\SensitiveParameter]` e nunca aparecem em dump. **A bandeira não é
+  derivada da faixa do número** — a Cielo a exige e adivinhar seria inventar um
+  fato sobre o cartão.
+- **Débito não existe no caminho portável.** Cielo e Pagar.me conhecem o tipo,
+  mas ele pede 3DS, que a lib não modela. Nenhum dos dez declara
+  `Method::DEBIT_CARD`, e há teste varrendo isso.
+- **Na Efí o caminho portável faz boleto, não Pix**: lá `charge()` **é** o
+  boleto e o Pix é `pixCharge()`, noutra API. Rotear Pix aqui mudaria o retorno
+  de `charge()` e quebraria a v2, então `supportedMethods()` dela diz `BOLETO`
+  e pronto.
 - **`setCharge(array)` não é substituído** e não deve ser. Continua sendo o
   caminho de quem quer o corpo cru daquele gateway.
 - **A chave Pix do Inter é da conta**, por isso entra em `options()` do registry
@@ -609,10 +628,11 @@ a notificação veio do gateway é `SupportsWebhookSignature`, e são coisas dif
 
 ## O que ainda está em aberto
 
-- `ChargeIntent` cobre **Pix em sete dos dez**: Asaas, Woovi, Mercado Pago e
-  Inter por valor escalar, PagBank, Pagar.me e AbacatePay por itens. Falta a
-  fase 3 — `boleto()`, `cartao()` e um VO `Card`, para Cielo, Rede e o boleto
-  da Efí. A **Rede não entra em Pix**: ela só faz crédito.
+- `ChargeIntent` está nos **dez**, com `pix()`, `boleto()`, `comItens()` e
+  `credito()`. O que falta não é gateway, é meio: **cartão nos cinco que pedem
+  token ou blob cifrado** (Mercado Pago, PagBank, Pagar.me, Asaas) e **débito
+  em qualquer um** (pede 3DS). Os dois precisam de desenho próprio, não de mais
+  um `fromIntent()`.
   **A Efí entra pela fase 3 roteando por dentro**: lá `charge()` é boleto e
   `pixCharge()` é a cobrança Pix, e é o `createCharge()` que decide — mudar o
   retorno de `charge()` quebraria a v2.
