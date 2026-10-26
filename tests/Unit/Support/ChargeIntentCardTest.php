@@ -26,13 +26,11 @@ function clienteSimples(): Customer
     return Customer::make(name: 'Maria Oliveira', document: '123.456.789-09', email: 'maria@exemplo.com');
 }
 
-it('a cielo faz os três meios com o mesmo intent, mudando só a fábrica', function () {
-    $esperado = ['Pix', 'Boleto', 'CreditCard'];
-    $tipos    = [];
+it('a cielo faz pix e crédito com o mesmo intent, mudando só a fábrica', function () {
+    $tipos = [];
 
     foreach ([
         ChargeIntent::pix(Money::reais('149,90'), clienteSimples()),
-        ChargeIntent::boleto(Money::reais('149,90'), clienteSimples(), '2099-11-10'),
         ChargeIntent::credito(Money::reais('149,90'), clienteSimples(), cartaoDeTeste('Visa'), 3),
     ] as $intent) {
         ClientFactory::fake([new Response(200, [], '{"Payment":{"PaymentId":"1"}}')]);
@@ -44,7 +42,18 @@ it('a cielo faz os três meios com o mesmo intent, mudando só a fábrica', func
         ClientFactory::stopFaking();
     }
 
-    expect($tipos)->toBe($esperado);
+    expect($tipos)->toBe(['Pix', 'CreditCard']);
+})->group('support');
+
+it('a cielo recusa vencimento em vez de engoli-lo', function () {
+    ClientFactory::fake([]);
+
+    expect(fn () => PHPay::make('cielo', ['merchantId' => 'i', 'merchantKey' => 'k'])
+        ->createCharge(ChargeIntent::pix(Money::reais('10,00'), clienteSimples(), dueDate: '2099-12-31')))
+        ->toThrow(ValidationException::class)
+        ->and(ClientFactory::recorded())->toBe([])
+        ->and(PHPay::make('cielo', ['merchantId' => 'i', 'merchantKey' => 'k'])->supportedMethods())
+        ->not->toContain(Method::BOLETO);
 })->group('support');
 
 it('manda o cartão para a cielo com as chaves dela e as parcelas', function () {

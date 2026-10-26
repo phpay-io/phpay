@@ -14,6 +14,7 @@ específico dele.
 | [Resolvendo o gateway](resolvendo-o-gateway.md) | `PHPay::gateway()` quando você sabe qual, `PHPay::make()` quando ele vem de configuração |
 | [Tratamento de erros](erros.md) | array é sucesso, falha é exceção — e qual exceção |
 | [Retry e idempotência](retry-e-idempotencia.md) | o que a biblioteca repete, o que ela recusa a repetir, e por quê |
+| [Fallback entre gateways](fallback.md) | tentar o próximo gateway, e só quando cair não cria cobrança dupla |
 | [Testando](testando.md) | `ClientFactory::fake()`, para quem usa a biblioteca testar sem sair para a rede |
 | [Ambientes e credenciais](ambientes-e-credenciais.md) | sandbox e produção em cada gateway, e como a credencial fica fora de dump |
 | [Cobrança portável](cobranca-portavel.md) | `ChargeIntent`, uma descrição de cobrança que vale em mais de um gateway |

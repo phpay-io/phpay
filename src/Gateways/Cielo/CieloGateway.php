@@ -78,16 +78,23 @@ class CieloGateway implements CieloGatewayInterface
     /**
      * the payment methods createCharge() accepts here.
      *
-     * the Cielo is the widest of the ten on the portable path: it takes the
-     * card number on the server, so the credit method is reachable. Debit is
-     * absent because it needs 3DS authentication, which the library does not
-     * model.
+     * the Cielo takes the card number on the server, so credit is reachable.
+     *
+     * the billet is NOT here, and it was until the due date was looked at:
+     * ChargeIntent::boleto() requires one, the Cielo's Payment takes it under
+     * a field this library has not confirmed, and the portable path was
+     * dropping it silently. Guessing the field name is what the project
+     * refuses to do with the Rede and the AbacatePay webhooks, and this is
+     * the same thing. Whoever confirms it can put the billet back.
+     *
+     * Debit is absent because it needs 3DS authentication, which the library
+     * does not model at all.
      *
      * @return array<int, Method>
      */
     public function supportedMethods(): array
     {
-        return [Method::PIX, Method::BOLETO, Method::CREDIT_CARD];
+        return [Method::PIX, Method::CREDIT_CARD];
     }
 
     /**
@@ -109,8 +116,6 @@ class CieloGateway implements CieloGatewayInterface
 
         if ($intent->method === Method::PIX) {
             $charge->setPix($intent->amount);
-        } elseif ($intent->method === Method::BOLETO) {
-            $charge->setBoleto($intent->amount);
         } else {
             if (!$intent->card instanceof Card) {
                 throw ValidationException::make('Cielo', CieloSaleRequest::messages()->payment);

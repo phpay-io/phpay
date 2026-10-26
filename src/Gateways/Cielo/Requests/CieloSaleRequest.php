@@ -17,6 +17,10 @@ class CieloSaleRequest
      */
     public static function fromIntent(ChargeIntent $intent): array
     {
+        if ($intent->dueDate !== null) {
+            throw ValidationException::make('Cielo', self::messages()->dueDate);
+        }
+
         $sale = $intent->reference !== null ? ['MerchantOrderId' => $intent->reference] : [];
 
         return $sale + $intent->extra();
@@ -99,7 +103,7 @@ class CieloSaleRequest
     /**
      * messages for validation
      *
-     * @return object{merchantOrderId: string, customer: string, customerName: string, payment: string, paymentType: string, amount: string, brand: string}
+     * @return object{merchantOrderId: string, customer: string, customerName: string, payment: string, paymentType: string, amount: string, brand: string, dueDate: string}
      */
     public static function messages(): object
     {
@@ -110,6 +114,7 @@ class CieloSaleRequest
             'payment'         => 'O campo Payment é obrigatório. Use setPix(), setBoleto() ou setCreditCard().',
             'paymentType'     => 'O campo Payment.Type é obrigatório e aceita apenas: CreditCard, DebitCard, Pix, Boleto.',
             'amount'          => 'O campo Payment.Amount é obrigatório e deve ser um inteiro em CENTAVOS maior que zero. A Cielo não aceita valor decimal: R$ 157,00 é 15700.',
+            'dueDate'         => 'O Payment do Pix da Cielo não tem onde levar vencimento, e o campo de vencimento do boleto dela não está confirmado — engolir a data em silêncio cobraria com prazo que ninguém escolheu. Para boleto com vencimento, use charge()->setBoleto($valor, $options) com o campo que a documentação da Cielo nomear.',
             'brand'           => 'A Cielo exige a bandeira do cartão (Visa, Master, Elo…). Informe-a no Card: a biblioteca não a adivinha pela faixa do número, porque isso seria inventar um fato sobre o cartão.',
         ];
     }
