@@ -332,7 +332,7 @@ versão converte no máximo quatro anos após ser publicada.
 > MIT** — uma licença nova não é retroativa. O texto está preservado em
 > [LICENSE-MIT.md](./LICENSE-MIT.md).
 
-Precisa de termos diferentes? Escreva para [fale@phpay.io](mailto:fale@phpay.io).
+Precisa de termos diferentes? Escreva para [mariolucasdev@gmail.com](mailto:mariolucasdev@gmail.com).
 
 ---
 

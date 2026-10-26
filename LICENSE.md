@@ -21,7 +21,7 @@ whether standalone or as the principal value of a larger offering.
 **Change License:** MIT
 
 For information about alternative licensing arrangements for the Licensed
-Work, please contact fale@phpay.io.
+Work, please contact mariolucasdev@gmail.com.
 
 ---
 
