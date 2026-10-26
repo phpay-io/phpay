@@ -4,7 +4,7 @@ namespace PHPay\Asaas;
 
 use GuzzleHttp\Client;
 use PHPay\Asaas\Interface\AsaasGatewayInterface;
-use PHPay\Asaas\Requests\{AsaasCustomerRequest, AsaasWebhookEventRequest};
+use PHPay\Asaas\Requests\{AsaasChargeRequest, AsaasCustomerRequest, AsaasWebhookEventRequest};
 use PHPay\Asaas\Resources\Charge\Charge;
 use PHPay\Asaas\Resources\Customer\Customer;
 use PHPay\Asaas\Resources\Pix\Pix;
@@ -13,7 +13,7 @@ use PHPay\Asaas\Resources\Webhook\Webhook;
 use PHPay\Asaas\Resources\WebhookSignature\WebhookSignature;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
-use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Support\{ChargeIntent, Customer as CustomerData, Method, Money};
 use PHPay\Webhooks\Event;
 
 class AsaasGateway implements AsaasGatewayInterface
@@ -88,6 +88,41 @@ class AsaasGateway implements AsaasGatewayInterface
     public function refund(string $id, Money|int|float|null $amount = null): array
     {
         return $this->charge()->refund($id, $amount);
+    }
+
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the Asaas also sells billets and credit card through `setCharge()`;
+     * they are absent here because the portable path cannot build them yet,
+     * and declaring a method this call would refuse is the same mistake as
+     * declaring a capability and throwing from inside it.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Asaas', $this->supportedMethods());
+
+        $charge = $this->charge()->setCharge(AsaasChargeRequest::fromIntent($intent));
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        return $charge->create();
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace PHPay\Inter\Interface;
 
-use PHPay\Contracts\{SupportsCharges, SupportsWebhookEvents, SupportsWebhooks};
+use PHPay\Contracts\{SupportsChargeIntents, SupportsCharges, SupportsWebhookEvents, SupportsWebhooks};
 use PHPay\Inter\Resources\Charge\Charge;
 use PHPay\Inter\Resources\Webhook\Webhook;
 
@@ -27,6 +27,7 @@ use PHPay\Inter\Resources\Webhook\Webhook;
  */
 interface InterGatewayInterface extends
     SupportsCharges,
+    SupportsChargeIntents,
     SupportsWebhooks,
     SupportsWebhookEvents
 {

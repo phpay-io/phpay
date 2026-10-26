@@ -2,9 +2,9 @@
 
 namespace PHPay;
 
-use PHPay\Contracts\{Capability, GatewayInterface, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature, SupportsWebhooks};
+use PHPay\Contracts\{Capability, GatewayInterface, SupportsChargeIntents, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Exceptions\{ApiException, NotImplementedException, ValidationException};
-use PHPay\Support\{Customer as CustomerData, Gateway, Money};
+use PHPay\Support\{ChargeIntent, Customer as CustomerData, Gateway, Method, Money};
 use PHPay\Webhooks\{Event, VerifiesSignature};
 
 /**
@@ -157,6 +157,47 @@ class PHPay implements GatewayInterface
         }
 
         return $gateway->refund($id, $amount);
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * the same ChargeIntent reaches every gateway that declares the
+     * capability; each one translates it into its own payload. use
+     * supportedMethods() to ask whether this gateway does that method before
+     * building the intent, or let the call refuse with a message naming what
+     * it does accept.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws NotImplementedException|ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $gateway = $this->gateway;
+
+        if (!$gateway instanceof SupportsChargeIntents) {
+            throw NotImplementedException::forCapability($gateway, Capability::CHARGE_INTENTS);
+        }
+
+        return $gateway->createCharge($intent);
+    }
+
+    /**
+     * the payment methods createCharge() accepts on this gateway.
+     *
+     * @return array<int, Method>
+     * @throws NotImplementedException
+     */
+    public function supportedMethods(): array
+    {
+        $gateway = $this->gateway;
+
+        if (!$gateway instanceof SupportsChargeIntents) {
+            throw NotImplementedException::forCapability($gateway, Capability::CHARGE_INTENTS);
+        }
+
+        return $gateway->supportedMethods();
     }
 
     /**

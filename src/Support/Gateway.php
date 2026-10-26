@@ -126,7 +126,7 @@ enum Gateway: string
          * than one account.
          */
         if ($this === self::INTER) {
-            $options = [...$options, 'certificate', 'scopes', 'account'];
+            $options = [...$options, 'certificate', 'scopes', 'account', 'pixKey'];
         }
 
         return $options;
@@ -180,7 +180,9 @@ enum Gateway: string
                 $sandbox,
                 $this->certificateOf($config),
                 $this->optional($config, 'scopes'),
-                $this->optional($config, 'account')
+                $this->optional($config, 'account'),
+                null,
+                $this->optional($config, 'pixKey')
             ),
         };
     }

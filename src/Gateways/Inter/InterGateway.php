@@ -10,6 +10,7 @@ use PHPay\Inter\Requests\InterWebhookEventRequest;
 use PHPay\Inter\Resources\Authorization\Authorization;
 use PHPay\Inter\Resources\Charge\Charge;
 use PHPay\Inter\Resources\Webhook\Webhook;
+use PHPay\Support\{ChargeIntent, Method};
 use PHPay\Webhooks\Event;
 
 /**
@@ -97,6 +98,15 @@ class InterGateway implements InterGatewayInterface
         ?string $scopes = null,
         private ?string $account = null,
         private ?Client $client = null,
+        /*
+         * the Pix key belongs to the account, not to the charge: the same key
+         * answers for every charge of that clientId. it sits after $client,
+         * which is the odd place, because $client is already the seventh
+         * parameter and inserting before it would break positional
+         * construction. whoever resolves through the registry never sees the
+         * order.
+         */
+        private ?string $pixKey = null,
     ) {
         $this->certificate = is_string($certificate) ? new Certificate($certificate) : $certificate;
         $this->scopes      = $scopes !== null && trim($scopes) !== '' ? trim($scopes) : self::SCOPES;
@@ -142,6 +152,71 @@ class InterGateway implements InterGatewayInterface
     public function charge(): Charge
     {
         return new Charge($this->getToken(), $this->certificate, $this->sandbox, $this->account, $this->client);
+    }
+
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the Inter's billet is another API (`/cobranca/v3`) that the library
+     * does not speak, so Pix is all there is.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * the Inter is the only gateway here with no `setCharge()`: its Charge
+     * builds the nested BACEN payload through its own setters, and those
+     * setters already are the mapping. The Pix key comes from the account,
+     * not from the intent — a charge description has no business carrying
+     * account configuration.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Inter', $this->supportedMethods());
+
+        if ($this->pixKey === null || trim($this->pixKey) === '') {
+            throw ValidationException::make('Inter', self::messages()->pixKey);
+        }
+
+        $charge = $this->charge()
+            ->setAmount($intent->amount)
+            ->setKey($this->pixKey);
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        if ($intent->description !== null) {
+            $charge->setDescription($intent->description);
+        }
+
+        if ($intent->dueDate !== null) {
+            $charge->setDueDate($intent->dueDate);
+        }
+
+        return $charge->create($intent->reference);
+    }
+
+    /**
+     * messages for what this gateway refuses before any HTTP.
+     *
+     * @return object{pixKey: string}
+     */
+    public static function messages(): object
+    {
+        return (object) [
+            'pixKey' => 'O Inter endereça a cobrança a uma chave Pix, e ela é da conta, não da cobrança. Informe "pixKey" na configuração do gateway, ou use charge()->setKey() se a aplicação atende mais de uma chave.',
+        ];
     }
 
     /**

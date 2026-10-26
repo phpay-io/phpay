@@ -3,9 +3,33 @@
 namespace PHPay\MercadoPago\Requests;
 
 use PHPay\Exceptions\ValidationException;
+use PHPay\Support\ChargeIntent;
 
 class MercadoPagoChargeRequest
 {
+    /**
+     * the Mercado Pago payload for a portable charge description.
+     *
+     * the amount is absent here because `setAmount()` normalizes it into the
+     * array — the Mercado Pago is the other gateway that wants reais, and
+     * reading the number straight from the intent would skip that.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException
+     */
+    public static function fromIntent(ChargeIntent $intent): array
+    {
+        if ($intent->dueDate !== null) {
+            throw ValidationException::make('Mercado Pago', self::messages()->dueDate);
+        }
+
+        return [
+            'payment_method_id' => 'pix',
+            'description'       => $intent->descriptionOrDefault(),
+        ] + $intent->extra();
+    }
+
     /**
      * validate charge payload before sending it to the gateway.
      *
@@ -47,7 +71,7 @@ class MercadoPagoChargeRequest
     /**
      * messages for validation
      *
-     * @return object{transactionAmount: string, paymentMethodId: string, payer: string, payerEmail: string}
+     * @return object{transactionAmount: string, paymentMethodId: string, payer: string, payerEmail: string, dueDate: string}
      */
     public static function messages(): object
     {
@@ -56,6 +80,7 @@ class MercadoPagoChargeRequest
             'paymentMethodId'   => 'O campo payment_method_id é obrigatório. Use "pix", "bolbradesco" ou o id devolvido pela tokenização do cartão.',
             'payer'             => 'O campo payer é obrigatório e deve ser um array.',
             'payerEmail'        => 'O campo payer.email é obrigatório e deve ser um e-mail válido.',
+            'dueDate'           => 'O Mercado Pago expira cobrança por date_of_expiration, que é data E hora com fuso. Converter dueDate aqui exigiria assumir um fuso horário, e a biblioteca não assume nenhum — informe date_of_expiration por withExtra().',
         ];
     }
 }

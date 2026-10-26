@@ -34,7 +34,7 @@ use PHPay\Asaas\AsaasGateway;
 use PHPay\Asaas\Enums\InvoiceStatusEnum;
 use PHPay\Cielo\CieloGateway;
 use PHPay\Cielo\Enums\SaleStatusEnum;
-use PHPay\Contracts\{Capability, GatewayInterface, SupportsRefunds};
+use PHPay\Contracts\{Capability, GatewayInterface, SupportsChargeIntents, SupportsRefunds};
 use PHPay\Efi\EfiGateway;
 use PHPay\Efi\Enums\{ChargeStatusEnum as EfiChargeStatusEnum, PixChargeStatusEnum};
 use PHPay\Efi\Resources\Charge\Charge as EfiCharge;
@@ -57,7 +57,7 @@ use PHPay\PagBank\PagBankGateway;
 use PHPay\PHPay;
 use PHPay\Rede\Enums\TransactionStatusEnum;
 use PHPay\Rede\RedeGateway;
-use PHPay\Support\{Customer, Money, StaticPixCode};
+use PHPay\Support\{ChargeIntent, Customer, Method, Money, StaticPixCode};
 use PHPay\Support\{Gateway, PaymentStatus};
 use PHPay\Webhooks\{Event, EventType};
 use PHPay\Woovi\Enums\ChargeStatusEnum as WooviChargeStatusEnum;
@@ -245,6 +245,41 @@ foreach ($gateways as $label => $gateway) {
                     $ensure(
                         $eventos[0]->type === EventType::UNKNOWN || $eventos[0]->type === EventType::UPDATED,
                         'corpo irreconhecível deveria degradar, não levantar'
+                    );
+                }
+            );
+
+            continue;
+        }
+
+        // cobrança portável é operação, não getter, como o estorno. Mas aqui
+        // dá para exercitar os DOIS sentidos sem rede: nos que declaram, o
+        // método que o gateway não faz é recusado antes de qualquer HTTP;
+        // nos que não declaram, quem recusa é a facade.
+        if ($capability === Capability::CHARGE_INTENTS) {
+            $check(
+                sprintf('%s: createCharge() %s', $label, $declared ? 'recusa o método que não faz' : 'recusa a capacidade'),
+                function () use ($phpay, $gateway, $declared, $ensure, $expect): void {
+                    $intent = ChargeIntent::pix(Money::reais('10,00'));
+
+                    if (!$declared) {
+                        $expect(NotImplementedException::class, static fn () => $phpay->createCharge($intent));
+
+                        return;
+                    }
+
+                    $ensure($gateway instanceof SupportsChargeIntents, 'deveria implementar SupportsChargeIntents');
+                    $ensure($phpay->supportedMethods() !== [], 'deveria declarar ao menos um meio');
+
+                    // nenhum deles faz boleto pelo caminho portável na fase
+                    // 1, então a recusa acontece antes de qualquer rede.
+                    $ensure(
+                        !in_array(Method::BOLETO, $phpay->supportedMethods(), true),
+                        'boleto ainda não existe no caminho portável'
+                    );
+                    $expect(
+                        ValidationException::class,
+                        static fn () => $intent->ensureSupportedBy('x', [Method::BOLETO])
                     );
                 }
             );

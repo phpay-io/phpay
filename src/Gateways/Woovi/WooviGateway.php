@@ -5,10 +5,10 @@ namespace PHPay\Woovi;
 use GuzzleHttp\Client;
 use PHPay\Exceptions\{ApiException, ValidationException};
 use PHPay\Http\MasksCredentials;
-use PHPay\Support\{Customer as CustomerData, Money};
+use PHPay\Support\{ChargeIntent, Customer as CustomerData, Method, Money};
 use PHPay\Webhooks\Event;
 use PHPay\Woovi\Interface\WooviGatewayInterface;
-use PHPay\Woovi\Requests\{WooviCustomerRequest, WooviWebhookEventRequest};
+use PHPay\Woovi\Requests\{WooviChargeRequest, WooviCustomerRequest, WooviWebhookEventRequest};
 use PHPay\Woovi\Resources\Charge\Charge;
 use PHPay\Woovi\Resources\Customer\Customer;
 use PHPay\Woovi\Resources\Pix\Pix;
@@ -84,6 +84,42 @@ class WooviGateway implements WooviGatewayInterface
      * @return array<mixed>
      * @throws ApiException
      */
+    /**
+     * the payment methods createCharge() accepts here.
+     *
+     * the Woovi only does Pix, so there is nothing else to list.
+     *
+     * @return array<int, Method>
+     */
+    public function supportedMethods(): array
+    {
+        return [Method::PIX];
+    }
+
+    /**
+     * create a charge from a portable description.
+     *
+     * the amount goes to create(), not to the body: it is the Woovi's own
+     * shape, and the one place in the library where a gateway takes the
+     * value as an argument.
+     *
+     * @param ChargeIntent $intent
+     * @return array<mixed>
+     * @throws ValidationException|ApiException
+     */
+    public function createCharge(ChargeIntent $intent): array
+    {
+        $intent->ensureSupportedBy('Woovi', $this->supportedMethods());
+
+        $charge = $this->charge()->setCharge(WooviChargeRequest::fromIntent($intent));
+
+        if ($intent->customer !== null) {
+            $charge->setCustomer($intent->customer);
+        }
+
+        return $charge->create($intent->amount);
+    }
+
     public function refund(string $id, Money|int|null $amount = null): array
     {
         return $this->charge()->refund($id, $amount);

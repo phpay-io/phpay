@@ -67,18 +67,18 @@ Trocar de gateway é trocar a linha do construtor.
 ## Gateways suportados
 
 <!-- capacidades:inicio -->
-| Gateway | Clientes | Cobranças | Estornos | Webhooks | Chaves Pix | Assinaturas | Assinatura de webhook | Leitura de webhook |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Efí** | — | ✅ | — | ✅ | ✅ | ✅ | — | ✅ |
-| **Mercado Pago** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ |
-| **PagBank** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ |
-| **Pagar.me** | ✅ | ✅ | ✅ | — | — | ✅ | — | ✅ |
-| **Cielo** | — | ✅ | ✅ | — | — | ✅ | — | ✅ |
-| **Rede** | — | ✅ | ✅ | — | — | — | — | — |
-| **AbacatePay** | ✅ | ✅ | — | — | — | — | ✅ | — |
-| **Inter** | — | ✅ | — | ✅ | — | — | — | ✅ |
+| Gateway | Clientes | Cobranças | Estornos | Webhooks | Chaves Pix | Assinaturas | Assinatura de webhook | Leitura de webhook | Cobrança portável |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Asaas** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Woovi/OpenPix** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Efí** | — | ✅ | — | ✅ | ✅ | ✅ | — | ✅ | — |
+| **Mercado Pago** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | ✅ |
+| **PagBank** | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | — |
+| **Pagar.me** | ✅ | ✅ | ✅ | — | — | ✅ | — | ✅ | — |
+| **Cielo** | — | ✅ | ✅ | — | — | ✅ | — | ✅ | — |
+| **Rede** | — | ✅ | ✅ | — | — | — | — | — | — |
+| **AbacatePay** | ✅ | ✅ | — | — | — | — | ✅ | — | — |
+| **Inter** | — | ✅ | — | ✅ | — | — | — | ✅ | ✅ |
 <!-- capacidades:fim -->
 
 As interfaces correspondentes são `SupportsCustomers`, `SupportsCharges`,

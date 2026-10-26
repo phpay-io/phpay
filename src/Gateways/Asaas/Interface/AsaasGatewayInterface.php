@@ -8,7 +8,7 @@ use PHPay\Asaas\Resources\Pix\Pix;
 use PHPay\Asaas\Resources\Subscription\Subscription;
 use PHPay\Asaas\Resources\Webhook\Webhook;
 use PHPay\Asaas\Resources\WebhookSignature\WebhookSignature;
-use PHPay\Contracts\{SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature, SupportsWebhooks};
+use PHPay\Contracts\{SupportsChargeIntents, SupportsCharges, SupportsCustomers, SupportsPixKeys, SupportsRefunds, SupportsSubscriptions, SupportsWebhookEvents, SupportsWebhookSignature, SupportsWebhooks};
 use PHPay\Support\Customer as CustomerData;
 
 /**
@@ -17,6 +17,7 @@ use PHPay\Support\Customer as CustomerData;
 interface AsaasGatewayInterface extends
     SupportsCustomers,
     SupportsCharges,
+    SupportsChargeIntents,
     SupportsRefunds,
     SupportsWebhooks,
     SupportsPixKeys,
