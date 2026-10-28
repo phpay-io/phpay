@@ -143,6 +143,6 @@ it('declara só o que createCharge() aceita hoje', function (string $gateway, ar
     ['woovi', ['appId'             => 'a'], [Method::PIX]],
     ['mercadopago', ['accessToken' => 'TEST-1'], [Method::PIX]],
     ['efi', ['clientId'            => 'i', 'clientSecret' => 's'], [Method::BOLETO]],
-    ['cielo', ['merchantId'        => 'i', 'merchantKey' => 'k'], [Method::PIX, Method::BOLETO, Method::CREDIT_CARD]],
+    ['cielo', ['merchantId'        => 'i', 'merchantKey' => 'k'], [Method::PIX, Method::CREDIT_CARD]],
     ['rede', ['affiliation'        => 'pv', 'secret' => 's'], [Method::CREDIT_CARD]],
 ])->group('support');

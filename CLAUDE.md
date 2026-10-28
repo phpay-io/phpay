@@ -288,6 +288,10 @@ descrição de cobrança que vale em mais de um gateway, com o mapeamento no
   **assinatura**. Por isso só Cielo e Rede declaram `CREDIT_CARD` — e é
   exatamente para isso que `supportedMethods()` serve. **Não invente mapeamento
   de cartão** para os outros: no Mercado Pago seria impossível, não só errado.
+- **A Cielo não faz boleto pelo caminho portável**: o `Payment` do Pix dela não
+  tem onde levar vencimento e o campo de vencimento do boleto não está
+  confirmado — engolir a data cobraria com prazo que ninguém escolheu, então
+  ela recusa. Volta quando alguém confirmar o campo (#182).
 - **O `Card` confere Luhn e mascara no `__debugInfo()`.** Dígito trocado pego
   aqui custa nada; pego no gateway custa recusa no checkout. Número e CVV levam
   `#[\SensitiveParameter]` e nunca aparecem em dump. **A bandeira não é
@@ -440,6 +444,37 @@ e PagBank (`x-idempotency-key`, 48h). Nos dois últimos é **opt-in** por
 mandar chave em toda requisição esbarraria no `409 idempotency_key_in_use`. Gateway
 novo só ganha setter se a documentação dele descrever o mecanismo — e a geração da
 chave vem de `PHPay\Http\Idempotency::key()`, não de `random_bytes` espalhado.
+
+## Fallback entre gateways
+
+Use **`PHPay\Support\FallbackGateway`**. É o irmão do retry, e **pior**: se o
+erro não prova que a requisição não chegou, cair para o próximo cria uma
+**segunda cobrança** — e entre dois PSPs não existe chave de idempotência que
+desfaça isso.
+
+- **Quem responde "saiu ou não?" é `PHPay\Http\Delivery`**, extraído do
+  `RetryPolicy` justamente para não haver duas cópias. **Não reimplemente** a
+  classificação: duas cópias divergem, e a divergência aparece como alguém
+  pagando duas vezes.
+- Cai em: erro que provou não ter saído, timeout antes de conectar, `401`,
+  `403`, `429`, e regra do próprio gateway recusada **antes** de qualquer HTTP.
+  **Não cai** em `4xx` de payload, `5xx` já na linha, nem timeout com conexão
+  aberta.
+- **`supportedMethods()` devolve a união**, porque `createCharge()` filtra por
+  cobrança antes de tentar. Para **capacidade** vale o contrário: o decorator
+  declara só cobrança e cobrança portável, nunca as dos gateways de dentro —
+  capacidade é perguntada uma vez contra este objeto, meio é escolhido por
+  cobrança.
+- **Retry roda dentro do gateway, fallback fora dele**: três tentativas no
+  mesmo antes de o próximo entrar. Teste que simule erro de transporte precisa
+  de três respostas na fila, não uma.
+- **`charge()` é do primário e não tem fallback**, porque devolve recurso com
+  estado. Recusá-lo seria declarar capacidade e lançar de dentro.
+- **Uma cadeia pode ser inútil sem avisar**: Asaas exige vencimento no Pix e a
+  Woovi o recusa, então aquela dupla nunca tem as duas como candidatas para a
+  mesma cobrança. Monte a cadeia com gateways que aceitam o mesmo intent.
+- Circuit breaker fica fora: precisa de estado entre requisições, e o núcleo é
+  sem estado de propósito.
 
 ## QR Code estático
 

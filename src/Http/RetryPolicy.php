@@ -2,7 +2,6 @@
 
 namespace PHPay\Http;
 
-use GuzzleHttp\Exception\ConnectException;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\{RequestInterface, ResponseInterface};
 use Throwable;
@@ -22,14 +21,8 @@ use Throwable;
  * idempotent without checking the response, and that warning is worth more
  * than the spec.
  *
- * The two Guzzle majors answer "did it leave the machine?" differently, and
- * this class asks each one in its own language. Guzzle 7 throws a single
- * ConnectException for everything from a failed DNS lookup to a read timeout,
- * so only the cURL errno in its handler context separates them. Guzzle 8
- * removed that accessor and split the cases into classes instead, with its own
- * upgrade guide saying to classify by class and not by error code — there,
- * ConnectException means the connection never happened, and that is the whole
- * question. Neither path names a class that exists in only one major.
+ * Whether a failure left the machine is asked of {@see Delivery}, which is
+ * also what FallbackGateway consults — the answer must never have two copies.
  *
  * @see https://docs.asaas.com/reference/excluir-cobranca
  * @see https://github.com/guzzle/guzzle/blob/8.3.0/UPGRADING.md
@@ -55,18 +48,6 @@ final class RetryPolicy
      * methods that change nothing, so repeating one costs nothing.
      */
     private const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
-
-    /**
-     * cURL error numbers where the request never left this machine: proxy and
-     * host resolution, the connection itself, and the TLS handshake.
-     */
-    private const NEVER_SENT = [5, 6, 7, 35];
-
-    /**
-     * CURLE_OPERATION_TIMEDOUT. Guzzle reports it as a ConnectException even
-     * when the body was already on the wire, so it needs a second look.
-     */
-    private const TIMED_OUT = 28;
 
     /**
      * construct.
@@ -117,7 +98,7 @@ final class RetryPolicy
          * O contrato é o mesmo nas duas majors, a classe não.
          */
         if ($exception instanceof NetworkExceptionInterface) {
-            return $this->neverSent($exception) || $this->repeatable($request);
+            return Delivery::neverSent($exception) || $this->repeatable($request);
         }
 
         /* another transport failure: no idea how far it got, so no guessing */
@@ -223,51 +204,6 @@ final class RetryPolicy
     {
         return in_array(strtoupper($request->getMethod()), self::SAFE_METHODS, true)
             || Idempotency::present($request);
-    }
-
-    /**
-     * whether the request provably never reached the gateway.
-     *
-     * @param Throwable $exception a transport failure, in either Guzzle major
-     * @return bool
-     */
-    private function neverSent(Throwable $exception): bool
-    {
-        /*
-         * Guzzle 8 não tem getHandlerContext(): ele trocou o errno por
-         * classes, e a própria migração manda classificar pela classe. Lá a
-         * ConnectException significa o que o nome diz — a conexão não se
-         * estabeleceu, nada saiu — e a ConnectTimeoutException herda dela.
-         * Todo o resto (NetworkException, NetworkTimeoutException e a família
-         * Response*) aconteceu com a requisição já na linha.
-         */
-        if (!method_exists($exception, 'getHandlerContext')) {
-            return $exception instanceof ConnectException;
-        }
-
-        $context = $exception->getHandlerContext();
-        $errno   = $context['errno'] ?? null;
-
-        if (!is_int($errno)) {
-            return false;
-        }
-
-        if (in_array($errno, self::NEVER_SENT, true)) {
-            return true;
-        }
-
-        if ($errno !== self::TIMED_OUT) {
-            return false;
-        }
-
-        /*
-         * a timeout that happened before the connection was established is a
-         * connect timeout: nothing was sent. with a connection open, the body
-         * may well have been processed.
-         */
-        $connectTime = $context['connect_time'] ?? null;
-
-        return is_numeric($connectTime) && (float) $connectTime === 0.0;
     }
 
     /**
